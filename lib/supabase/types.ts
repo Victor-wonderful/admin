@@ -1,0 +1,103 @@
+// 도메인 타입 (수동 작성 — CLI gen types 가 플랫폼 로그인을 요구해 대체).
+// 스키마: supabase/migrations/0001_init.sql 와 일치.
+
+export type MemberRole = "registered" | "subscriber" | "marketer";
+
+export interface MemberRow {
+  id: string;
+  display_name: string;
+  email: string | null;
+  role: MemberRole;
+  recommender_id: string | null;
+  parent_id: string | null;
+  joined_at: string;
+  is_active_subscriber: boolean;
+  created_at: string;
+}
+
+export interface ReferralCodeRow {
+  id: string;
+  code: string;
+  owner_id: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ProductRow {
+  id: string;
+  code: string;
+  name: string;
+  price_usd: number | null;
+  billing: "monthly" | "yearly" | "event";
+}
+
+export interface SubscriptionRow {
+  id: string;
+  member_id: string;
+  product_id: string | null;
+  amount_usd: number;
+  period_start: string;
+  period_end: string;
+  paid_at: string;
+  status: "active" | "expired";
+  created_at: string;
+}
+
+export interface AnnualMembershipRow {
+  id: string;
+  member_id: string;
+  amount_usd: number;
+  period_start: string;
+  period_end: string;
+  paid_at: string;
+  created_at: string;
+}
+
+// RPC 반환형
+export interface MarketerLeg {
+  leg_root: string;
+  leg_name: string;
+  active_count: number;
+}
+
+export interface MajorMinor {
+  major_leg: number;
+  other_minor: number;
+  total_active: number;
+  leg_count: number;
+}
+
+export interface RankRow {
+  rank: number;
+  rate_pct: number;
+  min_total: number | null;
+  min_direct: number | null;
+  override_rate: number | null;
+  requires_30pct: boolean;
+  label: string;
+}
+
+export interface RankInfo {
+  rank: number;
+  rate_pct: number;
+  total_active: number;
+  direct_active: number;
+  major_leg: number;
+  other_minor: number;
+  balance_pct: number; // 기타소실적 비율 (0~1)
+  balance_ok: boolean;
+  blocked_by_balance: boolean; // 카운트는 5직급+ 되나 30% 미달로 강등
+  next_rank: number | null;
+  next_min_total: number | null;
+  next_min_direct: number | null;
+}
+
+// 트리 시각화 공통 노드
+export interface TreeNode {
+  id: string;
+  name: string;
+  role: MemberRole;
+  isActive: boolean;
+  children: TreeNode[];
+  meta?: { activeCount?: number; recommenderId?: string | null; parentId?: string | null };
+}

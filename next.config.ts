@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // 컨테이너 브라우저/네트워크 IP 로 dev 접근 시 cross-origin 자산 차단 방지.
+  allowedDevOrigins: ["10.8.1.2"],
 };
 
 export default nextConfig;
