@@ -46,6 +46,18 @@ export async function listMarketers(): Promise<MemberRow[]> {
   return listMembers({ role: "marketer" });
 }
 
+// 특정 회원이 추천(recommender)한 직접 하위 회원 목록
+export async function listReferred(recommenderId: string): Promise<MemberRow[]> {
+  const sb = getServerClient();
+  const { data, error } = await sb
+    .from("members")
+    .select("*")
+    .eq("recommender_id", recommenderId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as MemberRow[];
+}
+
 export async function listProducts(): Promise<ProductRow[]> {
   const sb = getServerClient();
   const { data, error } = await sb.from("products").select("*").order("code");

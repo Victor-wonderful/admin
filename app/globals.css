@@ -4,117 +4,275 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+  Alpha Gate design tokens — ported from the Pencil design system (admin-ui.pen).
+  Raw brand values live in :root; @theme inline exposes them as Tailwind utilities
+  and maps shadcn semantic tokens onto the brand so existing components stay on-brand.
+*/
+
 @theme inline {
+  /* fonts */
+  --font-sans: var(--font-inter), "Pretendard Variable", "Pretendard", system-ui,
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  /* shadcn semantic tokens (mapped to brand in :root) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* brand — green ramp (accent = green-500) */
+  --color-brand: var(--green-500);
+  --color-brand-ink: var(--green-700);
+  --color-brand-soft: var(--accent-soft);
+  --color-green-50: var(--green-50);
+  --color-green-100: var(--green-100);
+  --color-green-300: var(--green-300);
+  --color-green-500: var(--green-500);
+  --color-green-600: var(--green-600);
+  --color-green-700: var(--green-700);
+  --color-lime: var(--lime);
+
+  /* brand — crypto (marketer purple) */
+  --color-crypto: var(--crypto);
+  --color-crypto-soft: var(--crypto-soft);
+
+  /* semantic states */
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-positive: var(--positive);
+
+  /* surfaces & ink */
+  --color-feature: var(--feature-bg);
+  --color-canvas: var(--canvas-bg);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+
+  /* text */
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-border-strong: var(--border-strong);
+
+  /* neutrals */
+  --color-n-0: var(--n-0);
+  --color-n-50: var(--n-50);
+  --color-n-100: var(--n-100);
+  --color-n-200: var(--n-200);
+  --color-n-300: var(--n-300);
+  --color-n-400: var(--n-400);
+  --color-n-500: var(--n-500);
+  --color-n-600: var(--n-600);
+  --color-n-700: var(--n-700);
+  --color-n-800: var(--n-800);
+  --color-n-900: var(--n-900);
+
+  /* chart categories */
+  --color-cat-green: var(--cat-green);
+  --color-cat-orange: var(--cat-orange);
+  --color-cat-red: var(--cat-red);
+  --color-cat-teal: var(--cat-teal);
+  --color-cat-yellow: var(--cat-yellow);
+
+  /* gradient card stops */
+  --color-card-grad-from: var(--card-grad-from);
+  --color-card-grad-to: var(--card-grad-to);
+
+  /* pink accent */
+  --color-pink-50: var(--pink-50);
+  --color-pink-100: var(--pink-100);
+  --color-pink-500: var(--pink-500);
+  --color-pink-600: var(--pink-600);
+  --color-pink-ink: var(--pink-ink);
+
+  /* radii — Pencil sm8 / md10 / lg14 / xl20 */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* ===== Alpha Gate raw brand tokens ===== */
+  /* green ramp */
+  --green-50: #e6f4ea;
+  --green-100: #c2e6cf;
+  --green-300: #6fc58e;
+  --green-500: #1f9d55; /* accent / brand primary */
+  --green-600: #178a49;
+  --green-700: #0f5c31; /* accent-ink */
+  --accent-soft: #e6f4ea;
+  --lime: #9bcb3c;
+
+  /* crypto (marketer purple) */
+  --crypto: #7c3aed;
+  --crypto-soft: #ede9fb;
+
+  /* semantic states */
+  --info: #2f6fed;
+  --info-soft: #e7effc;
+  --warning: #d97706;
+  --warning-soft: #fcf1e2;
+  --negative: #dc2626;
+  --negative-soft: #fbeaea;
+  --positive: #16a34a;
+
+  /* surfaces & ink */
+  --feature-bg: #14181f;
+  --canvas-bg: #f4f5f3;
+  --surface: #ffffff;
+  --surface-muted: #fafaf9;
+  --ink: #111418;
+  --ink-soft: #1b1f26;
+
+  /* neutrals */
+  --n-0: #ffffff;
+  --n-50: #f7f7f5;
+  --n-100: #f1f1ee;
+  --n-200: #e6e7e3;
+  --n-300: #d3d4cf;
+  --n-400: #9ca3af;
+  --n-500: #6b7280;
+  --n-600: #4b5563;
+  --n-700: #374151;
+  --n-800: #1f2430;
+  --n-900: #14181f;
+
+  /* text & borders */
+  --text-primary: #14181f;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --border-strong: #dddee1;
+
+  /* chart categories */
+  --cat-green: #6fb23c;
+  --cat-orange: #f59e0b;
+  --cat-red: #ef4444;
+  --cat-teal: #14b8a6;
+  --cat-yellow: #fbbf24;
+
+  /* gradient card stops */
+  --card-grad-from: #b7e04a;
+  --card-grad-to: #1f9d55;
+
+  /* pink accent */
+  --pink-50: #fde7ef;
+  --pink-100: #f9c2d8;
+  --pink-500: #ef2d6e;
+  --pink-600: #cc1e58;
+  --pink-ink: #8e143c;
+
+  /* ===== shadcn semantic tokens mapped to brand ===== */
+  --background: var(--canvas-bg);
+  --foreground: var(--text-primary);
+  --card: var(--surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--green-500);
+  --primary-foreground: #ffffff;
+  --secondary: var(--n-100);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-muted);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--accent-soft);
+  --accent-foreground: var(--green-700);
+  --destructive: var(--negative);
+  --destructive-foreground: #ffffff;
+  --border: #ecedef;
+  --input: var(--border-strong);
+  --ring: var(--green-500);
+  --chart-1: var(--green-500);
+  --chart-2: var(--crypto);
+  --chart-3: var(--info);
+  --chart-4: var(--cat-orange);
+  --chart-5: var(--cat-teal);
+
+  --radius: 0.875rem;
+
+  /* sidebar */
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text-primary);
+  --sidebar-primary: var(--green-500);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--accent-soft);
+  --sidebar-accent-foreground: var(--green-700);
+  --sidebar-border: #ecedef;
+  --sidebar-ring: var(--green-500);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Light-first product; dark mode keeps surfaces on the feature-ink scale
+     so shadcn components remain usable when .dark is toggled. */
+  --background: var(--feature-bg);
+  --foreground: #ffffff;
+  --card: var(--ink-soft);
+  --card-foreground: #ffffff;
+  --popover: var(--ink-soft);
+  --popover-foreground: #ffffff;
+  --primary: var(--green-500);
+  --primary-foreground: #ffffff;
+  --secondary: #232a36;
+  --secondary-foreground: #ffffff;
+  --muted: #232a36;
+  --muted-foreground: var(--n-400);
+  --accent: #1d3326;
+  --accent-foreground: var(--green-300);
+  --destructive: var(--negative);
+  --destructive-foreground: #ffffff;
+  --border: #ffffff1a;
+  --input: #ffffff26;
+  --ring: var(--green-500);
+  --chart-1: var(--green-300);
+  --chart-2: var(--crypto);
+  --chart-3: var(--info);
+  --chart-4: var(--cat-orange);
+  --chart-5: var(--cat-teal);
+  --sidebar: var(--ink-soft);
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: var(--green-500);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1d3326;
+  --sidebar-accent-foreground: var(--green-300);
+  --sidebar-border: #ffffff1a;
+  --sidebar-ring: var(--green-500);
 }
 
 @layer base {
