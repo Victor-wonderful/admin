@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { toUid } from "@/lib/uid";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
@@ -126,7 +127,7 @@ export default async function AdminSettlementsPage() {
             </div>
             {rows.map((r) => (
               <div key={r.id} className="grid grid-cols-[1.4fr_0.9fr_0.9fr_0.9fr_1fr_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
-                <span className="font-semibold text-text-primary">{r.members?.display_name ?? r.member_id.slice(0, 8)}</span>
+                <span className="font-semibold text-text-primary">{toUid(r.member_id)}</span>
                 <span className="text-text-secondary tabular-nums">{usd(r.level_amount)}</span>
                 <span className="text-text-secondary tabular-nums">{usd(r.rank_amount)}</span>
                 <span className="text-text-secondary tabular-nums">{usd(r.share_amount)}</span>

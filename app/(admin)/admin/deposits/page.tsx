@@ -12,6 +12,7 @@ import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { toUid } from "@/lib/uid";
 import { getDepositStats, listTransactions } from "@/lib/queries/finance";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +56,7 @@ export default async function AdminDepositsPage() {
             {rows.map((r) => (
               <div key={r.id} className="grid grid-cols-[auto_1fr_1.2fr_auto_auto_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
                 <span className="text-text-tertiary tabular-nums">{r.created_at.slice(5, 16).replace("T", " ")}</span>
-                <span className="font-semibold text-text-primary">{r.members?.display_name ?? "—"}</span>
+                <span className="font-semibold text-text-primary">{toUid(r.member_id)}</span>
                 <span className="text-text-secondary">{Number(r.amount_usd) >= 200 ? "마케터 연회비" : "Alpha Engine 구독"}</span>
                 <span className="font-semibold tabular-nums text-green-700">+{usd(r.amount_usd)}</span>
                 <span className="text-xs text-text-tertiary">{r.network}</span>

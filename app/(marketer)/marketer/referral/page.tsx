@@ -13,6 +13,7 @@ import {
   LinkIcon,
 } from "lucide-react";
 
+import { toUid } from "@/lib/uid";
 import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
@@ -151,7 +152,7 @@ export default async function MarketerReferralPage() {
             </div>
             {referred.slice(0, 8).map((m) => (
               <div key={m.id} className="grid grid-cols-[1.4fr_1fr_1fr_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
-                <span className="font-semibold text-text-primary">{m.display_name}</span>
+                <span className="font-semibold text-text-primary">{toUid(m.id)}</span>
                 <span><Pill tone={ROLE_TONE[m.role]}>{ROLE_LABEL[m.role]}</Pill></span>
                 <span className="text-text-secondary tabular-nums">{m.created_at.slice(0, 10)}</span>
                 <span className="justify-self-end">

@@ -3,6 +3,7 @@ import { RankPanel } from "@/components/ranks/RankPanel";
 import { getMajorMinor } from "@/lib/queries/legs";
 import { getMember } from "@/lib/queries/members";
 import { getMemberRank } from "@/lib/queries/ranks";
+import { toUid } from "@/lib/uid";
 import { ROOT_MARKETER_ID } from "@/lib/constants";
 
 export default async function MarketerDashboard({
@@ -17,7 +18,7 @@ export default async function MarketerDashboard({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{me?.display_name ?? "마케터"} 대시보드</h1>
+        <h1 className="text-2xl font-bold">{me ? toUid(me.id) : "마케터"} 대시보드</h1>
         <p className="text-sm text-muted-foreground">
           카운팅 기준: 이번 달 구독료를 유지 중인 <b>활성 구독자</b>만 집계됩니다.
         </p>

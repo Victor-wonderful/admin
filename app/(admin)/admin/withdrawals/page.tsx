@@ -12,6 +12,7 @@ import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { toUid } from "@/lib/uid";
 import { getWithdrawalStats, listWithdrawals } from "@/lib/queries/finance";
 import { cn } from "@/lib/utils";
 
@@ -67,7 +68,7 @@ export default async function AdminWithdrawalsPage() {
               return (
                 <div key={r.id} className="grid grid-cols-[auto_1fr_auto_1.1fr_auto_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
                   <span className="text-text-tertiary tabular-nums">{r.requested_at.slice(5, 16).replace("T", " ")}</span>
-                  <span className="font-semibold text-text-primary">{r.members?.display_name ?? r.member_id.slice(0, 8)}</span>
+                  <span className="font-semibold text-text-primary">{toUid(r.member_id)}</span>
                   <span className="font-semibold tabular-nums text-text-primary">−{usd(r.amount_usd)}</span>
                   <span className="flex items-center gap-1 text-xs text-text-tertiary"><HashIcon className="size-3" />{r.to_address}</span>
                   <span className="text-xs text-text-tertiary">{r.network}</span>

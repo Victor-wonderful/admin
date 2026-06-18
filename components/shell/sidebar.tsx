@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HexagonIcon, LockIcon } from "lucide-react";
+import { HexagonIcon, LockIcon, ChevronDownIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -144,6 +144,87 @@ export function SidebarNavItem({
     );
   }
   return <Link href={href}>{inner}</Link>;
+}
+
+// 접이식 그룹: 부모 항목(링크) + 우측 chevron 토글 + 하위 항목.
+// 하위 라우트에 진입하면 자동으로 펼쳐진다.
+export function SidebarNavGroup({
+  href,
+  icon: Icon,
+  label,
+  sublabel,
+  children,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  sublabel?: string;
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const within = pathname === href || pathname.startsWith(href + "/");
+  const exactActive = pathname === href;
+  const [open, setOpen] = React.useState(within);
+
+  React.useEffect(() => {
+    if (within) setOpen(true);
+  }, [within]);
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div
+        className={cn(
+          "flex items-center rounded-[9px] pr-1.5 transition-colors",
+          exactActive ? "bg-green-50" : "hover:bg-n-50",
+        )}
+      >
+        <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5 py-2.5 pl-2.5">
+          <Icon className={cn("size-[18px] shrink-0", exactActive ? "text-green-700" : "text-n-500")} />
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className={cn("text-[13px]", exactActive ? "font-semibold text-green-700" : "font-medium text-n-900")}>
+              {label}
+            </div>
+            {sublabel ? (
+              <div className={cn("text-[10px]", exactActive ? "text-green-600" : "text-n-400")}>{sublabel}</div>
+            ) : null}
+          </div>
+        </Link>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-label="하위 메뉴 펼치기/접기"
+          aria-expanded={open}
+          className="grid size-6 shrink-0 place-items-center rounded-md text-n-400 transition-colors hover:bg-n-100 hover:text-n-600"
+        >
+          <ChevronDownIcon className={cn("size-4 transition-transform", open ? "" : "-rotate-90")} />
+        </button>
+      </div>
+      {open ? <div className="flex flex-col gap-0.5">{children}</div> : null}
+    </div>
+  );
+}
+
+export function SidebarSubItem({ href, label }: { href: string; label: string }) {
+  const pathname = usePathname();
+  const active = pathname === href;
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center rounded-[9px] py-1.5 pr-2.5 pl-[42px] transition-colors",
+        active ? "bg-green-50" : "hover:bg-n-50",
+      )}
+    >
+      <span
+        className={cn(
+          "text-[12.5px]",
+          active ? "font-semibold text-green-700" : "font-medium text-n-500",
+        )}
+      >
+        {label}
+      </span>
+    </Link>
+  );
 }
 
 export function SidebarSpacer() {

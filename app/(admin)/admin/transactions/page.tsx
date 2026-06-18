@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { toUid } from "@/lib/uid";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
@@ -77,7 +78,7 @@ export default async function AdminTransactionsPage() {
                     {ty.dir === "in" ? <ArrowDownLeftIcon className="size-3.5 text-green-600" /> : <ArrowUpRightIcon className="size-3.5 text-info" />}
                     {ty.label}
                   </span>
-                  <span className="font-semibold text-text-primary">{r.members?.display_name ?? "—"}</span>
+                  <span className="font-semibold text-text-primary">{toUid(r.member_id)}</span>
                   <span className={cn("font-semibold tabular-nums", ty.dir === "in" ? "text-green-700" : "text-text-primary")}>
                     {ty.dir === "in" ? "+" : "−"}{usd(r.amount_usd)}
                   </span>

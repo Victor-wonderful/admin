@@ -22,6 +22,8 @@ import {
   SidebarBrand,
   SidebarSection,
   SidebarNavItem,
+  SidebarNavGroup,
+  SidebarSubItem,
   SidebarSpacer,
   SidebarBottomCard,
 } from "@/components/shell/sidebar";
@@ -41,7 +43,11 @@ export function AdminSidebar() {
       </SidebarSection>
 
       <SidebarSection label="회원·조직">
-        <SidebarNavItem href="/admin/members" icon={UsersIcon} label="회원관리" sublabel="Members" />
+        <SidebarNavGroup href="/admin/members" icon={UsersIcon} label="회원관리" sublabel="Members">
+          <SidebarSubItem href="/admin/members/registered" label="등록회원" />
+          <SidebarSubItem href="/admin/members/subscriber" label="구독회원" />
+          <SidebarSubItem href="/admin/members/marketer" label="마케터" />
+        </SidebarNavGroup>
         <SidebarNavItem href="/admin/org" icon={NetworkIcon} label="조직도" sublabel="Genealogy" />
       </SidebarSection>
 
