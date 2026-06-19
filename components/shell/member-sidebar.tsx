@@ -4,6 +4,7 @@ import {
   LayoutDashboardIcon,
   NetworkIcon,
   Share2Icon,
+  CoinsIcon,
   WalletIcon,
   ShoppingCartIcon,
   UserRoundIcon,
@@ -56,6 +57,7 @@ export function MemberSidebar({
         <SidebarNavItem href="/marketer/dashboard" icon={LayoutDashboardIcon} label="대시보드" sublabel="Dashboard" />
         <SidebarNavItem href="/marketer/genealogy" icon={NetworkIcon} label="계보도" sublabel="Genealogy" locked={locked} />
         <SidebarNavItem href="/marketer/referral" icon={Share2Icon} label="레퍼럴" sublabel="Referral" locked={locked} />
+        <SidebarNavItem href="/marketer/commissions" icon={CoinsIcon} label="내 수당" sublabel="Commissions" locked={locked} />
         <SidebarNavItem href="/marketer/wallet" icon={WalletIcon} label="내 지갑" sublabel="My Wallet" />
         <SidebarNavItem href="/marketer/orders" icon={ShoppingCartIcon} label="구독·주문" sublabel="Subscription" />
         <SidebarNavItem href="/marketer/profile" icon={UserRoundIcon} label="프로필·설정" sublabel="Profile" />
