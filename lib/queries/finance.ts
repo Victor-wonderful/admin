@@ -77,6 +77,45 @@ export async function listWithdrawals(limit = 20): Promise<Withdrawal[]> {
   return (data ?? []) as unknown as Withdrawal[];
 }
 
+export interface WithdrawalSummary {
+  pendingCount: number;
+  pendingAmount: number; // 승인 대기 금액
+  sendingCount: number;
+  sendingAmount: number; // 송금 중 금액
+  completedMonthAmount: number; // 당월 완료 출금액
+  completedTotalAmount: number; // 누적 완료 출금액
+  operatingBalance: number; // 운영 지갑 출금 가능 잔액
+}
+
+// 출금 KPI 집계 — 상태별 건수·금액 + 운영 지갑 잔액. (행 수 제한적이라 fetch 후 JS 집계)
+export async function getWithdrawalSummary(): Promise<WithdrawalSummary> {
+  const sb = getServerClient();
+  const [{ data: wd, error: e1 }, { data: sw, error: e2 }] = await Promise.all([
+    sb.from("withdrawals").select("amount_usd, status, processed_at, requested_at"),
+    sb.from("system_wallets").select("kind, balance_usd").eq("kind", "operating").maybeSingle(),
+  ]);
+  if (e1) throw e1;
+  if (e2) throw e2;
+
+  const month = fmtMonth(new Date("2026-06-15"));
+  const s: WithdrawalSummary = {
+    pendingCount: 0, pendingAmount: 0, sendingCount: 0, sendingAmount: 0,
+    completedMonthAmount: 0, completedTotalAmount: 0,
+    operatingBalance: sw ? Number(sw.balance_usd) : 0,
+  };
+  for (const r of wd ?? []) {
+    const amt = Number(r.amount_usd);
+    if (r.status === "pending" || r.status === "approved") { s.pendingCount++; s.pendingAmount += amt; }
+    else if (r.status === "sending") { s.sendingCount++; s.sendingAmount += amt; }
+    else if (r.status === "completed") {
+      s.completedTotalAmount += amt;
+      const when = (r.processed_at ?? r.requested_at) as string | null;
+      if (when && fmtMonth(new Date(when)) === month) s.completedMonthAmount += amt;
+    }
+  }
+  return s;
+}
+
 export async function listSettlements(cycle: string, limit = 20): Promise<Settlement[]> {
   const sb = getServerClient();
   const { data, error } = await sb

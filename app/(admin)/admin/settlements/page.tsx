@@ -17,6 +17,7 @@ import { Pill } from "@/components/ui/pill";
 import { RunSettlementButton } from "@/components/settlements/run-settlement-button";
 import { PayCommissionButton } from "@/components/settlements/pay-commission-button";
 import { getSettlementSummary, listSettlements, getPoolReconciliation } from "@/lib/queries/finance";
+import { getMemberRanksMap } from "@/lib/queries/ranks";
 import { toUid, uidInitials } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
@@ -54,11 +55,20 @@ function statusPill(status: string) {
   return <Pill tone="neutral">산정</Pill>;
 }
 
+// 마케터 직급 뱃지 (R1~R9). 무직급/미산정은 표시 안 함.
+function rankPill(rank: number | undefined) {
+  if (!rank || rank <= 0) return null;
+  return (
+    <span className="shrink-0 rounded-[5px] bg-crypto-soft px-1.5 py-0.5 text-[10px] font-bold text-crypto">R{rank}</span>
+  );
+}
+
 export default async function AdminSettlementsPage() {
-  const [sum, rows, recon] = await Promise.all([
+  const [sum, rows, recon, ranks] = await Promise.all([
     getSettlementSummary(CYCLE),
     listSettlements(CYCLE, 8),
     getPoolReconciliation(CYCLE),
+    getMemberRanksMap(),
   ]);
 
   const lpct = pctOf(sum.level, sum.total);
@@ -207,8 +217,11 @@ export default async function AdminSettlementsPage() {
                 <div className="flex items-center gap-2.5">
                   <span className="grid size-8 shrink-0 place-items-center rounded-full bg-green-50 text-[10px] font-bold text-green-700">{uidInitials(r.member_id)}</span>
                   <div className="min-w-0">
-                    <div className="truncate text-[13px] font-semibold text-text-primary">{toUid(r.member_id)}</div>
-                    <span className="text-[10px] text-text-tertiary">당월 수당</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate text-[13px] font-semibold text-text-primary">{toUid(r.member_id)}</span>
+                      {rankPill(ranks.get(r.member_id)?.rank)}
+                    </div>
+                    <span className="text-[10px] text-text-tertiary">마케터 · 당월 수당</span>
                   </div>
                 </div>
                 <span className="text-right text-[13px] tabular-nums text-text-secondary">{usd(r.level_amount)}</span>

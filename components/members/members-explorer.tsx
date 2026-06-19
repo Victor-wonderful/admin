@@ -26,6 +26,7 @@ export interface ExplorerRow {
   active: boolean;
   recommenderName: string | null;
   joinedAt: string; // YYYY-MM-DD
+  rank: number | null; // 마케터 직급 R1~R9, 0=무직급, null=비마케터
 }
 
 const ROLE_LABEL: Record<MemberRole, string> = { registered: "등록회원", subscriber: "구독회원", marketer: "마케터" };
@@ -65,6 +66,12 @@ function subLabel(r: ExplorerRow): { text: string; cls: string } {
   if (r.role === "registered") return { text: "—", cls: "text-n-300" };
   if (r.active) return { text: "활성", cls: "bg-green-50 text-green-700" };
   return { text: "만료", cls: "bg-n-100 text-n-600" };
+}
+// 직급 셀: 마케터만 R1~R9 / 무직급, 비마케터는 — (직급 개념 없음)
+function rankCell(r: ExplorerRow): { text: string; cls: string } {
+  if (r.role !== "marketer" || r.rank == null) return { text: "—", cls: "text-n-300" };
+  if (r.rank === 0) return { text: "무직급", cls: "bg-n-100 text-n-500" };
+  return { text: `R${r.rank}`, cls: "bg-crypto-soft text-crypto" };
 }
 
 export function MembersExplorer({
@@ -287,6 +294,7 @@ export function MembersExplorer({
         ) : (
           pageRows.map((r) => {
             const sub = subLabel(r);
+            const rank = rankCell(r);
             return (
               <Link key={r.id} href={`/admin/members/${r.id}`} className="grid grid-cols-[minmax(0,1fr)_110px_100px_100px_150px_110px_170px_40px] items-center gap-3 border-b py-[11px] text-sm transition-colors last:border-0 hover:bg-surface-muted">
                 <span className="flex items-center gap-2.5">
@@ -300,7 +308,9 @@ export function MembersExplorer({
                 <span>
                   {sub.text === "—" ? <span className="text-n-300">—</span> : <span className={cn("inline-block rounded-[7px] px-2.5 py-1 text-[12px] font-semibold", sub.cls)}>{sub.text}</span>}
                 </span>
-                <span className="text-n-300">—</span>
+                <span>
+                  {rank.text === "—" ? <span className="text-n-300">—</span> : <span className={cn("inline-block rounded-[7px] px-2.5 py-1 text-[12px] font-semibold", rank.cls)}>{rank.text}</span>}
+                </span>
                 <span className="truncate text-[12px] font-medium text-text-secondary">{r.recommenderName ?? "—"}</span>
                 <span className="text-[12px] tabular-nums text-text-secondary">{r.joinedAt}</span>
                 <span>

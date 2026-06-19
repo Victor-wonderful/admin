@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:settlement": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/settlement_verify.sql",
+    "test:withdrawal": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/withdrawal_verify.sql",
+    "test:realtime": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/realtime_payout_verify.sql",
+    "test:engine": "npm run test:settlement && npm run test:withdrawal && npm run test:realtime"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

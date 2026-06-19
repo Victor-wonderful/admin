@@ -13,12 +13,21 @@ export function PayCommissionButton({ cycle = "2026-06" }: { cycle?: string }) {
   const [pending, start] = React.useTransition();
   const [result, setResult] = React.useState<PayResult | null>(null);
 
+  // 0명·0원 = 산정액이 이미 실시간(트리거)으로 전액 지급됨 → 정상(오류 아님)
+  const alreadyPaid = result !== null && result.members_paid === 0 && result.total_paid === 0;
+
   return (
     <span className="flex items-center gap-2">
       {result ? (
-        <span className="text-[12px] font-medium text-positive">
-          {result.members_paid}명 · {usd(result.total_paid)} 지급
-        </span>
+        alreadyPaid ? (
+          <span className="text-[12px] font-medium text-text-tertiary">
+            추가 지급 없음 · 실시간 기지급 완료
+          </span>
+        ) : (
+          <span className="text-[12px] font-medium text-positive">
+            {result.members_paid}명 · {usd(result.total_paid)} 추가 지급
+          </span>
+        )
       ) : null}
       <button
         type="button"
