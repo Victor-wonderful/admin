@@ -1,15 +1,18 @@
 -- 0007_settlement.sql — 정산 엔진
 -- 사이클(YYYY-MM)의 마케터 수당을 계산해 settlements 에 기록(멱등 재산정).
 --
--- 기준금 = 월 구독료 $120 (활성 구독자 1명 = 월 $120 매출).
+-- 수당 base = 회원별 '수당 볼륨' V(m):
+--   V(m) = $120 (활성 구독)  +  $200 (활성 연회비)
+--   → 구독료와 연회비 모두 수당 재원에 포함. 각 회원의 V 가 두 트리를 타고 상위로 굴러간다.
 -- 3종 수당:
---   1) 레벨 수당  — 직추(recommender) 체인. 활성 구독당 1대 25% · 2대 9% × $120 (3대+ 차단).
---   2) 직급 수당  — 후원(placement) 상향 롤업 차액차등 + 브레이크어웨이.
---                  각 활성 구독($120)이 후원 조상 라인을 타고 올라가며,
---                  자격 직급자는 (본인 요율 − 더 가까운 자격자의 요율) 차액만 수령.
---                  요율은 직급과 함께 단조 증가하므로, 산하 동급/상위가 이미 받았으면 차액=0(차단).
---   3) 공유 수당  — 후원 산하 활성수 × 직급 override 요율(3~9직급) × $120, 누적(중복수령).
+--   1) 레벨 수당 — 직추(recommender) 체인. 하위 V 의 1대 25% · 2대 9% (3대+ 차단).
+--   2) 직급 수당 — 후원(placement) 상향 롤업 차액차등 + 브레이크어웨이.
+--                  하위 V 가 후원 조상 라인을 올라가며 자격자는 (본인요율 − 더 가까운 자격자 요율) 차액만 수령.
+--                  요율은 직급과 단조증가 → 산하 동급/상위가 있으면 차액=0(차단).
+--   3) 공유 수당 — 후원 산하 V 합 × 직급 override 요율(3~9직급), 누적(중복수령).
 --                  30% 균형 게이트는 evaluate_rank 가 자격 직급에 이미 반영.
+-- 주의: 직급 '자격'(min_total 등)은 활성 구독자 수 기준(evaluate_rank) — 연회비는 자격 카운트가 아니라
+--       지급 base 에만 포함된다.
 
 -- refresh_active_subscribers: WHERE 절 추가(0003 의 무조건 UPDATE 는 Supabase API 역할의
 -- safeupdate 가드에 막힘). 값이 바뀌는 행만 갱신 → 가드 통과 + 불필요한 쓰기 제거.
@@ -38,9 +41,10 @@ returns table(
 )
 language plpgsql as $$
 declare
-  c_base numeric := 120;    -- 기준금(월 구독료)
-  c_l1   numeric := 0.25;   -- 레벨 1대 요율
-  c_l2   numeric := 0.09;   -- 레벨 2대 요율
+  c_sub numeric := 120;    -- 월 구독료
+  c_ann numeric := 200;    -- 연회비(연)
+  c_l1  numeric := 0.25;   -- 레벨 1대 요율
+  c_l2  numeric := 0.09;   -- 레벨 2대 요율
 begin
   -- 0) 활성 구독자 플래그 최신화
   perform refresh_active_subscribers(p_as_of);
@@ -53,21 +57,29 @@ begin
     cross join lateral evaluate_rank(m.id) er
     where m.role = 'marketer' and er.rank > 0;
 
-  -- 활성 구독 리프
-  drop table if exists _leaf;
-  create temp table _leaf on commit drop as
-    select id from members where is_active_subscriber;
+  -- 수당 base 볼륨 V(m) = 활성 구독($120) + 활성 연회비($200)
+  drop table if exists _vol;
+  create temp table _vol on commit drop as
+    select m.id as member_id,
+      (case when m.is_active_subscriber then c_sub else 0 end)
+      + (case when exists (
+            select 1 from annual_memberships a
+            where a.member_id = m.id and p_as_of between a.period_start and a.period_end
+         ) then c_ann else 0 end) as vol
+    from members m;
+  delete from _vol where vol <= 0;
 
-  -- 1) 레벨 수당 (직추 2대)
+  -- 1) 레벨 수당 (직추 2대) — 하위 회원 볼륨 기준
   drop table if exists _level;
   create temp table _level on commit drop as
     with a as (
-      select id, recommender_id
-      from members where is_active_subscriber and recommender_id is not null
+      select v.member_id as id, m.recommender_id, v.vol
+      from _vol v join members m on m.id = v.member_id
+      where m.recommender_id is not null
     ),
-    g1 as (select recommender_id as mid, c_l1 * c_base as amt from a),
+    g1 as (select recommender_id as mid, c_l1 * vol as amt from a),
     g2 as (
-      select r.recommender_id as mid, c_l2 * c_base as amt
+      select r.recommender_id as mid, c_l2 * a.vol as amt
       from a join members r on r.id = a.recommender_id
       where r.recommender_id is not null
     )
@@ -75,18 +87,18 @@ begin
     from (select * from g1 union all select * from g2) u
     group by mid;
 
-  -- 2) 직급 수당 (차액차등 + 브레이크어웨이)
+  -- 2) 직급 수당 (차액차등 + 브레이크어웨이) — 리프 볼륨 기준
   drop table if exists _rankc;
   create temp table _rankc on commit drop as
     with anc as (
-      select pc.descendant_id as leaf, pc.ancestor_id as mid, pc.depth, rk.rate_pct
+      select pc.descendant_id as leaf, pc.ancestor_id as mid, pc.depth, rk.rate_pct, v.vol
       from placement_closure pc
-      join _leaf lf on lf.id = pc.descendant_id
+      join _vol v on v.member_id = pc.descendant_id
       join _rank rk on rk.member_id = pc.ancestor_id
       where pc.depth >= 1
     ),
     diff as (
-      select mid,
+      select mid, vol,
         greatest(0, rate_pct - coalesce(
           max(rate_pct) over (
             partition by leaf order by depth asc
@@ -94,23 +106,23 @@ begin
           ), 0)) as drate
       from anc
     )
-    select mid, (sum(drate) / 100.0 * c_base)::numeric(12,2) as amt
+    select mid, (sum(drate / 100.0 * vol))::numeric(12,2) as amt
     from diff group by mid;
 
-  -- 3) 공유 수당 (override 누적 중복수령)
+  -- 3) 공유 수당 (override 누적 중복수령) — 산하 볼륨 합 기준
   drop table if exists _share;
   create temp table _share on commit drop as
-    with cnt as (
-      select pc.ancestor_id as mid, count(*) as n
+    with vs as (
+      select pc.ancestor_id as mid, sum(v.vol) as vsum
       from placement_closure pc
-      join members m on m.id = pc.descendant_id
-      where pc.depth >= 1 and m.is_active_subscriber
+      join _vol v on v.member_id = pc.descendant_id
+      where pc.depth >= 1
       group by pc.ancestor_id
     )
-    select rk.member_id as mid, (rr.override_rate / 100.0 * c_base * cnt.n)::numeric(12,2) as amt
+    select rk.member_id as mid, (rr.override_rate / 100.0 * vs.vsum)::numeric(12,2) as amt
     from _rank rk
     join ranks rr on rr.rank = rk.rank
-    join cnt on cnt.mid = rk.member_id
+    join vs on vs.mid = rk.member_id
     where rr.override_rate is not null;
 
   -- 4) settlements 멱등 재기록 (수령액 0 인 마케터는 제외)
