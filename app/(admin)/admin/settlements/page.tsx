@@ -7,9 +7,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CheckCheckIcon,
-  CheckIcon,
-  ArrowUpRightIcon,
-  ArrowDownRightIcon,
   SlidersHorizontalIcon,
   DownloadIcon,
 } from "lucide-react";
@@ -19,12 +16,17 @@ import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { RunSettlementButton } from "@/components/settlements/run-settlement-button";
 import { PayCommissionButton } from "@/components/settlements/pay-commission-button";
+import { getSettlementSummary, listSettlements, getPoolReconciliation } from "@/lib/queries/finance";
+import { toUid, uidInitials } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-// 수당 정산 — Pencil 디자인(o9CRw) 1:1. 집계 연동 전까지 디자인 수치 고정.
-const TOTAL = 52_910;
+const CYCLE = "2026-06";
+
+const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
+const compact = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : usd(n));
+const pctOf = (p: number, t: number) => (t > 0 ? Math.round((p / t) * 100) : 0);
 
 const SUBCARD =
   "rounded-lg bg-card p-[18px] ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]";
@@ -37,52 +39,56 @@ const badgeTone: Record<string, string> = {
   neutral: "bg-n-100 text-n-500",
 };
 
-// ── 상단 KPI 5종 ──
-const KPIS = [
-  { icon: CoinsIcon, tone: "green" as const, label: "당월 수당 총액", value: "$52,910", delta: 8.4, deltaLabel: "vs 전월", info: null as string | null },
-  { icon: Share2Icon, tone: "green" as const, label: "직접추천수당", value: "$23,810", delta: null, info: "구성 45%" },
-  { icon: LayersIcon, tone: "crypto" as const, label: "직급수당", value: "$20,106", delta: null, info: "구성 38%" },
-  { icon: UsersIcon, tone: "info" as const, label: "공유수당", value: "$8,994", delta: null, info: "구성 17%" },
-  { icon: ClockIcon, tone: "warning" as const, label: "지급 대기", value: "$16,430", delta: null, info: "85건 대기", warn: true },
-];
-
-// ── 정산 파이프라인 ──
 const PIPELINE = [
   { label: "산정 완료", state: "done" },
   { label: "확정 검토", state: "current" },
   { label: "지급 실행", state: "todo" },
 ];
 
-// ── 수당 구성(도넛) ──
-const COMPOSITION = [
-  { label: "직접추천수당", sub: "레벨 1~3 · 직추 기반", value: "$23,810", pct: 45, hex: "#1f9d55", dot: "bg-green-500" },
-  { label: "직급수당", sub: "R1~R9 직급 달성", value: "$20,106", pct: 38, hex: "#7c3aed", dot: "bg-crypto" },
-  { label: "공유수당", sub: "매출 3% 공유 분배", value: "$8,994", pct: 17, hex: "#2f6fed", dot: "bg-info" },
-];
-
-// ── 공유수당 풀 ──
-const POOL = [
-  { label: "당월 적립 (매출 3%)", value: "+$5,328", tone: "text-positive" },
-  { label: "당월 분배 (마케터 412명)", value: "−$8,994", tone: "text-negative" },
-  { label: "분배 대상 마케터", value: "412명", tone: "text-text-primary" },
-  { label: "1인 평균 분배", value: "$21.8", tone: "text-text-primary" },
-];
-
-// ── 마케터별 정산 ──
-type Status = "paid" | "confirmed" | "held";
-const ROWS: { uid: string; rank: string; level: string; rankAmt: string; share: string; total: string; status: Status }[] = [
-  { uid: "AG-8F3A21", rank: "R6", level: "$1,240", rankAmt: "$980", share: "$210", total: "$2,430", status: "paid" },
-  { uid: "AG-2B91C0", rank: "R5", level: "$980", rankAmt: "$720", share: "$180", total: "$1,880", status: "paid" },
-  { uid: "AG-77D4E2", rank: "R5", level: "$640", rankAmt: "$540", share: "$150", total: "$1,330", status: "confirmed" },
-  { uid: "AG-19A0FF", rank: "R4", level: "$590", rankAmt: "$460", share: "$160", total: "$1,210", status: "confirmed" },
-  { uid: "AG-5C32B8", rank: "R4", level: "$420", rankAmt: "$300", share: "$110", total: "$830", status: "confirmed" },
-  { uid: "AG-A1B2C3", rank: "R3", level: "$310", rankAmt: "$190", share: "$80", total: "$580", status: "held" },
-  { uid: "AG-6E7F88", rank: "R3", level: "$190", rankAmt: "$90", share: "$60", total: "$330", status: "confirmed" },
-];
-
 const COLS = "grid-cols-[1.7fr_1fr_1fr_1fr_1.1fr_120px]";
 
-export default function AdminSettlementsPage() {
+function statusPill(status: string) {
+  if (status === "paid") return <Pill tone="green" dot>지급 완료</Pill>;
+  if (status === "held") return <Pill tone="neutral">보류</Pill>;
+  if (status === "confirmed") return <Pill tone="info">확정</Pill>;
+  return <Pill tone="neutral">산정</Pill>;
+}
+
+export default async function AdminSettlementsPage() {
+  const [sum, rows, recon] = await Promise.all([
+    getSettlementSummary(CYCLE),
+    listSettlements(CYCLE, 8),
+    getPoolReconciliation(CYCLE),
+  ]);
+
+  const lpct = pctOf(sum.level, sum.total);
+  const rpct = pctOf(sum.rank, sum.total);
+  const spct = pctOf(sum.share, sum.total);
+  const payRate = recon.computed_payout > 0 ? Math.round((recon.paid_out / recon.computed_payout) * 100) : 0;
+
+  const KPIS = [
+    { icon: CoinsIcon, tone: "green" as const, label: "당월 수당 총액", value: usd(sum.total), info: `${sum.count.toLocaleString()}명`, warn: false },
+    { icon: Share2Icon, tone: "green" as const, label: "직접추천수당", value: usd(sum.level), info: `구성 ${lpct}%`, warn: false },
+    { icon: LayersIcon, tone: "crypto" as const, label: "직급수당", value: usd(sum.rank), info: `구성 ${rpct}%`, warn: false },
+    { icon: UsersIcon, tone: "info" as const, label: "공유수당", value: usd(sum.share), info: `구성 ${spct}%`, warn: false },
+    { icon: ClockIcon, tone: "warning" as const, label: "미지급", value: usd(recon.computed_payout - recon.paid_out), info: "지급 대기", warn: true },
+  ];
+
+  const COMPOSITION = [
+    { label: "직접추천수당", sub: "직추 체인 1·2대", value: usd(sum.level), pct: lpct, dot: "bg-green-500" },
+    { label: "직급수당", sub: "R1~R9 차액차등", value: usd(sum.rank), pct: rpct, dot: "bg-crypto" },
+    { label: "공유수당", sub: "직급별 누적배분", value: usd(sum.share), pct: spct, dot: "bg-info" },
+  ];
+
+  const donut = `conic-gradient(#1f9d55 0 ${lpct}%, #7c3aed ${lpct}% ${lpct + rpct}%, #2f6fed ${lpct + rpct}% 100%)`;
+
+  const POOL = [
+    { label: "수당풀 배분 (매출 60%)", value: usd(recon.pool_allocated), tone: "text-text-primary" },
+    { label: "엔진 산정 합계", value: `−${usd(recon.computed_payout)}`, tone: "text-text-primary" },
+    { label: "실지급 누적", value: `−${usd(recon.paid_out)}`, tone: "text-negative" },
+    { label: "풀 잔여", value: usd(recon.remaining), tone: "text-positive" },
+  ];
+
   return (
     <>
       <Topbar title="수당 정산" sub="산정 → 직접추천 · 직급 · 공유 수당 · USDT" uid="운영자" />
@@ -99,15 +105,7 @@ export default function AdminSettlementsPage() {
                 <span className="text-xs font-medium text-text-secondary">{k.label}</span>
               </div>
               <div className="text-[26px] leading-none font-bold tabular-nums text-text-primary">{k.value}</div>
-              {k.delta !== null ? (
-                <span className={cn("inline-flex items-center gap-1 text-[11px] font-semibold", k.delta >= 0 ? "text-positive" : "text-negative")}>
-                  {k.delta >= 0 ? <ArrowUpRightIcon className="size-3" /> : <ArrowDownRightIcon className="size-3" />}
-                  {k.delta >= 0 ? "+" : ""}{k.delta.toFixed(1)}%
-                  <span className="font-medium text-text-tertiary">{k.deltaLabel}</span>
-                </span>
-              ) : (
-                <span className={cn("text-[11px] font-medium", "warn" in k && k.warn ? "text-warning" : "text-text-tertiary")}>{k.info}</span>
-              )}
+              <span className={cn("text-[11px] font-medium", k.warn ? "text-warning" : "text-text-tertiary")}>{k.info}</span>
             </div>
           ))}
         </section>
@@ -132,24 +130,21 @@ export default function AdminSettlementsPage() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <RunSettlementButton cycle="2026-06" />
+              <RunSettlementButton cycle={CYCLE} />
               <button className="inline-flex items-center gap-1.5 rounded-md bg-card px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong"><CheckCheckIcon className="size-3.5" /> 일괄 확정</button>
-              <PayCommissionButton cycle="2026-06" />
+              <PayCommissionButton cycle={CYCLE} />
             </div>
           </div>
         </Panel>
 
-        {/* ── 수당 구성 + 공유수당 풀 ── */}
+        {/* ── 수당 구성 + 수당 풀 정합 ── */}
         <div className="grid gap-[18px] lg:grid-cols-[1fr_388px]">
           <Panel title="수당 구성" sub="당월 · 직접추천 · 직급 · 공유 USDT">
             <div className="flex items-center gap-7">
-              <div
-                className="relative grid size-40 shrink-0 place-items-center rounded-full"
-                style={{ background: "conic-gradient(#1f9d55 0% 45%, #7c3aed 45% 83%, #2f6fed 83% 100%)" }}
-              >
+              <div className="relative grid size-40 shrink-0 place-items-center rounded-full" style={{ background: donut }}>
                 <div className="grid size-[104px] place-items-center rounded-full bg-card text-center">
                   <div>
-                    <div className="text-[21px] font-bold tabular-nums text-text-primary">$52.9K</div>
+                    <div className="text-[21px] font-bold tabular-nums text-text-primary">{compact(sum.total)}</div>
                     <div className="text-[11px] text-text-tertiary">당월 수당</div>
                   </div>
                 </div>
@@ -170,10 +165,10 @@ export default function AdminSettlementsPage() {
             </div>
           </Panel>
 
-          <Panel title="공유수당 풀" action={<Pill tone="green">적립률 3%</Pill>}>
+          <Panel title="수당 풀 정합" action={<Pill tone={recon.over_pool ? "negative" : "green"}>소진율 {recon.utilization_pct}%</Pill>}>
             <div className="rounded-lg bg-green-50 px-4 py-3.5">
-              <div className="text-xs font-medium text-green-700">당월 분배 가능 잔액</div>
-              <div className="text-[28px] leading-none font-bold tabular-nums text-green-700">$14,260</div>
+              <div className="text-xs font-medium text-green-700">수당 풀 (매출 60%)</div>
+              <div className="text-[28px] leading-none font-bold tabular-nums text-green-700">{usd(recon.pool_allocated)}</div>
             </div>
             <div className="mt-3 divide-y divide-border">
               {POOL.map((p) => (
@@ -189,7 +184,7 @@ export default function AdminSettlementsPage() {
         {/* ── 마케터별 정산 ── */}
         <Panel
           title="마케터별 정산"
-          sub="2026년 6월 · 지급 USDT"
+          sub={`${CYCLE} · 상위 ${rows.length}명 · 지급 USDT`}
           action={
             <div className="flex items-center gap-2">
               <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border"><SlidersHorizontalIcon className="size-4" /> 상태</button>
@@ -207,39 +202,29 @@ export default function AdminSettlementsPage() {
               <span className="text-right">합계</span>
               <span className="text-right">상태</span>
             </div>
-            {ROWS.map((r) => (
-              <div key={r.uid} className={cn("grid items-center gap-3 border-b py-3.5 last:border-0", COLS)}>
+            {rows.map((r) => (
+              <div key={r.id} className={cn("grid items-center gap-3 border-b py-3.5 last:border-0", COLS)}>
                 <div className="flex items-center gap-2.5">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-n-100 text-[10px] font-bold text-n-500">{r.uid.slice(3, 5)}</span>
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-green-50 text-[10px] font-bold text-green-700">{uidInitials(r.member_id)}</span>
                   <div className="min-w-0">
-                    <div className="truncate text-[13px] font-semibold text-text-primary">{r.uid}</div>
-                    <span className="text-[10px] font-bold text-crypto">{r.rank}</span>
+                    <div className="truncate text-[13px] font-semibold text-text-primary">{toUid(r.member_id)}</div>
+                    <span className="text-[10px] text-text-tertiary">당월 수당</span>
                   </div>
                 </div>
-                <span className="text-right text-[13px] tabular-nums text-text-secondary">{r.level}</span>
-                <span className="text-right text-[13px] tabular-nums text-text-secondary">{r.rankAmt}</span>
-                <span className="text-right text-[13px] tabular-nums text-text-secondary">{r.share}</span>
-                <span className="text-right text-[13px] font-bold tabular-nums text-text-primary">{r.total}</span>
-                <span className="flex justify-end">
-                  {r.status === "paid" ? (
-                    <Pill tone="green" dot>지급 완료</Pill>
-                  ) : r.status === "held" ? (
-                    <Pill tone="neutral">보류</Pill>
-                  ) : (
-                    <button className="inline-flex items-center gap-1 rounded-md bg-green-500 px-3 py-1.5 text-xs font-semibold text-white">
-                      <CheckIcon className="size-3.5" /> 지급
-                    </button>
-                  )}
-                </span>
+                <span className="text-right text-[13px] tabular-nums text-text-secondary">{usd(r.level_amount)}</span>
+                <span className="text-right text-[13px] tabular-nums text-text-secondary">{usd(r.rank_amount)}</span>
+                <span className="text-right text-[13px] tabular-nums text-text-secondary">{usd(r.share_amount)}</span>
+                <span className="text-right text-[13px] font-bold tabular-nums text-text-primary">{usd(r.total_amount)}</span>
+                <span className="flex justify-end">{statusPill(r.status)}</span>
               </div>
             ))}
             <div className={cn("grid items-center gap-3 pt-3.5 text-[13px] font-bold text-text-primary", COLS)}>
-              <span>당월 합계 · 212명</span>
-              <span className="text-right tabular-nums text-text-secondary">$23,810</span>
-              <span className="text-right tabular-nums text-text-secondary">$20,106</span>
-              <span className="text-right tabular-nums text-text-secondary">$8,994</span>
-              <span className="text-right tabular-nums">${TOTAL.toLocaleString()}</span>
-              <span className="flex justify-end"><Pill tone="green">지급률 71%</Pill></span>
+              <span>당월 합계 · {sum.count.toLocaleString()}명</span>
+              <span className="text-right tabular-nums text-text-secondary">{usd(sum.level)}</span>
+              <span className="text-right tabular-nums text-text-secondary">{usd(sum.rank)}</span>
+              <span className="text-right tabular-nums text-text-secondary">{usd(sum.share)}</span>
+              <span className="text-right tabular-nums">{usd(sum.total)}</span>
+              <span className="flex justify-end"><Pill tone="green">지급률 {payRate}%</Pill></span>
             </div>
           </div>
         </Panel>
