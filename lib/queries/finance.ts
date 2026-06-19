@@ -297,6 +297,42 @@ export async function getMemberSettlement(memberId: string, cycle: string) {
   };
 }
 
+export interface PoolReconciliation {
+  pool_allocated: number;
+  computed_payout: number;
+  paid_out: number;
+  remaining: number;
+  utilization_pct: number;
+  over_pool: boolean;
+}
+
+// 수당풀(매출 60%) 대비 산정·지급액 정합 (풀↔엔진).
+export async function getPoolReconciliation(cycle: string): Promise<PoolReconciliation> {
+  const sb = getServerClient();
+  const { data, error } = await sb.rpc("pool_reconciliation", { p_cycle: cycle });
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) as PoolReconciliation | undefined;
+  return row ?? { pool_allocated: 0, computed_payout: 0, paid_out: 0, remaining: 0, utilization_pct: 0, over_pool: false };
+}
+
+export interface VisibleSettlement {
+  member_id: string;
+  level_amount: number;
+  rank_amount: number;
+  share_amount: number;
+  total_amount: number;
+  status: string;
+  relation: "self" | "placement" | "referral";
+}
+
+// 마케터 시점 수당 조회: 본인 + 하위(후원/직추)만. 상위(업라인) 수당은 절대 노출 안 됨.
+export async function getVisibleSettlements(viewerId: string, cycle: string): Promise<VisibleSettlement[]> {
+  const sb = getServerClient();
+  const { data, error } = await sb.rpc("visible_settlements", { p_viewer: viewerId, p_cycle: cycle });
+  if (error) throw error;
+  return (data ?? []) as VisibleSettlement[];
+}
+
 // 매출 = subscriptions + annual_memberships 결제액 집계
 export async function getRevenueSummary() {
   const sb = getServerClient();
