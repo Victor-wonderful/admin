@@ -10,6 +10,7 @@ import {
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { AddProductModal } from "@/components/products/add-product-modal";
 import { listProducts } from "@/lib/queries/members";
 import type { ProductRow } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
@@ -38,11 +39,7 @@ export default async function AdminProductsPage() {
         title="상품·구독플랜"
         sub="상품 카탈로그 · 주문·정산 항목 기준"
         uid="운영자"
-        actions={
-          <button className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3.5 py-2 text-[13px] font-semibold text-white">
-            <PlusIcon className="size-3.5" /> 상품 추가
-          </button>
-        }
+        actions={<AddProductModal />}
       />
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
