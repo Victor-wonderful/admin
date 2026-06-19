@@ -6,7 +6,6 @@ import {
   ClockIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  RefreshCwIcon,
   CheckCheckIcon,
   SendIcon,
   CheckIcon,
@@ -19,6 +18,7 @@ import {
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { RunSettlementButton } from "@/components/settlements/run-settlement-button";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -132,7 +132,7 @@ export default function AdminSettlementsPage() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <button className="inline-flex items-center gap-1.5 rounded-md bg-card px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong"><RefreshCwIcon className="size-3.5" /> 재산정</button>
+              <RunSettlementButton cycle="2026-06" />
               <button className="inline-flex items-center gap-1.5 rounded-md bg-card px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong"><CheckCheckIcon className="size-3.5" /> 일괄 확정</button>
               <button className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3 py-2 text-[13px] font-semibold text-white"><SendIcon className="size-3.5" /> 지급 실행</button>
             </div>
