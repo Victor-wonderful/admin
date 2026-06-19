@@ -342,18 +342,28 @@ export async function getRevenueSummary() {
   ]);
   if (subs.error) throw subs.error;
   if (annual.error) throw annual.error;
-  const all = [...(subs.data ?? []), ...(annual.data ?? [])];
   const month = fmtMonth(new Date("2026-06-15"));
-  let total = 0,
-    monthTotal = 0;
-  for (const r of all) {
+  const inMonth = (p: unknown) => typeof p === "string" && p.startsWith(month);
+
+  let total = 0, monthTotal = 0;
+  let monthSub = 0, monthAnnual = 0, monthSubCount = 0, monthAnnualCount = 0;
+  for (const r of subs.data ?? []) {
     const amt = Number(r.amount_usd);
     total += amt;
-    if (typeof r.paid_at === "string" && r.paid_at.startsWith(month)) monthTotal += amt;
+    if (inMonth(r.paid_at)) { monthTotal += amt; monthSub += amt; monthSubCount++; }
+  }
+  for (const r of annual.data ?? []) {
+    const amt = Number(r.amount_usd);
+    total += amt;
+    if (inMonth(r.paid_at)) { monthTotal += amt; monthAnnual += amt; monthAnnualCount++; }
   }
   return {
     total,
     monthTotal,
+    monthSub,
+    monthAnnual,
+    monthSubCount,
+    monthAnnualCount,
     subCount: subs.data?.length ?? 0,
     annualCount: annual.data?.length ?? 0,
   };
