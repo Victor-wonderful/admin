@@ -4,7 +4,6 @@ import {
   Settings2Icon,
   CalendarClockIcon,
   WalletIcon,
-  PlusIcon,
   HashIcon,
   CopyIcon,
   CircleCheckIcon,
@@ -13,32 +12,46 @@ import {
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { DepositModal } from "@/components/wallet/deposit-modal";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
+import { getMemberWallet } from "@/lib/queries/finance";
 import { ROOT_MARKETER_ID } from "@/lib/constants";
+import { toUid } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const PRODUCTS = [
-  { icon: CpuIcon, iconTone: "bg-green-50 text-green-700", name: "Alpha Engine 구독", sub: "AI 크립토 자동매매 엔진", price: "$120", cycle: "/ 월 · USDT", state: "가동 중", rows: [["다음 결제일", "2026-07-12"], ["구독 기간", "10개월차"]], cta: "구독 관리" },
-  { icon: BadgeCheckIcon, iconTone: "bg-crypto-soft text-crypto", name: "마케터 연회비", sub: "추천 수당 자격", price: "$200", cycle: "/ 년 · USDT", state: "유효", rows: [["다음 갱신일", "2026-08-12"], ["가입", "2025-08-12"]], cta: "갱신 관리" },
-];
-
-const UPCOMING = [
-  { name: "Alpha Engine 구독", sub: "월 구독 · 2026-07-12", amount: "$120", dday: "D-26", soft: "bg-green-50 text-green-700", prog: 13, bar: "bg-green-600" },
-  { name: "마케터 연회비", sub: "연 1회 · 2027-08-12", amount: "$200", dday: "D-421", soft: "bg-crypto-soft text-crypto", prog: 30, bar: "bg-crypto" },
-];
+const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 export default async function MarketerOrdersPage() {
-  const [subs, products] = await Promise.all([
+  const [subs, products, wallet] = await Promise.all([
     getMemberSubscriptions(ROOT_MARKETER_ID),
     listProducts(),
+    getMemberWallet(ROOT_MARKETER_ID),
   ]);
   const productName = new Map(products.map((p) => [p.id, p.name]));
 
+  // 구독 상태(실데이터): 활성 구독 존재 여부 + 최근 구독 기간
+  const today = "2026-06-15";
+  const activeSub = subs.find((s) => s.status === "active" && s.period_start <= today && today <= s.period_end);
+  const latestSub = subs[0] ?? null;
+  const subState = activeSub ? "가동 중" : "비활성";
+  const subNext = (activeSub ?? latestSub)?.period_end?.slice(0, 10) ?? "—";
+  const balance = wallet?.balance_usd ?? 0;
+  const subPrice = activeSub ? Number(activeSub.amount_usd) : 120;
+
+  const PRODUCTS = [
+    { icon: CpuIcon, iconTone: "bg-green-50 text-green-700", name: "Alpha Engine 구독", sub: "AI 크립토 자동매매 엔진", price: usd(subPrice), cycle: "/ 월 · USDT", state: subState, on: !!activeSub, rows: [["다음 결제일", subNext], ["결제 내역", `${subs.length}건`]], cta: "구독 관리" },
+    { icon: BadgeCheckIcon, iconTone: "bg-crypto-soft text-crypto", name: "마케터 연회비", sub: "추천 수당 자격", price: "$200", cycle: "/ 년 · USDT", state: "유효", on: true, rows: [["수당 자격", "활성"], ["갱신", "연 1회"]], cta: "갱신 관리" },
+  ];
+
+  const UPCOMING = activeSub
+    ? [{ name: "Alpha Engine 구독", sub: `월 구독 · ${subNext}`, amount: usd(subPrice), soft: "bg-green-50 text-green-700", prog: 50, bar: "bg-green-600" }]
+    : [];
+
   return (
     <>
-      <Topbar title="구독·주문" sub="내 구독 · 결제 내역" uid="AG·8F3A21" />
+      <Topbar title="구독·주문" sub="내 구독 · 결제 내역" uid={toUid(ROOT_MARKETER_ID)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="grid gap-4 lg:grid-cols-2">
@@ -54,7 +67,7 @@ export default async function MarketerOrdersPage() {
                     <div className="text-xs text-text-secondary">{p.sub}</div>
                   </div>
                 </div>
-                <Pill tone="green" dot>{p.state}</Pill>
+                <Pill tone={p.on ? "green" : "neutral"} dot={p.on}>{p.state}</Pill>
               </div>
               <div className="mt-3 flex items-end gap-1">
                 <span className="text-2xl font-bold text-text-primary">{p.price}</span>
@@ -76,9 +89,11 @@ export default async function MarketerOrdersPage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_412px]">
-          <Panel title="다음 결제 예정" sub="예정된 자동 결제 일정" action={<Pill tone="warning"><CalendarClockIcon className="size-3" /> 2건 예정</Pill>}>
+          <Panel title="다음 결제 예정" sub="예정된 자동 결제 일정" action={<Pill tone="warning"><CalendarClockIcon className="size-3" /> {UPCOMING.length}건 예정</Pill>}>
             <div>
-              {UPCOMING.map((u, i) => (
+              {UPCOMING.length === 0 ? (
+                <div className="py-8 text-center text-sm text-text-tertiary">예정된 결제가 없습니다.</div>
+              ) : UPCOMING.map((u, i) => (
                 <div key={u.name} className={cn("space-y-2.5 py-3.5", i < UPCOMING.length - 1 && "border-b")}>
                   <div className="flex items-center gap-3">
                     <span className={cn("grid size-10 place-items-center rounded-[12px]", u.soft)}>
@@ -90,7 +105,6 @@ export default async function MarketerOrdersPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-base font-bold text-text-primary">{u.amount}</div>
-                      <span className={cn("rounded px-2 py-0.5 text-[11px] font-bold", u.soft)}>{u.dday}</span>
                     </div>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-n-100">
@@ -106,7 +120,7 @@ export default async function MarketerOrdersPage() {
               <div className="flex items-center justify-between rounded-lg bg-surface-muted p-3.5 ring-1 ring-border">
                 <div>
                   <div className="text-xs text-text-secondary">내 지갑 잔액 (결제 가능)</div>
-                  <div className="text-2xl font-bold text-text-primary">$42,300</div>
+                  <div className="text-2xl font-bold text-text-primary">{usd(balance)}</div>
                 </div>
                 <span className="grid size-[42px] place-items-center rounded-[12px] bg-green-50 text-green-700">
                   <WalletIcon className="size-5" />
@@ -114,15 +128,13 @@ export default async function MarketerOrdersPage() {
               </div>
               <div className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2.5 ring-1 ring-border">
                 <HashIcon className="size-3 text-text-tertiary" />
-                <span className="flex-1 text-xs font-medium text-text-primary">TRdep8…k29Q</span>
+                <span className="flex-1 truncate text-xs font-medium text-text-primary">{wallet?.deposit_address ?? "—"}</span>
                 <CopyIcon className="size-3 text-text-tertiary" />
               </div>
               <div className="flex items-center gap-2 rounded-md bg-green-50 px-3 py-2.5 text-xs font-medium text-green-700">
-                <CircleCheckIcon className="size-4" /> 다음 결제 $120 · 내 지갑 잔액에서 차감
+                <CircleCheckIcon className="size-4" /> 다음 결제 {usd(subPrice)} · 내 지갑 잔액에서 차감
               </div>
-              <button className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand py-3 text-[13px] font-bold text-white">
-                <PlusIcon className="size-4" /> USDT 충전하기
-              </button>
+              <DepositModal address={wallet?.deposit_address ?? ""} network={wallet?.network ?? "TRC20"} />
             </div>
           </Panel>
         </div>

@@ -28,13 +28,7 @@ export const dynamic = "force-dynamic";
 const ROLE_LABEL: Record<MemberRole, string> = { registered: "등록회원", subscriber: "구독회원", marketer: "마케터" };
 const ROLE_TONE: Record<MemberRole, "neutral" | "green" | "crypto"> = { registered: "neutral", subscriber: "green", marketer: "crypto" };
 
-// 퍼널·채널·추이는 분석 데이터 부재로 정적.
-const FUNNEL = [
-  { name: "링크 클릭", sub: "전체 유입", count: "1,840", w: 100, bar: "bg-feature", pct: "100%" },
-  { name: "회원 가입", sub: "등록회원 전환", count: "248", w: 58, bar: "bg-info", pct: "13.5%" },
-  { name: "구독 전환", sub: "엔진 구독 결제", count: "172", w: 40, bar: "bg-green-600", pct: "69.4%" },
-  { name: "마케터 전환", sub: "연회비 납부", count: "9", w: 17, bar: "bg-crypto", pct: "5.2%" },
-];
+// 가입 추이·채널은 클릭 트래킹 인프라 부재로 정적(예시).
 const SIGNUPS = [40, 28, 52, 44, 64, 38, 72, 56, 48, 84, 60, 92, 70, 110];
 const CHANNELS = [
   { icon: MessageCircleIcon, name: "카카오톡", count: "98명", w: 40, color: "bg-green-600" },
@@ -53,7 +47,16 @@ export default async function MarketerReferralPage() {
   const subscribed = referred.filter((m) => m.is_active_subscriber).length;
   const marketers = referred.filter((m) => m.role === "marketer").length;
   const convRate = total > 0 ? ((subscribed / total) * 100).toFixed(1) : "0.0";
+  const mktRate = total > 0 ? ((marketers / total) * 100).toFixed(1) : "0.0";
   const codeStr = code?.code ?? "—";
+
+  // 퍼널 — 추천 코드 가입 → 구독 → 마케터 (실데이터). 링크 클릭은 트래킹 부재로 제외.
+  const pctOf = (n: number) => (total > 0 ? Math.max(n > 0 ? 8 : 0, Math.round((n / total) * 100)) : 0);
+  const funnel = [
+    { name: "회원 가입", sub: "내 추천 코드 가입", count: total.toLocaleString(), w: 100, bar: "bg-info", pct: "100%" },
+    { name: "구독 전환", sub: "엔진 구독 결제", count: subscribed.toLocaleString(), w: pctOf(subscribed), bar: "bg-green-600", pct: `${convRate}%` },
+    { name: "마케터 전환", sub: "연회비 납부·활동", count: marketers.toLocaleString(), w: pctOf(marketers), bar: "bg-crypto", pct: `${mktRate}%` },
+  ];
 
   const kpis = [
     { icon: UserPlusIcon, tone: "neutral" as const, label: "총 가입", value: `${total.toLocaleString()}명` },
@@ -64,7 +67,7 @@ export default async function MarketerReferralPage() {
 
   return (
     <>
-      <Topbar title="레퍼럴" sub="내 추천 코드 · 초대 실적" uid="AG·8F3A21" />
+      <Topbar title="레퍼럴" sub="내 추천 코드 · 초대 실적" uid={toUid(ROOT_MARKETER_ID)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="flex items-center justify-between gap-4 rounded-xl bg-feature p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
@@ -91,9 +94,9 @@ export default async function MarketerReferralPage() {
           ))}
         </div>
 
-        <Panel title="초대 전환 퍼널" sub="추천 링크 클릭 → 회원 가입 → 구독 전환 → 마케터 전환" action={<Pill tone="crypto"><UsersIcon className="size-3" /> 전체 전환율 0.5%</Pill>}>
+        <Panel title="초대 전환 퍼널" sub="회원 가입 → 구독 전환 → 마케터 전환 (실데이터)" action={<Pill tone="crypto"><UsersIcon className="size-3" /> 마케터 전환율 {mktRate}%</Pill>}>
           <div className="space-y-2.5">
-            {FUNNEL.map((f) => (
+            {funnel.map((f) => (
               <div key={f.name} className="flex items-center gap-4">
                 <div className="w-36 shrink-0">
                   <div className="text-[13px] font-semibold text-text-primary">{f.name}</div>

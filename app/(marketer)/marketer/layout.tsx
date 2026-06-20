@@ -1,19 +1,25 @@
 import { MemberSidebar } from "@/components/shell/member-sidebar";
+import { getMarketerViewerId } from "@/lib/session";
+import { getMemberRank } from "@/lib/queries/ranks";
+import { toUid } from "@/lib/uid";
 
 export const dynamic = "force-dynamic";
 
-export default function MarketerLayout({
+export default async function MarketerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const id = await getMarketerViewerId();
+  const rank = await getMemberRank(id);
+  const grade =
+    rank && rank.rank > 0
+      ? `${rank.rank}직급 · 활성 산하 ${rank.total_active.toLocaleString()}명`
+      : "무직급 · 활성 산하 집계";
+
   return (
     <div className="flex min-h-screen bg-canvas">
-      <MemberSidebar
-        role="marketer"
-        uid="AG·8F3A21"
-        gradeSub="후원 전체 활성 3,420명 · 다음 직급 49%"
-      />
+      <MemberSidebar role="marketer" uid={toUid(id)} gradeSub={grade} />
       <main className="flex min-w-0 flex-1 flex-col">{children}</main>
     </div>
   );

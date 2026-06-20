@@ -3,7 +3,6 @@ import {
   SigmaIcon,
   Share2Icon,
   UsersIcon,
-  CircleArrowUpIcon,
   TrophyIcon,
 } from "lucide-react";
 
@@ -11,41 +10,61 @@ import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-request-modal";
 import { getMajorMinor } from "@/lib/queries/legs";
 import { getMemberRank } from "@/lib/queries/ranks";
-import { ROOT_MARKETER_ID } from "@/lib/constants";
+import { getMemberWalletData, getMemberSettlement, getMemberCumulativeCommission } from "@/lib/queries/finance";
+import { getMarketerViewerId } from "@/lib/session";
+import { toUid } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-// 수당 금액은 정산 스키마 부재로 정적, 직급/실적은 실데이터.
-const COMPOSITION = [
-  { label: "직접추천 수당", pct: 45, color: "bg-green-500" },
-  { label: "직급 수당", pct: 38, color: "bg-crypto" },
-  { label: "공유 수당", pct: 17, color: "bg-info" },
-];
-
-const COMMISSIONS = [
-  { date: "06-16", type: "직접추천", tone: "green" as const, from: "1대 활성 구독", amount: "+$320" },
-  { date: "06-15", type: "직급", tone: "crypto" as const, from: "직급 차액 5%", amount: "+$1,120" },
-  { date: "06-14", type: "공유", tone: "info" as const, from: "공유수당 풀 분배", amount: "+$210" },
-];
+const CYCLE = "2026-06";
+const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
+const signed = (n: number) => (n >= 0 ? `+${usd(n)}` : `−${usd(Math.abs(n))}`);
+const pct = (p: number, t: number) => (t > 0 ? Math.round((p / t) * 100) : 0);
 
 export default async function MarketerDashboardPage() {
-  const [mm, rank] = await Promise.all([
-    getMajorMinor(ROOT_MARKETER_ID),
-    getMemberRank(ROOT_MARKETER_ID),
+  const ME = await getMarketerViewerId();
+  const [mm, rank, wd, settle, cumulative] = await Promise.all([
+    getMajorMinor(ME),
+    getMemberRank(ME),
+    getMemberWalletData(ME),
+    getMemberSettlement(ME, CYCLE),
+    getMemberCumulativeCommission(ME),
   ]);
 
+  const balance = wd.wallet?.balance_usd ?? 0;
+  const monthTotal = settle?.total ?? wd.monthCommission;
+  const level = settle?.level ?? 0;
+  const rankAmt = settle?.rank ?? 0;
+  const share = settle?.share ?? 0;
+
   const kpis = [
-    { icon: CoinsIcon, tone: "green" as const, label: "당월 수당", value: "$14,200" },
-    { icon: SigmaIcon, tone: "neutral" as const, label: "누적 수당", value: "$128,400" },
+    { icon: CoinsIcon, tone: "green" as const, label: "당월 수당", value: usd(monthTotal) },
+    { icon: SigmaIcon, tone: "neutral" as const, label: "누적 수당", value: usd(cumulative) },
     { icon: Share2Icon, tone: "crypto" as const, label: "후원 라인", value: `${mm.leg_count}개` },
     { icon: UsersIcon, tone: "info" as const, label: "총 활성 산하", value: `${mm.total_active.toLocaleString()}명` },
   ];
 
+  const composition = [
+    { label: "직접추천 수당", amount: level, pct: pct(level, monthTotal), color: "bg-green-500" },
+    { label: "직급 수당", amount: rankAmt, pct: pct(rankAmt, monthTotal), color: "bg-crypto" },
+    { label: "공유 수당", amount: share, pct: pct(share, monthTotal), color: "bg-info" },
+  ];
+
+  // 그 달 직급(기록) 우선, 없으면 라이브 평가
+  const curRank = settle?.member_rank ?? (rank && rank.rank > 0 ? rank.rank : 0);
+  const rankLabel = curRank > 0 ? `${curRank}직급${rank ? ` (${Number(rank.rate_pct)}%)` : ""}` : "무직급";
+  const nextLabel = rank?.next_rank ? `다음 ${rank.next_rank}직급` : "최고 직급";
   const nextTotal = rank?.next_min_total ?? null;
   const majorPct = nextTotal ? Math.min(Math.round((mm.major_leg / nextTotal) * 100), 100) : 100;
+
+  // 30% = 공유수당 자격(5직급↑만 적용). blocked_by_balance = 공유수당 차단.
+  const shareGated = curRank >= 5;
+  const shareOk = rank ? !rank.blocked_by_balance : true;
+
   const rankReqs = [
     {
       label: "대실적 라인 (주력)",
@@ -55,32 +74,38 @@ export default async function MarketerDashboardPage() {
     },
     {
       label: "기타 소실적 합계",
-      value: `${mm.other_minor.toLocaleString()}명`,
+      value: `${mm.other_minor.toLocaleString()}명 (${Math.round(Number(rank?.balance_pct ?? 0) * 100)}%)`,
       pct: 100,
       color: "bg-info",
     },
   ];
 
-  const rankLabel = rank && rank.rank > 0 ? `${rank.rank}직급 (${Number(rank.rate_pct)}%)` : "무직급";
-  const nextLabel = rank?.next_rank ? `다음 ${rank.next_rank}직급` : "최고 직급";
-  const balanceOk = rank?.balance_ok ?? true;
+  const recent = composition.filter((c) => c.amount > 0).map((c) => ({
+    date: CYCLE,
+    type: c.label.replace(" 수당", ""),
+    tone: (c.color.includes("green") ? "green" : c.color.includes("crypto") ? "crypto" : "info") as "green" | "crypto" | "info",
+    amount: signed(c.amount),
+  }));
 
   return (
     <>
-      <Topbar title="대시보드" sub="내 수당 현황" uid="AG·8F3A21" />
+      <Topbar title="대시보드" sub="내 수당 현황" uid={toUid(ME)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="flex items-center justify-between gap-4 rounded-xl bg-gradient-to-br from-lime to-green-600 p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
           <div>
             <div className="text-[13px] font-semibold text-white/80">출금 가능 잔액</div>
             <div className="mt-1 text-[42px] leading-none font-bold tabular-nums">
-              $42,300 <span className="text-base font-semibold text-white/80">USDT</span>
+              {usd(balance)} <span className="text-base font-semibold text-white/80">USDT</span>
             </div>
-            <div className="mt-2 text-xs font-medium text-white/80">당월 수당 +$14,200 · 당월 충전 +$500</div>
+            <div className="mt-2 text-xs font-medium text-white/80">당월 수당 {signed(monthTotal)} · 당월 충전 {signed(wd.monthDeposit)}</div>
           </div>
-          <button className="inline-flex items-center gap-2 rounded-[10px] bg-white px-7 py-3 text-[15px] font-bold text-green-700">
-            <CircleArrowUpIcon className="size-[18px]" /> 출금 신청
-          </button>
+          <WithdrawalRequestModal
+            memberId={ME}
+            balance={balance}
+            defaultAddress={wd.wallet?.deposit_address ?? ""}
+            defaultNetwork={wd.wallet?.network ?? "TRC20"}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -90,13 +115,13 @@ export default async function MarketerDashboardPage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <Panel title="내 수당 구성" sub="당월 지급 기준">
+          <Panel title="내 수당 구성" sub={`${CYCLE} · 당월 ${usd(monthTotal)}`}>
             <div className="space-y-4">
-              {COMPOSITION.map((c) => (
+              {composition.map((c) => (
                 <div key={c.label} className="space-y-1.5">
                   <div className="flex items-center justify-between text-[13px]">
                     <span className="font-medium text-text-secondary">{c.label}</span>
-                    <span className="font-bold text-text-primary">{c.pct}%</span>
+                    <span className="font-bold text-text-primary">{usd(c.amount)} · {c.pct}%</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-n-100">
                     <div className={`h-full rounded-full ${c.color}`} style={{ width: `${c.pct}%` }} />
@@ -123,27 +148,34 @@ export default async function MarketerDashboardPage() {
                   </div>
                 </div>
               ))}
-              <div className={cn("flex items-center justify-between rounded-md px-3.5 py-3 text-[13px]", balanceOk ? "bg-green-50 text-green-700" : "bg-warning-soft text-warning")}>
-                <span className="font-semibold">30% 균형 룰 (차액차단)</span>
-                <span className="font-bold">{balanceOk ? "충족" : "미충족"}</span>
+              <div className={cn(
+                "flex items-center justify-between rounded-md px-3.5 py-3 text-[13px]",
+                !shareGated ? "bg-surface-muted text-text-secondary" : shareOk ? "bg-green-50 text-green-700" : "bg-warning-soft text-warning",
+              )}>
+                <span className="font-semibold">공유수당 30% 자격 (5직급↑)</span>
+                <span className="font-bold">{!shareGated ? "5직급부터 적용" : shareOk ? "충족" : "미충족"}</span>
               </div>
             </div>
           </Panel>
         </div>
 
-        <Panel title="최근 수당 내역" sub="유형별 적립">
+        <Panel title="최근 수당 내역" sub={`${CYCLE} · 유형별 적립`}>
           <div>
             <div className="grid grid-cols-[auto_1fr_1.5fr_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
-              <span>일자</span><span>유형</span><span>내역</span><span className="text-right">금액</span>
+              <span>사이클</span><span>유형</span><span>내역</span><span className="text-right">금액</span>
             </div>
-            {COMMISSIONS.map((c, i) => (
-              <div key={i} className="grid grid-cols-[auto_1fr_1.5fr_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
-                <span className="text-text-tertiary tabular-nums">{c.date}</span>
-                <span><Pill tone={c.tone}>{c.type}</Pill></span>
-                <span className="text-text-secondary">{c.from}</span>
-                <span className="text-right font-bold tabular-nums text-green-700">{c.amount}</span>
-              </div>
-            ))}
+            {recent.length === 0 ? (
+              <div className="py-8 text-center text-sm text-text-tertiary">당월 수당 내역이 없습니다.</div>
+            ) : (
+              recent.map((c, i) => (
+                <div key={i} className="grid grid-cols-[auto_1fr_1.5fr_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
+                  <span className="text-text-tertiary tabular-nums">{c.date}</span>
+                  <span><Pill tone={c.tone}>{c.type}</Pill></span>
+                  <span className="text-text-secondary">당월 정산 적립</span>
+                  <span className="text-right font-bold tabular-nums text-green-700">{c.amount}</span>
+                </div>
+              ))
+            )}
           </div>
         </Panel>
       </div>

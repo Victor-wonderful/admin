@@ -8,7 +8,10 @@ import {
   WalletIcon,
   ShoppingCartIcon,
   UserRoundIcon,
+  LogOutIcon,
 } from "lucide-react";
+
+import { logout } from "@/lib/actions/auth";
 
 import { cn } from "@/lib/utils";
 import {
@@ -81,6 +84,11 @@ export function MemberSidebar({
         </div>
         <div className="mt-1.5 text-sm font-bold text-white">{uid}</div>
         <div className="mt-1 text-[11px] leading-relaxed text-white/60">{gradeSub}</div>
+        <form action={logout} className="mt-2.5">
+          <button type="submit" className="flex w-full items-center justify-center gap-1.5 rounded-md bg-white/10 py-2 text-[12px] font-semibold text-white/80 transition-colors hover:bg-white/15">
+            <LogOutIcon className="size-3.5" /> 로그아웃
+          </button>
+        </form>
       </SidebarBottomCard>
     </Sidebar>
   );

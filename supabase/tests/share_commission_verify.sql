@@ -24,6 +24,12 @@ begin
 end;
 $f$;
 
+-- baseline 강제(롤백됨): M0 의 활성 구독을 만료 + 플래그 false 로 '비자격' 상태 — 커밋 상태와 무관하게 성립.
+update subscriptions set period_end = date '2020-01-01'
+where member_id = 'aaaaaaaa-0000-0000-0000-000000000000' and status = 'active';
+update members set is_active_subscriber = false
+where id = 'aaaaaaaa-0000-0000-0000-000000000000';
+
 do $$
 declare
   M0 uuid := 'aaaaaaaa-0000-0000-0000-000000000000';

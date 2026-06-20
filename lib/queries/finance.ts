@@ -41,6 +41,7 @@ export interface Settlement {
   share_amount: number;
   total_amount: number;
   status: string;
+  member_rank: number | null; // 그 달 평가 직급(0018)
   members?: { display_name: string } | null;
 }
 
@@ -323,7 +324,7 @@ export async function getMemberSettlement(memberId: string, cycle: string) {
   const sb = getServerClient();
   const { data, error } = await sb
     .from("settlements")
-    .select("level_amount, rank_amount, share_amount, total_amount, status")
+    .select("level_amount, rank_amount, share_amount, total_amount, member_rank, status")
     .eq("member_id", memberId)
     .eq("cycle", cycle)
     .maybeSingle();
@@ -334,8 +335,17 @@ export async function getMemberSettlement(memberId: string, cycle: string) {
     rank: Number(data.rank_amount),
     share: Number(data.share_amount),
     total: Number(data.total_amount),
+    member_rank: (data.member_rank as number | null) ?? null,
     status: data.status as string,
   };
+}
+
+// 회원 누적 수당(전 사이클 정산 합계).
+export async function getMemberCumulativeCommission(memberId: string): Promise<number> {
+  const sb = getServerClient();
+  const { data, error } = await sb.from("settlements").select("total_amount").eq("member_id", memberId);
+  if (error) throw error;
+  return (data ?? []).reduce((s, r) => s + Number(r.total_amount), 0);
 }
 
 export interface PoolReconciliation {

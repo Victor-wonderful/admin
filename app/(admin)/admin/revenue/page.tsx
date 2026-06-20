@@ -12,6 +12,7 @@ import {
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { AllocateRevenueButton } from "@/components/revenue/allocate-revenue-button";
 import { getRevenueSummary } from "@/lib/queries/finance";
 import { cn } from "@/lib/utils";
 
@@ -122,7 +123,7 @@ export default async function AdminRevenuePage() {
         </section>
 
         {/* ── 당월 매출 배분 (라이브) ── */}
-        <Panel title="당월 매출 배분" sub="순매출 1차 배분 · USDT" action={<Pill tone="green">합계 100%</Pill>}>
+        <Panel title="당월 매출 배분" sub="순매출 1차 배분 · USDT" action={<div className="flex items-center gap-2.5"><Pill tone="green">합계 100%</Pill><AllocateRevenueButton cycle="2026-06" /></div>}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
             <div className="flex flex-col justify-center rounded-lg bg-feature px-6 py-5 text-white lg:w-60">
               <div className="text-xs font-medium text-white/60">당월 매출 (총액)</div>

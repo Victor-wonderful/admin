@@ -16,6 +16,7 @@ import { Pill } from "@/components/ui/pill";
 import { RunSettlementButton } from "@/components/settlements/run-settlement-button";
 import { PayCommissionButton } from "@/components/settlements/pay-commission-button";
 import { ConfirmSettlementsButton } from "@/components/settlements/confirm-settlements-button";
+import { SettlementHoldButton } from "@/components/settlements/settlement-hold-button";
 import { getSettlementSummary, listSettlements, getPoolReconciliation } from "@/lib/queries/finance";
 import { getMemberRanksMap } from "@/lib/queries/ranks";
 import { toUid, uidInitials } from "@/lib/uid";
@@ -40,7 +41,7 @@ const badgeTone: Record<string, string> = {
   neutral: "bg-n-100 text-n-500",
 };
 
-const COLS = "grid-cols-[1.7fr_1fr_1fr_1fr_1.1fr_120px]";
+const COLS = "grid-cols-[1.7fr_1fr_1fr_1fr_1.1fr_180px]";
 
 function statusPill(status: string) {
   if (status === "paid") return <Pill tone="green" dot>지급 완료</Pill>;
@@ -221,7 +222,7 @@ export default async function AdminSettlementsPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="truncate text-[13px] font-semibold text-text-primary">{toUid(r.member_id)}</span>
-                      {rankPill(ranks.get(r.member_id)?.rank)}
+                      {rankPill(r.member_rank ?? ranks.get(r.member_id)?.rank)}
                     </div>
                     <span className="text-[10px] text-text-tertiary">마케터 · 당월 수당</span>
                   </div>
@@ -230,7 +231,10 @@ export default async function AdminSettlementsPage() {
                 <span className="text-right text-[13px] tabular-nums text-text-secondary">{usd(r.rank_amount)}</span>
                 <span className="text-right text-[13px] tabular-nums text-text-secondary">{usd(r.share_amount)}</span>
                 <span className="text-right text-[13px] font-bold tabular-nums text-text-primary">{usd(r.total_amount)}</span>
-                <span className="flex justify-end">{statusPill(r.status)}</span>
+                <span className="flex items-center justify-end gap-2">
+                  {statusPill(r.status)}
+                  <SettlementHoldButton cycle={CYCLE} memberId={r.member_id} status={r.status} />
+                </span>
               </div>
             ))}
             <div className={cn("grid items-center gap-3 pt-3.5 text-[13px] font-bold text-text-primary", COLS)}>

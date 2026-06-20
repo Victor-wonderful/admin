@@ -10,7 +10,8 @@ import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
-import { listSettlements, getVisibleSettlements, type VisibleSettlement } from "@/lib/queries/finance";
+import { getVisibleSettlements, type VisibleSettlement } from "@/lib/queries/finance";
+import { ROOT_MARKETER_ID } from "@/lib/constants";
 import { toUid, uidInitials } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +27,8 @@ const REL: Record<string, { label: string; tone: "green" | "crypto" | "neutral" 
 };
 
 export default async function MarketerCommissionsPage() {
-  // 데모 시점: 당월 수당 상위 마케터를 "현재 로그인 마케터"로 사용.
-  const top = await listSettlements(CYCLE, 1);
-  const viewerId = top[0]?.member_id ?? "00000000-0000-0000-0000-000000000000";
+  // 현재 로그인 마케터 = 데모 루트(M0). 다른 마케터 페이지와 동일 시점.
+  const viewerId = ROOT_MARKETER_ID;
 
   const visible = await getVisibleSettlements(viewerId, CYCLE);
   const self =
