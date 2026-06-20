@@ -1,21 +1,18 @@
 import {
-  SaveIcon,
-  RotateCcwIcon,
   ArrowDownToLineIcon,
   LayersIcon,
   InfoIcon,
   PlusIcon,
-  Trash2Icon,
-  ChevronDownIcon,
   CornerDownRightIcon,
   ArrowDownIcon,
-  AwardIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { RankToggle } from "@/components/ranks/rank-toggle";
+import { RankConfigEditor } from "@/components/ranks/rank-config-editor";
+import { listRanks } from "@/lib/queries/ranks";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -43,46 +40,6 @@ const LEVELS = [
   { n: 3, name: "레벨 3 이상", rate: null, on: false, muted: true },
 ];
 
-const RANKS = [
-  { n: 1, rate: "5", total: null, alt: "2", gate: false },
-  { n: 2, rate: "12", total: "300", alt: "50", gate: false },
-  { n: 3, rate: "22", total: "600", alt: "100", gate: false },
-  { n: 4, rate: "30", total: "1,500", alt: null, gate: false },
-  { n: 5, rate: "36", total: "3,000", alt: null, gate: true },
-  { n: 6, rate: "41", total: "7,000", alt: null, gate: true },
-  { n: 7, rate: "45", total: "20,000", alt: null, gate: true },
-  { n: 8, rate: "48", total: "40,000", alt: null, gate: true },
-  { n: 9, rate: "53", total: "80,000", alt: null, gate: true },
-];
-
-const SHARE = [
-  { n: 3, rate: "4", note: null },
-  { n: 4, rate: "3", note: null },
-  { n: 5, rate: "2.5", note: "전체 구독유저수 30%는 기타소실적 유지" },
-  { n: 6, rate: "1.5", note: null },
-  { n: 7, rate: "1", note: null },
-  { n: 8, rate: "1", note: null },
-  { n: 9, rate: "1", note: null },
-];
-
-// 직급 배지 색상 (티어)
-function rankBadge(n: number): string {
-  if (n <= 2) return "bg-n-100 text-n-500";
-  if (n <= 4) return "bg-green-50 text-green-700";
-  if (n <= 6) return "bg-info-soft text-info";
-  if (n === 7) return "bg-warning-soft text-warning";
-  if (n === 8) return "bg-crypto-soft text-crypto";
-  return "bg-negative-soft text-negative";
-}
-function rankDot(n: number): string {
-  if (n <= 2) return "bg-n-400";
-  if (n <= 4) return "bg-green-500";
-  if (n <= 6) return "bg-info";
-  if (n === 7) return "bg-warning";
-  if (n === 8) return "bg-crypto";
-  return "bg-negative";
-}
-
 // 값 입력 박스 (편집 가능 · uncontrolled)
 function NumBox({ value, unit = "%", w = "w-8" }: { value: string; unit?: string; w?: string }) {
   return (
@@ -93,33 +50,14 @@ function NumBox({ value, unit = "%", w = "w-8" }: { value: string; unit?: string
   );
 }
 
-const Dash = () => <span className="text-text-tertiary">—</span>;
+export default async function AdminRanksPage() {
+  const ranks = await listRanks();
 
-const RANK_COLS = "grid-cols-[88px_1fr_140px_120px_92px_40px]";
-
-export default function AdminRanksPage() {
   return (
     <>
       <Topbar title="수당체계·직급" sub="직급 9등급 · 직급요율 5~53% · 자격 기준 · 수당 3종" uid="운영자" />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
-        {/* ── 미저장 변경 툴바 ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-[13px]">
-            <span className="size-2 rounded-full bg-warning" />
-            <span className="font-semibold text-text-primary">미저장 변경 2건</span>
-            <span className="text-text-tertiary">레벨 수당 · 직급 수당 · 공유수당 풀을 설정합니다</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-1.5 rounded-md bg-card px-3.5 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong">
-              <RotateCcwIcon className="size-3.5" /> 기본값 복원
-            </button>
-            <button className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3.5 py-2 text-[13px] font-semibold text-white">
-              <SaveIcon className="size-3.5" /> 변경사항 저장
-            </button>
-          </div>
-        </div>
-
         {/* ── 매출 배분 구조 ── */}
         <Panel
           title="매출 배분 구조"
@@ -246,82 +184,13 @@ export default function AdminRanksPage() {
           </button>
         </Panel>
 
-        {/* ── 직급 수당 ── */}
+        {/* ── 직급 자격 기준 · 공유수당 (실DB 편집) ── */}
         <Panel
-          title="직급 수당"
-          sub="직급별 요율 · 자격 기준 · 1~3직급 레벨 1 대체 · 5직급↑ 30% 균형"
-          action={<button className="inline-flex items-center gap-1.5 rounded-md bg-card px-3 py-1.5 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong"><PlusIcon className="size-3.5" /> 직급 추가</button>}
+          title="직급 자격 기준 · 공유수당 (관리자 설정)"
+          sub="직급=순수 카운트(30% 무관) · 30% 게이트는 공유수당에만 · 저장 즉시 정산 기준 반영"
+          action={<Pill tone="crypto">단일 소스</Pill>}
         >
-          <div className="mb-4 flex items-start gap-2.5 rounded-lg bg-green-50 px-4 py-3 text-[12px] leading-relaxed text-green-700">
-            <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-green-500 text-white"><AwardIcon className="size-3" /></span>
-            <span>
-              <b className="font-bold">차액(차등) 지급 — 차액차단</b><br />
-              각 직급은 (본인 요율 − 직하위 직급 요율)의 차액만 수령하고 나머지는 하위 직급으로 내려갑니다. 예: 내가 9직급(53%)이고 직하위가 8직급(48%)이면 → 나는 차액 5%만 수령, 48%는 하위로. 산하에 동급자 이상이 생기면 그 레그는 차단.
-            </span>
-          </div>
-
-          <div className="overflow-x-auto">
-            <div className="min-w-[680px]">
-              <div className={cn("grid items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary", RANK_COLS)}>
-                <span>직급</span>
-                <span className="text-right">직급요율</span>
-                <span className="text-right">후원 전체 활성</span>
-                <span className="text-right">레벨 1 대체</span>
-                <span className="text-right">30% 균형</span>
-                <span />
-              </div>
-              {RANKS.map((r) => (
-                <div key={r.n} className={cn("grid items-center gap-3 border-b py-2.5 last:border-0", RANK_COLS)}>
-                  <span className={cn("inline-flex w-fit items-center rounded-md px-2.5 py-1 text-[12px] font-bold", rankBadge(r.n))}>{r.n}직급</span>
-                  <span className="flex justify-end"><NumBox value={r.rate} /></span>
-                  <span className="flex justify-end">{r.total ? <NumBox value={r.total} unit="명" w="w-12" /> : <Dash />}</span>
-                  <span className="flex justify-end">{r.alt ? <NumBox value={r.alt} unit="명" w="w-8" /> : <Dash />}</span>
-                  <span className="flex justify-end"><RankToggle defaultOn={r.gate} /></span>
-                  <span className="flex justify-end"><button className="grid size-7 place-items-center rounded-md text-text-tertiary hover:bg-surface-muted"><Trash2Icon className="size-3.5" /></button></span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p className="mt-3 text-[11px] leading-relaxed text-text-tertiary">
-            카운팅 = 후원계보 전체 활성 구독자(is_active_subscriber). 1~3직급은 레벨 1(직접추천) 인원으로 대체 인정 · 첫 직접추천은 대실적 후원계보로 자동 지정 · 5직급 이상은 전체 구독유저수 기준 + 기타소실적 30% 이상 유지(대실적 올빵 방지) · 직급수당은 산하 동급자 이상 시 차액차단.
-          </p>
-        </Panel>
-
-        {/* ── 공유수당 ── */}
-        <Panel
-          title="공유수당"
-          sub="수당 풀에서 받는 공유수당 · 대상 직급별 차등 누적배분 (중복수령)"
-          action={<Pill tone="crypto">중복 누적배분</Pill>}
-        >
-          <div className="grid grid-cols-[180px_1fr_40px] items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary">
-            <span>대상직급</span><span>배분요율설명</span><span />
-          </div>
-          {SHARE.map((s) => (
-            <div key={s.n} className="grid grid-cols-[180px_1fr_40px] items-center gap-3 border-b py-3 last:border-0">
-              <button className="inline-flex w-fit items-center gap-2 rounded-md bg-card px-3 py-1.5 text-[13px] font-semibold ring-1 ring-border-strong">
-                <span className={cn("size-2 rounded-full", rankDot(s.n))} />
-                {s.n}직급
-                <ChevronDownIcon className="size-3.5 text-text-tertiary" />
-              </button>
-              <span className="flex items-center gap-2.5">
-                <NumBox value={s.rate} />
-                <span className="h-px flex-1 bg-border" />
-                {s.note ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-md bg-info-soft px-2.5 py-1 text-[11px] font-medium text-info">
-                    <InfoIcon className="size-3" /> {s.note}
-                  </span>
-                ) : null}
-              </span>
-              <span className="flex justify-end"><button className="grid size-7 place-items-center rounded-md text-text-tertiary hover:bg-surface-muted"><Trash2Icon className="size-3.5" /></button></span>
-            </div>
-          ))}
-          <button className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border-strong py-2.5 text-[13px] font-medium text-text-secondary">
-            <PlusIcon className="size-4" /> 공유 대상 직급 추가
-          </button>
-          <p className="mt-3 text-[11px] leading-relaxed text-text-tertiary">
-            공유수당 = 수당 풀에서 배정된 공유수당 몫을 위 직급별 배분요율(%)로 중복(누적) 분배. 상위 직급은 하위 직급 배분도 함께 수령(중복수령). 5직급 이상은 기타소실적 30% 유지 조건 충족 시에만 분배 대상.
-          </p>
+          <RankConfigEditor initial={ranks} />
         </Panel>
       </div>
     </>

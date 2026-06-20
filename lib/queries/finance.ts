@@ -204,14 +204,16 @@ export async function getSettlementSummary(cycle: string) {
     share = 0,
     total = 0,
     pending = 0;
+  const status = { calculated: 0, confirmed: 0, paid: 0, held: 0 };
   for (const r of rows) {
     level += Number(r.level_amount);
     rank += Number(r.rank_amount);
     share += Number(r.share_amount);
     total += Number(r.total_amount);
     if (r.status !== "paid") pending += Number(r.total_amount);
+    if (r.status in status) status[r.status as keyof typeof status]++;
   }
-  return { level, rank, share, total, pending, count: rows.length };
+  return { level, rank, share, total, pending, count: rows.length, status };
 }
 
 // ── 마케터 통합 지갑 ───────────────────────────────────────────────

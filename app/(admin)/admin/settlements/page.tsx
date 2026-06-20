@@ -6,7 +6,6 @@ import {
   ClockIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CheckCheckIcon,
   SlidersHorizontalIcon,
   DownloadIcon,
 } from "lucide-react";
@@ -16,6 +15,7 @@ import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { RunSettlementButton } from "@/components/settlements/run-settlement-button";
 import { PayCommissionButton } from "@/components/settlements/pay-commission-button";
+import { ConfirmSettlementsButton } from "@/components/settlements/confirm-settlements-button";
 import { getSettlementSummary, listSettlements, getPoolReconciliation } from "@/lib/queries/finance";
 import { getMemberRanksMap } from "@/lib/queries/ranks";
 import { toUid, uidInitials } from "@/lib/uid";
@@ -39,12 +39,6 @@ const badgeTone: Record<string, string> = {
   warning: "bg-warning-soft text-warning",
   neutral: "bg-n-100 text-n-500",
 };
-
-const PIPELINE = [
-  { label: "산정 완료", state: "done" },
-  { label: "확정 검토", state: "current" },
-  { label: "지급 실행", state: "todo" },
-];
 
 const COLS = "grid-cols-[1.7fr_1fr_1fr_1fr_1.1fr_120px]";
 
@@ -75,6 +69,14 @@ export default async function AdminSettlementsPage() {
   const rpct = pctOf(sum.rank, sum.total);
   const spct = pctOf(sum.share, sum.total);
   const payRate = recon.computed_payout > 0 ? Math.round((recon.paid_out / recon.computed_payout) * 100) : 0;
+
+  // 파이프라인 상태(산정→확정→지급)를 실제 settlements 상태로 표시
+  const st = sum.status;
+  const PIPELINE = [
+    { label: "산정 완료", state: sum.count > 0 ? "done" : "todo" },
+    { label: "확정 검토", state: st.paid > 0 || st.confirmed > 0 ? "done" : st.calculated > 0 ? "current" : "todo" },
+    { label: "지급 실행", state: st.paid > 0 ? "done" : st.confirmed > 0 ? "current" : "todo" },
+  ];
 
   const KPIS = [
     { icon: CoinsIcon, tone: "green" as const, label: "당월 수당 총액", value: usd(sum.total), info: `${sum.count.toLocaleString()}명`, warn: false },
@@ -141,7 +143,7 @@ export default async function AdminSettlementsPage() {
             </div>
             <div className="flex items-center gap-2">
               <RunSettlementButton cycle={CYCLE} />
-              <button className="inline-flex items-center gap-1.5 rounded-md bg-card px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong"><CheckCheckIcon className="size-3.5" /> 일괄 확정</button>
+              <ConfirmSettlementsButton cycle={CYCLE} />
               <PayCommissionButton cycle={CYCLE} />
             </div>
           </div>
