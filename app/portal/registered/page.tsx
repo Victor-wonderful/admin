@@ -121,7 +121,7 @@ export default async function RegisteredDashboardPage() {
         </Panel>
 
         {/* 구독 플랜 + 지갑 충전 */}
-        <div className="grid gap-4 lg:grid-cols-[1fr_400px]">
+        <div className="grid gap-4 lg:grid-cols-[1fr_392px]">
           <Panel>
             <div className="flex items-center gap-3">
               <div className="grid size-11 place-items-center rounded-[13px] bg-green-50 text-green-700">
