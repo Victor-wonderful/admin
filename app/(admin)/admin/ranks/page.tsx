@@ -1,116 +1,196 @@
+import {
+  ArrowDownToLineIcon,
+  LayersIcon,
+  InfoIcon,
+  PlusIcon,
+  CornerDownRightIcon,
+  ArrowDownIcon,
+} from "lucide-react";
+
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { RankToggle } from "@/components/ranks/rank-toggle";
+import { RankConfigEditor } from "@/components/ranks/rank-config-editor";
 import { listRanks } from "@/lib/queries/ranks";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+// 수당체계·직급 — Pencil 디자인(cfaJF) 1:1. 정책 설정 폼.
+
+// 1차 배분
 const ALLOCATION = [
-  { label: "수당 풀", pct: 60, color: "bg-green-500", desc: "레벨·직급·공유 지급 재원" },
-  { label: "회사 수익", pct: 20, color: "bg-info", desc: "운영·개발" },
-  { label: "지분자 배당", pct: 10, color: "bg-crypto", desc: "투자자 분배" },
-  { label: "예비비", pct: 10, color: "bg-n-400", desc: "리스크 대비" },
+  { label: "수당 풀", pct: 60, color: "bg-green-500", dot: "bg-green-500", desc: "네트워크 수당 재원 · 레벨·직급·공유" },
+  { label: "회사 수익", pct: 20, color: "bg-info", dot: "bg-info", desc: "회사 운영 이익" },
+  { label: "지분자 배당", pct: 10, color: "bg-crypto", dot: "bg-crypto", desc: "지분 보유자 분배" },
+  { label: "예비비", pct: 10, color: "bg-n-400", dot: "bg-n-400", desc: "리스크 적립 · 미지급 대비" },
 ];
 
+// 수당 풀 2차 세분
 const POOL = [
-  { label: "레벨 수당", pct: 45, color: "bg-green-500", hint: "요율 1대 25% · 2대 9%" },
-  { label: "직급 수당", pct: 38, color: "bg-crypto", hint: "요율 5~53% 차액차단" },
-  { label: "공유 수당", pct: 17, color: "bg-info", hint: "직급별 차등 누적배분" },
+  { label: "레벨 수당", pct: 45, color: "bg-green-500", dot: "bg-green-500", hint: "요율 1대 25% · 2대 9%" },
+  { label: "직급 수당", pct: 38, color: "bg-crypto", dot: "bg-crypto", hint: "직급요율 5~53% 차액" },
+  { label: "공유수당", pct: 17, color: "bg-info", dot: "bg-info", hint: "직급별 차등 누적배분" },
 ];
+
+const LEVELS = [
+  { n: 1, name: "레벨 1", rate: "25", on: true, muted: false },
+  { n: 2, name: "레벨 2", rate: "9", on: true, muted: false },
+  { n: 3, name: "레벨 3 이상", rate: null, on: false, muted: true },
+];
+
+// 값 입력 박스 (편집 가능 · uncontrolled)
+function NumBox({ value, unit = "%", w = "w-8" }: { value: string; unit?: string; w?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-card px-2.5 py-1.5 ring-1 ring-border-strong">
+      <input defaultValue={value} className={cn("bg-transparent text-right text-sm font-bold tabular-nums text-text-primary outline-none", w)} />
+      <span className="text-[11px] text-text-tertiary">{unit}</span>
+    </span>
+  );
+}
 
 export default async function AdminRanksPage() {
   const ranks = await listRanks();
-  const shareRanks = ranks.filter((r) => r.override_rate != null);
 
   return (
     <>
-      <Topbar title="수당체계·직급" sub="매출 배분 · 레벨·직급·공유 수당 설정" uid="운영자" />
-      <div className="flex-1 space-y-4 overflow-auto p-7">
-        {/* 매출 배분 구조 (정책 — 정적) */}
-        <Panel title="매출 배분 구조" sub="매출 입금(100%) → 1차 배분" action={<Pill tone="green">합계 100%</Pill>}>
-          <div className="mb-4 flex h-3 overflow-hidden rounded-full">
+      <Topbar title="수당체계·직급" sub="직급 9등급 · 직급요율 5~53% · 자격 기준 · 수당 3종" uid="운영자" />
+
+      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+        {/* ── 매출 배분 구조 ── */}
+        <Panel
+          title="매출 배분 구조"
+          sub="매출 입금 시 먼저 4개로 1차 배분 → 수당 풀(60%)은 다시 레벨·직급·공유로 2차 세분"
+          action={<Pill tone="green" dot>합계 100%</Pill>}
+        >
+          <div className="flex items-center justify-between gap-4 rounded-lg bg-green-50 px-4 py-3.5">
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-full bg-green-500 text-white"><ArrowDownToLineIcon className="size-[18px]" /></span>
+              <div>
+                <div className="text-[13px] font-bold text-green-700">매출 입금</div>
+                <div className="text-[11px] text-green-700/70">구독료·연회비·상품대금 등 회사 지갑 유입 (USDT)</div>
+              </div>
+            </div>
+            <span className="text-2xl font-bold tabular-nums text-green-700">100%</span>
+          </div>
+
+          <div className="my-3.5 flex items-center justify-center gap-1.5 text-[11px] text-text-tertiary">
+            <ArrowDownIcon className="size-3" /> 1차 배분 — 입금액을 먼저 크게 4개로 나눔
+          </div>
+
+          <div className="mb-4 flex h-9 overflow-hidden rounded-lg">
             {ALLOCATION.map((a) => (
-              <div key={a.label} className={a.color} style={{ width: `${a.pct}%` }} />
+              <div key={a.label} className={cn("flex items-center justify-center text-[12px] font-semibold text-white", a.color)} style={{ width: `${a.pct}%` }}>
+                {a.pct >= 20 ? `${a.label} ${a.pct}%` : `${a.pct}%`}
+              </div>
             ))}
           </div>
+
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {ALLOCATION.map((a) => (
-              <div key={a.label} className="rounded-lg bg-surface-muted p-3.5 ring-1 ring-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-semibold text-text-primary">{a.label}</span>
-                  <span className="text-sm font-bold text-text-primary">{a.pct}%</span>
+              <div key={a.label} className="rounded-lg p-4 ring-1 ring-border">
+                <div className="flex items-center gap-2 text-[13px] font-semibold text-text-primary">
+                  <span className={cn("size-2.5 rounded-full", a.dot)} /> {a.label}
                 </div>
-                <div className="mt-1 text-[11px] text-text-tertiary">{a.desc}</div>
+                <div className="mt-2.5 flex items-end gap-1">
+                  <span className="text-[26px] leading-none font-bold tabular-nums text-text-primary">{a.pct}</span>
+                  <span className="pb-0.5 text-sm font-medium text-text-tertiary">%</span>
+                </div>
+                <div className="mt-2.5 text-[11px] text-text-tertiary">{a.desc}</div>
               </div>
             ))}
           </div>
+
+          <div className="mt-4 flex items-center gap-2 rounded-lg bg-surface-muted px-4 py-3 text-[12px] text-text-secondary">
+            <CornerDownRightIcon className="size-4 shrink-0 text-text-tertiary" />
+            2차 세분 — 수당 풀 60%는 아래 레벨 수당 · 직급수당 · 공유수당으로 다시 나뉨
+          </div>
         </Panel>
 
-        <Panel title="수당 풀 설정" sub="수당 풀(매출 60%)을 레벨·직급·공유에 배분" action={<Pill tone="warning">추정값 · 재검토 필요</Pill>}>
-          <div className="mb-4 flex h-3 overflow-hidden rounded-full">
-            {POOL.map((p) => <div key={p.label} className={p.color} style={{ width: `${p.pct}%` }} />)}
+        {/* ── 수당 풀 설정 ── */}
+        <Panel
+          title="수당 풀 설정"
+          sub="수당 풀(매출 60%)을 레벨·직급·공유 수당에 배분 · 각 수당 세부 요율은 아래에서 설정"
+          action={<Pill tone="green" dot>합계 100%</Pill>}
+        >
+          <div className="flex items-center justify-between gap-4 rounded-lg bg-green-50 px-4 py-3.5">
+            <div className="flex items-center gap-3">
+              <span className="grid size-9 place-items-center rounded-full bg-green-500 text-white"><LayersIcon className="size-[18px]" /></span>
+              <div>
+                <div className="text-[13px] font-bold text-green-700">수당 풀</div>
+                <div className="text-[11px] text-green-700/70">전체 매출의 60% · 레벨·직급·공유 수당의 지급 재원</div>
+              </div>
+            </div>
+            <span className="text-2xl font-bold tabular-nums text-green-700">100%</span>
           </div>
+
+          <div className="my-3.5 flex items-center justify-center gap-1.5 text-[11px] text-text-tertiary">
+            <ArrowDownIcon className="size-3" /> 풀 배분 비율 설정 — 풀을 3종에 나눔
+          </div>
+
+          <div className="mb-4 flex h-9 overflow-hidden rounded-lg">
+            {POOL.map((p) => (
+              <div key={p.label} className={cn("flex items-center justify-center text-[12px] font-semibold text-white", p.color)} style={{ width: `${p.pct}%` }}>
+                {p.label} {p.pct}%
+              </div>
+            ))}
+          </div>
+
           <div className="grid gap-3 lg:grid-cols-3">
             {POOL.map((p) => (
-              <div key={p.label} className="rounded-lg bg-surface-muted p-4 ring-1 ring-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-semibold text-text-primary">{p.label}</span>
-                  <span className="text-base font-bold text-text-primary">{p.pct}%</span>
+              <div key={p.label} className="rounded-lg p-4 ring-1 ring-border">
+                <div className="flex items-center gap-2 text-[13px] font-semibold text-text-primary">
+                  <span className={cn("size-2.5 rounded-full", p.dot)} /> {p.label}
                 </div>
-                <div className="mt-1.5 text-[11px] text-text-tertiary">{p.hint}</div>
+                <div className="mt-2.5 flex items-end justify-between">
+                  <div className="flex items-end gap-1">
+                    <span className="text-[26px] leading-none font-bold tabular-nums text-text-primary">{p.pct}</span>
+                    <span className="pb-0.5 text-sm font-medium text-text-tertiary">%</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] text-text-tertiary">{p.hint}</div>
+                    <div className="text-[11px] font-medium text-text-secondary">세부 설정 ↓</div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
-        </Panel>
 
-        <Panel title="레벨 수당" sub="추천 세대 기준 · 1·2대만 (3대 이상 차단)">
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[["1대", "25%", "직접 추천"], ["2대", "9%", "추천의 추천"]].map(([lv, rate, d]) => (
-              <div key={lv} className="flex items-center justify-between rounded-lg bg-green-50 p-4">
-                <div>
-                  <div className="text-sm font-bold text-green-700">{lv}</div>
-                  <div className="text-xs text-text-secondary">{d}</div>
-                </div>
-                <div className="text-2xl font-bold text-green-700">{rate}</div>
-              </div>
-            ))}
+          <div className="mt-4 flex items-start gap-2.5 rounded-lg bg-info-soft px-4 py-3 text-[12px] leading-relaxed text-info">
+            <InfoIcon className="mt-0.5 size-4 shrink-0" />
+            위 비율은 &lsquo;수당 풀을 3종에 나누는 배분(예산) 설정&rsquo;입니다. 각 수당의 실제 지급 요율(레벨 1대 25%·2대 9%, 직급 차액차단, 공유 차등배분)은 아래 세부 섹션에서 따로 설정합니다 — 배분 비율과 지급 요율은 별개입니다.
           </div>
-          <p className="mt-3 text-[11px] text-text-tertiary">기준금 = 하위 회원의 $120 구독료. 3대 이상은 레벨 수당 지급 차단.</p>
         </Panel>
 
-        {/* 직급 수당 — 실데이터 (ranks 테이블) */}
-        <Panel title="직급 수당" sub={`${ranks.length}직급 · 차액(차등) 지급 · 차액차단(브레이크어웨이)`}>
-          <div>
-            <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
-              <span>직급</span><span>요율</span><span>달성 조건 (후원 활성 구독자)</span><span>직추 대체</span><span>30% 게이트</span><span className="text-right">공유 배분</span>
+        {/* ── 레벨 수당 ── */}
+        <Panel
+          title={<span className="flex items-center gap-2"><span className="grid size-7 place-items-center rounded-md bg-green-50 text-green-700"><LayersIcon className="size-4" /></span>레벨 수당</span>}
+          sub="추천 세대별 요율 · 레벨 1·2대 지급, 3 이상 차단"
+        >
+          <div className="grid grid-cols-[40px_1fr_auto_auto] items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary">
+            <span>레벨</span><span /><span className="text-right">지급 요율</span><span className="text-right">지급 여부</span>
+          </div>
+          {LEVELS.map((l) => (
+            <div key={l.n} className="grid grid-cols-[40px_1fr_auto_auto] items-center gap-3 border-b py-3.5 last:border-0">
+              <span className={cn("grid size-7 place-items-center rounded-md text-xs font-bold", l.muted ? "bg-n-100 text-n-400" : "bg-green-50 text-green-700")}>{l.n}</span>
+              <span className={cn("text-sm font-semibold", l.muted ? "text-text-tertiary" : "text-text-primary")}>{l.name}</span>
+              <span className="flex justify-end">{l.rate ? <NumBox value={l.rate} /> : <span className="text-[13px] font-medium text-text-tertiary">지급 차단</span>}</span>
+              <span className="flex justify-end"><RankToggle defaultOn={l.on} /></span>
             </div>
-            {ranks.map((r) => (
-              <div key={r.rank} className="grid grid-cols-[auto_auto_1fr_auto_auto_auto] items-center gap-3 border-b py-2.5 text-sm last:border-0">
-                <span className="font-semibold text-text-primary">{r.rank}직급</span>
-                <span className="font-bold text-crypto tabular-nums">{Number(r.rate_pct)}%</span>
-                <span className="text-text-secondary tabular-nums">{r.min_total != null ? `총 활성 ${r.min_total.toLocaleString()}명` : "—"}</span>
-                <span className="text-text-tertiary tabular-nums">{r.min_direct != null ? r.min_direct : "—"}</span>
-                <span>{r.requires_30pct ? <Pill tone="warning">필요</Pill> : <span className="text-text-tertiary">—</span>}</span>
-                <span className="justify-self-end text-text-secondary tabular-nums">{r.override_rate != null ? `${Number(r.override_rate)}%` : "—"}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-text-tertiary">
-            상위 직급은 (본인 요율 − 직하위 직급 요율) 차액만 수령, 나머지는 하위로 내려갑니다. 산하 동급자 이상 시 차단. 첫 직접추천은 대실적 후원계보로 자동 지정.
-          </p>
+          ))}
+          <button className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border-strong py-2.5 text-[13px] font-medium text-text-secondary">
+            <PlusIcon className="size-4" /> 레벨 추가
+          </button>
         </Panel>
 
-        {/* 공유 수당 — 실데이터 */}
-        <Panel title="공유 수당" sub="수당 풀의 공유수당 몫 · 직급별 차등 누적배분(중복수령)">
-          <div className="flex flex-wrap gap-2">
-            {shareRanks.map((r) => (
-              <div key={r.rank} className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2 ring-1 ring-border">
-                <span className="text-[13px] font-semibold text-text-primary">{r.rank}직급</span>
-                <span className="text-[13px] font-bold text-info tabular-nums">{Number(r.override_rate)}%</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-[11px] text-text-tertiary">5직급 = 전체 구독유저수 30% 기타소실적 유지. 상위 직급이 하위 위에 겹쳐 받는 중복수령 방식.</p>
+        {/* ── 직급 자격 기준 · 공유수당 (실DB 편집) ── */}
+        <Panel
+          title="직급 자격 기준 · 공유수당 (관리자 설정)"
+          sub="직급=순수 카운트(30% 무관) · 30% 게이트는 공유수당에만 · 저장 즉시 정산 기준 반영"
+          action={<Pill tone="crypto">단일 소스</Pill>}
+        >
+          <RankConfigEditor initial={ranks} />
         </Panel>
       </div>
     </>

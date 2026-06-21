@@ -6,7 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:settlement": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/settlement_verify.sql",
+    "test:withdrawal": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/withdrawal_verify.sql",
+    "test:realtime": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/realtime_payout_verify.sql",
+    "test:share": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/share_commission_verify.sql",
+    "test:reconcile": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/realtime_batch_reconcile_verify.sql",
+    "test:gate": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/balance_gate_verify.sql",
+    "test:transparency": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/transparency_verify.sql",
+    "test:proration": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/proration_verify.sql",
+    "test:workflow": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/workflow_verify.sql",
+    "test:sharegate": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/share_gate_verify.sql",
+    "test:monthly": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/monthly_rank_verify.sql",
+    "test:lifecycle": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/member_lifecycle_verify.sql",
+    "test:engine": "npm run test:settlement && npm run test:withdrawal && npm run test:realtime && npm run test:share && npm run test:reconcile && npm run test:gate && npm run test:transparency && npm run test:proration && npm run test:workflow && npm run test:sharegate && npm run test:monthly && npm run test:lifecycle"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

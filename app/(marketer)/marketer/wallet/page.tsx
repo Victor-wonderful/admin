@@ -3,8 +3,6 @@ import {
   TrendingUpIcon,
   ArrowDownToLineIcon,
   ShoppingCartIcon,
-  PlusIcon,
-  CircleArrowUpIcon,
   HashIcon,
   CopyIcon,
 } from "lucide-react";
@@ -13,6 +11,8 @@ import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-request-modal";
+import { DepositModal } from "@/components/wallet/deposit-modal";
 import { getMemberWalletData, type LedgerEntry } from "@/lib/queries/finance";
 import { ROOT_MARKETER_ID } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -76,12 +76,13 @@ export default async function MarketerWalletPage() {
           </div>
           <div className="flex flex-col items-end gap-2.5">
             <div className="flex gap-2.5">
-              <button className="inline-flex items-center gap-2 rounded-[10px] bg-white/15 px-6 py-3 text-[15px] font-bold text-white">
-                <PlusIcon className="size-[18px]" /> 충전
-              </button>
-              <button className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700">
-                <CircleArrowUpIcon className="size-[18px]" /> 출금 신청
-              </button>
+              <DepositModal address={address} network={network} />
+              <WithdrawalRequestModal
+                memberId={ROOT_MARKETER_ID}
+                balance={balance}
+                defaultAddress={address === "—" ? "" : address}
+                defaultNetwork={network}
+              />
             </div>
             <span className="text-xs font-medium text-white/80">당월 수당 {signed(monthCommission)} · 당월 충전 {signed(monthDeposit)}</span>
           </div>

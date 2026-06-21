@@ -52,10 +52,10 @@ export function RankPanel({ info }: { info: RankInfo }) {
           <p className="text-muted-foreground">최고 직급(9직급)입니다.</p>
         )}
 
-        {/* 30% 기타소실적 균형 */}
+        {/* 30% 기타소실적 균형 = 공유수당 자격(5직급+) */}
         <div className="space-y-1.5 border-t pt-3">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">기타소실적 비율 (5직급+ 30% 필요)</span>
+            <span className="text-muted-foreground">기타소실적 비율 (공유수당 5직급+ 30%)</span>
             <span
               className={cn(
                 "font-medium tabular-nums",
@@ -72,7 +72,7 @@ export function RankPanel({ info }: { info: RankInfo }) {
           />
           {info.blocked_by_balance ? (
             <p className="text-xs text-amber-600">
-              ⚠ 구독유저 수로는 더 높은 직급이지만, 기타소실적 30% 미달로 자격이 제한됩니다.
+              ⚠ 직급·직급수당은 그대로지만, 기타소실적 30% 미달로 <b>공유수당</b>(5직급↑)을 받지 못합니다.
             </p>
           ) : null}
         </div>

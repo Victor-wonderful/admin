@@ -2,14 +2,26 @@ import "server-only";
 import { getServerClient } from "@/lib/supabase/server";
 import type { MemberRow, ReferralCodeRow, SubscriptionRow, ProductRow } from "@/lib/supabase/types";
 
+// PostgREST max_rows(1000) 캡 우회 — 1000행씩 배치로 전량 fetch.
 export async function listMembers(opts?: { role?: string; activeOnly?: boolean }): Promise<MemberRow[]> {
   const sb = getServerClient();
-  let q = sb.from("members").select("*").order("created_at", { ascending: true });
-  if (opts?.role) q = q.eq("role", opts.role);
-  if (opts?.activeOnly) q = q.eq("is_active_subscriber", true);
-  const { data, error } = await q;
-  if (error) throw error;
-  return (data ?? []) as MemberRow[];
+  const PAGE = 1000;
+  const all: MemberRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    let q = sb
+      .from("members")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (opts?.role) q = q.eq("role", opts.role);
+    if (opts?.activeOnly) q = q.eq("is_active_subscriber", true);
+    const { data, error } = await q;
+    if (error) throw error;
+    const batch = (data ?? []) as MemberRow[];
+    all.push(...batch);
+    if (batch.length < PAGE) break;
+  }
+  return all;
 }
 
 export async function getMember(id: string): Promise<MemberRow | null> {
@@ -65,14 +77,24 @@ export async function listProducts(): Promise<ProductRow[]> {
   return (data ?? []) as ProductRow[];
 }
 
-// 회원 카운트 요약(어드민 대시보드)
+// 회원 카운트 요약(어드민 대시보드) — count 쿼리로 정확 집계(1000행 캡 영향 없음).
 export async function getMemberStats() {
-  const members = await listMembers();
-  const by = { registered: 0, subscriber: 0, marketer: 0 };
-  let active = 0;
-  for (const m of members) {
-    by[m.role]++;
-    if (m.is_active_subscriber) active++;
-  }
-  return { total: members.length, active, ...by };
+  const sb = getServerClient();
+  const countWhere = async (col?: "role" | "is_active_subscriber", val?: string | boolean) => {
+    let q = sb.from("members").select("*", { count: "exact", head: true });
+    if (col) q = q.eq(col, val as never);
+    const { count, error } = await q;
+    if (error) throw error;
+    return count ?? 0;
+  };
+
+  const [total, registered, subscriber, marketer, active] = await Promise.all([
+    countWhere(),
+    countWhere("role", "registered"),
+    countWhere("role", "subscriber"),
+    countWhere("role", "marketer"),
+    countWhere("is_active_subscriber", true),
+  ]);
+
+  return { total, registered, subscriber, marketer, active };
 }

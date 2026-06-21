@@ -4,10 +4,14 @@ import {
   LayoutDashboardIcon,
   NetworkIcon,
   Share2Icon,
+  CoinsIcon,
   WalletIcon,
   ShoppingCartIcon,
   UserRoundIcon,
+  LogOutIcon,
 } from "lucide-react";
+
+import { logout } from "@/lib/actions/auth";
 
 import { cn } from "@/lib/utils";
 import {
@@ -56,6 +60,7 @@ export function MemberSidebar({
         <SidebarNavItem href="/marketer/dashboard" icon={LayoutDashboardIcon} label="대시보드" sublabel="Dashboard" />
         <SidebarNavItem href="/marketer/genealogy" icon={NetworkIcon} label="계보도" sublabel="Genealogy" locked={locked} />
         <SidebarNavItem href="/marketer/referral" icon={Share2Icon} label="레퍼럴" sublabel="Referral" locked={locked} />
+        <SidebarNavItem href="/marketer/commissions" icon={CoinsIcon} label="내 수당" sublabel="Commissions" locked={locked} />
         <SidebarNavItem href="/marketer/wallet" icon={WalletIcon} label="내 지갑" sublabel="My Wallet" />
         <SidebarNavItem href="/marketer/orders" icon={ShoppingCartIcon} label="구독·주문" sublabel="Subscription" />
         <SidebarNavItem href="/marketer/profile" icon={UserRoundIcon} label="프로필·설정" sublabel="Profile" />
@@ -79,6 +84,11 @@ export function MemberSidebar({
         </div>
         <div className="mt-1.5 text-sm font-bold text-white">{uid}</div>
         <div className="mt-1 text-[11px] leading-relaxed text-white/60">{gradeSub}</div>
+        <form action={logout} className="mt-2.5">
+          <button type="submit" className="flex w-full items-center justify-center gap-1.5 rounded-md bg-white/10 py-2 text-[12px] font-semibold text-white/80 transition-colors hover:bg-white/15">
+            <LogOutIcon className="size-3.5" /> 로그아웃
+          </button>
+        </form>
       </SidebarBottomCard>
     </Sidebar>
   );

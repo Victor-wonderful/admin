@@ -13,8 +13,11 @@ import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { MemberTree } from "@/components/trees/member-tree";
+import { GenealogyTrees } from "@/components/trees/genealogy-trees";
 import { getBothTrees } from "@/lib/queries/trees";
+import { getMajorMinor } from "@/lib/queries/legs";
 import { ROOT_MARKETER_ID } from "@/lib/constants";
+import { toUid } from "@/lib/uid";
 import type { TreeNode } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +29,11 @@ function countAll(n: TreeNode | null): number {
 }
 
 export default async function MarketerGenealogyPage() {
-  const { unilevel } = await getBothTrees(ROOT_MARKETER_ID);
+  const [{ unilevel, placement }, mm] = await Promise.all([
+    getBothTrees(ROOT_MARKETER_ID),
+    getMajorMinor(ROOT_MARKETER_ID),
+  ]);
+  const balancePct = mm.total_active > 0 ? Math.round((mm.other_minor / mm.total_active) * 100) : 0;
 
   const oneL = unilevel?.children.length ?? 0;
   const twoL = unilevel?.children.reduce((s, c) => s + c.children.length, 0) ?? 0;
@@ -50,20 +57,16 @@ export default async function MarketerGenealogyPage() {
   const SUMMARY = [
     { icon: UsersIcon, k: "1대 직접 추천", v: `${oneL}명` },
     { icon: UsersIcon, k: "2대", v: `${twoL}명` },
-    { icon: CircleCheckIcon, k: "활성 구독자", v: `${active.toLocaleString()}명` },
-    { icon: LayersIcon, k: "총 산하", v: `${totalSub.toLocaleString()}명` },
+    { icon: LayersIcon, k: "대실적 라인 (주력)", v: `${mm.major_leg.toLocaleString()}명` },
+    { icon: GitBranchIcon, k: `기타 소실적 (${balancePct}%)`, v: `${mm.other_minor.toLocaleString()}명` },
+    { icon: LayersIcon, k: "총 활성 산하", v: `${mm.total_active.toLocaleString()}명` },
   ];
 
   return (
     <>
-      <Topbar title="계보도" sub="추천 계보 · 1대·2대 (3대 차단)" uid="AG·8F3A21" />
+      <Topbar title="계보도" sub="추천 계보(수당) · 후원 배치(스필오버)" uid={toUid(ROOT_MARKETER_ID)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
-        <div className="flex w-fit gap-1 rounded-md bg-surface-muted p-1 ring-1 ring-border">
-          <span className="rounded bg-card px-4 py-1.5 text-[13px] font-semibold text-text-primary shadow-sm">추천 계보 (수당)</span>
-          <span className="rounded px-4 py-1.5 text-[13px] font-medium text-text-secondary">후원 배치 (스필오버)</span>
-        </div>
-
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((s) => (
             <div key={s.label} className="flex items-center gap-3 rounded-lg bg-card p-4 ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]">
@@ -86,9 +89,18 @@ export default async function MarketerGenealogyPage() {
           ))}
         </div>
 
-        <Panel bodyClassName="overflow-x-auto">
-          <MemberTree root={unilevel} maxDepth={2} maxChildren={6} />
-        </Panel>
+        <GenealogyTrees
+          unilevel={
+            <Panel bodyClassName="overflow-x-auto" sub="추천 계보 — 레벨수당 1·2대">
+              <MemberTree root={unilevel} maxDepth={2} maxChildren={6} />
+            </Panel>
+          }
+          placement={
+            <Panel bodyClassName="overflow-x-auto" sub="후원 배치 — 직급·공유수당 (스필오버)">
+              <MemberTree root={placement} maxDepth={3} maxChildren={6} />
+            </Panel>
+          }
+        />
 
         <div className="flex items-start gap-2.5 rounded-md bg-info-soft px-3.5 py-3 text-xs leading-relaxed text-info">
           <LayersIcon className="mt-0.5 size-4 shrink-0" />

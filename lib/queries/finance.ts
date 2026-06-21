@@ -41,6 +41,7 @@ export interface Settlement {
   share_amount: number;
   total_amount: number;
   status: string;
+  member_rank: number | null; // 그 달 평가 직급(0018)
   members?: { display_name: string } | null;
 }
 
@@ -75,6 +76,45 @@ export async function listWithdrawals(limit = 20): Promise<Withdrawal[]> {
     .limit(limit);
   if (error) throw error;
   return (data ?? []) as unknown as Withdrawal[];
+}
+
+export interface WithdrawalSummary {
+  pendingCount: number;
+  pendingAmount: number; // 승인 대기 금액
+  sendingCount: number;
+  sendingAmount: number; // 송금 중 금액
+  completedMonthAmount: number; // 당월 완료 출금액
+  completedTotalAmount: number; // 누적 완료 출금액
+  operatingBalance: number; // 운영 지갑 출금 가능 잔액
+}
+
+// 출금 KPI 집계 — 상태별 건수·금액 + 운영 지갑 잔액. (행 수 제한적이라 fetch 후 JS 집계)
+export async function getWithdrawalSummary(): Promise<WithdrawalSummary> {
+  const sb = getServerClient();
+  const [{ data: wd, error: e1 }, { data: sw, error: e2 }] = await Promise.all([
+    sb.from("withdrawals").select("amount_usd, status, processed_at, requested_at"),
+    sb.from("system_wallets").select("kind, balance_usd").eq("kind", "operating").maybeSingle(),
+  ]);
+  if (e1) throw e1;
+  if (e2) throw e2;
+
+  const month = fmtMonth(new Date("2026-06-15"));
+  const s: WithdrawalSummary = {
+    pendingCount: 0, pendingAmount: 0, sendingCount: 0, sendingAmount: 0,
+    completedMonthAmount: 0, completedTotalAmount: 0,
+    operatingBalance: sw ? Number(sw.balance_usd) : 0,
+  };
+  for (const r of wd ?? []) {
+    const amt = Number(r.amount_usd);
+    if (r.status === "pending" || r.status === "approved") { s.pendingCount++; s.pendingAmount += amt; }
+    else if (r.status === "sending") { s.sendingCount++; s.sendingAmount += amt; }
+    else if (r.status === "completed") {
+      s.completedTotalAmount += amt;
+      const when = (r.processed_at ?? r.requested_at) as string | null;
+      if (when && fmtMonth(new Date(when)) === month) s.completedMonthAmount += amt;
+    }
+  }
+  return s;
 }
 
 export async function listSettlements(cycle: string, limit = 20): Promise<Settlement[]> {
@@ -165,14 +205,16 @@ export async function getSettlementSummary(cycle: string) {
     share = 0,
     total = 0,
     pending = 0;
+  const status = { calculated: 0, confirmed: 0, paid: 0, held: 0 };
   for (const r of rows) {
     level += Number(r.level_amount);
     rank += Number(r.rank_amount);
     share += Number(r.share_amount);
     total += Number(r.total_amount);
     if (r.status !== "paid") pending += Number(r.total_amount);
+    if (r.status in status) status[r.status as keyof typeof status]++;
   }
-  return { level, rank, share, total, pending, count: rows.length };
+  return { level, rank, share, total, pending, count: rows.length, status };
 }
 
 // ── 마케터 통합 지갑 ───────────────────────────────────────────────
@@ -282,7 +324,7 @@ export async function getMemberSettlement(memberId: string, cycle: string) {
   const sb = getServerClient();
   const { data, error } = await sb
     .from("settlements")
-    .select("level_amount, rank_amount, share_amount, total_amount, status")
+    .select("level_amount, rank_amount, share_amount, total_amount, member_rank, status")
     .eq("member_id", memberId)
     .eq("cycle", cycle)
     .maybeSingle();
@@ -293,8 +335,53 @@ export async function getMemberSettlement(memberId: string, cycle: string) {
     rank: Number(data.rank_amount),
     share: Number(data.share_amount),
     total: Number(data.total_amount),
+    member_rank: (data.member_rank as number | null) ?? null,
     status: data.status as string,
   };
+}
+
+// 회원 누적 수당(전 사이클 정산 합계).
+export async function getMemberCumulativeCommission(memberId: string): Promise<number> {
+  const sb = getServerClient();
+  const { data, error } = await sb.from("settlements").select("total_amount").eq("member_id", memberId);
+  if (error) throw error;
+  return (data ?? []).reduce((s, r) => s + Number(r.total_amount), 0);
+}
+
+export interface PoolReconciliation {
+  pool_allocated: number;
+  computed_payout: number;
+  paid_out: number;
+  remaining: number;
+  utilization_pct: number;
+  over_pool: boolean;
+}
+
+// 수당풀(매출 60%) 대비 산정·지급액 정합 (풀↔엔진).
+export async function getPoolReconciliation(cycle: string): Promise<PoolReconciliation> {
+  const sb = getServerClient();
+  const { data, error } = await sb.rpc("pool_reconciliation", { p_cycle: cycle });
+  if (error) throw error;
+  const row = (Array.isArray(data) ? data[0] : data) as PoolReconciliation | undefined;
+  return row ?? { pool_allocated: 0, computed_payout: 0, paid_out: 0, remaining: 0, utilization_pct: 0, over_pool: false };
+}
+
+export interface VisibleSettlement {
+  member_id: string;
+  level_amount: number;
+  rank_amount: number;
+  share_amount: number;
+  total_amount: number;
+  status: string;
+  relation: "self" | "placement" | "referral";
+}
+
+// 마케터 시점 수당 조회: 본인 + 하위(후원/직추)만. 상위(업라인) 수당은 절대 노출 안 됨.
+export async function getVisibleSettlements(viewerId: string, cycle: string): Promise<VisibleSettlement[]> {
+  const sb = getServerClient();
+  const { data, error } = await sb.rpc("visible_settlements", { p_viewer: viewerId, p_cycle: cycle });
+  if (error) throw error;
+  return (data ?? []) as VisibleSettlement[];
 }
 
 // 매출 = subscriptions + annual_memberships 결제액 집계
@@ -306,18 +393,28 @@ export async function getRevenueSummary() {
   ]);
   if (subs.error) throw subs.error;
   if (annual.error) throw annual.error;
-  const all = [...(subs.data ?? []), ...(annual.data ?? [])];
   const month = fmtMonth(new Date("2026-06-15"));
-  let total = 0,
-    monthTotal = 0;
-  for (const r of all) {
+  const inMonth = (p: unknown) => typeof p === "string" && p.startsWith(month);
+
+  let total = 0, monthTotal = 0;
+  let monthSub = 0, monthAnnual = 0, monthSubCount = 0, monthAnnualCount = 0;
+  for (const r of subs.data ?? []) {
     const amt = Number(r.amount_usd);
     total += amt;
-    if (typeof r.paid_at === "string" && r.paid_at.startsWith(month)) monthTotal += amt;
+    if (inMonth(r.paid_at)) { monthTotal += amt; monthSub += amt; monthSubCount++; }
+  }
+  for (const r of annual.data ?? []) {
+    const amt = Number(r.amount_usd);
+    total += amt;
+    if (inMonth(r.paid_at)) { monthTotal += amt; monthAnnual += amt; monthAnnualCount++; }
   }
   return {
     total,
     monthTotal,
+    monthSub,
+    monthAnnual,
+    monthSubCount,
+    monthAnnualCount,
     subCount: subs.data?.length ?? 0,
     annualCount: annual.data?.length ?? 0,
   };
