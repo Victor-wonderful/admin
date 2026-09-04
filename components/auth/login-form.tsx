@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { Loader2Icon, LogInIcon } from "lucide-react";
+import { Loader2Icon, LogInIcon, TriangleAlertIcon } from "lucide-react";
 
 import { loginByEmail } from "@/lib/actions/auth";
 import { Field } from "@/components/auth/field";
 
-export function LoginForm() {
+export function LoginForm({ notice }: { notice?: string }) {
   const [state, action, pending] = useActionState(loginByEmail, undefined);
 
   return (
@@ -16,6 +16,13 @@ export function LoginForm() {
         <h1 className="text-[22px] font-bold text-text-primary">로그인</h1>
         <p className="mt-1 text-sm text-text-secondary">포르투나 회원 포털 · 등급에 맞는 화면으로 이동합니다</p>
       </div>
+
+      {notice ? (
+        <div className="flex gap-2 rounded-md bg-warning-soft px-3.5 py-3 text-xs leading-relaxed text-text-secondary">
+          <TriangleAlertIcon className="size-4 shrink-0 text-warning" />
+          <span>{notice}</span>
+        </div>
+      ) : null}
 
       <form action={action} className="space-y-3">
         <Field

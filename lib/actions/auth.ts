@@ -1,19 +1,33 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { randomBytes } from "node:crypto";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerClient } from "@/lib/supabase/server";
-import { SESSION_COOKIE, roleHome } from "@/lib/session";
+import { SESSION_COOKIE, SESSION_MAX_AGE, hashSessionToken, roleHome } from "@/lib/session";
 import { syncFortunaAccount } from "@/lib/fortuna-auth";
 import type { MemberRole } from "@/lib/supabase/types";
 
-const MAX_AGE = 60 * 60 * 24 * 7; // 7일
-
 export type AuthState = { error?: string; values?: Record<string, string> } | undefined;
 
-async function setSession(memberId: string) {
+// 세션 열기: 무작위 토큰 발급 → DB 에 해시 저장(같은 회원의 다른 세션은 모두 폐기 = 1기기 제한) → 쿠키에 토큰.
+async function openSession(memberId: string) {
+  const token = randomBytes(32).toString("hex");
+  const h = await headers();
+  const ua = h.get("user-agent") ?? "";
+  const ip = (h.get("x-forwarded-for") ?? h.get("x-real-ip") ?? "").split(",")[0].trim();
+
+  const sb = getServerClient();
+  const { error } = await sb.rpc("open_member_session", {
+    p_member: memberId,
+    p_token_hash: hashSessionToken(token),
+    p_user_agent: ua,
+    p_ip: ip,
+  });
+  if (error) throw new Error("세션 생성 실패: " + error.message);
+
   const store = await cookies();
-  store.set(SESSION_COOKIE, memberId, { path: "/", httpOnly: true, sameSite: "lax", maxAge: MAX_AGE });
+  store.set(SESSION_COOKIE, token, { path: "/", httpOnly: true, sameSite: "lax", maxAge: SESSION_MAX_AGE });
 }
 
 // ID(이메일) + 비밀번호 로그인(검증은 DB 함수 member_login 에서 bcrypt 비교). 실패 시 에러 문자열 반환.
@@ -33,7 +47,7 @@ export async function loginByEmail(_prev: AuthState, formData: FormData): Promis
   const { data: m } = await sb.from("members").select("display_name").eq("id", row.id).maybeSingle();
   await syncFortunaAccount({ memberId: row.id, email, password, displayName: m?.display_name ?? email.split("@")[0] });
 
-  await setSession(row.id);
+  await openSession(row.id);
   redirect(roleHome(row.role as MemberRole));
 }
 
@@ -77,12 +91,18 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   const memberId = String(data);
   await syncFortunaAccount({ memberId, email: values.email, password, displayName: values.nickname });
 
-  await setSession(memberId);
+  await openSession(memberId);
   redirect(roleHome("registered"));
 }
 
+// 로그아웃: 현재 세션만 폐기 + 쿠키 삭제.
 export async function logout() {
   const store = await cookies();
+  const token = store.get(SESSION_COOKIE)?.value;
+  if (token) {
+    const sb = getServerClient();
+    await sb.rpc("close_member_session", { p_token_hash: hashSessionToken(token) });
+  }
   store.delete(SESSION_COOKIE);
   redirect("/login");
 }

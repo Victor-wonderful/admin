@@ -11,7 +11,6 @@ import {
   CreditCardIcon,
   CalendarDaysIcon,
   TrophyIcon,
-  ShieldCheckIcon,
   KeyRoundIcon,
   LockIcon,
   BanIcon,
@@ -20,6 +19,16 @@ import {
 
 import { Topbar } from "@/components/shell/topbar";
 import { getMember, getMemberSubscriptions, listReferred } from "@/lib/queries/members";
+import { listMemberSessions, describeDevice } from "@/lib/queries/sessions";
+import { ForceLogoutButton } from "@/components/members/force-logout-button";
+
+// 세션 종료 사유 표기
+const SESSION_END: Record<string, string> = { logout: "로그아웃", other_device: "다른 기기 로그인", expired: "만료", admin: "관리자 종료" };
+const fmtTs = (iso: string) => {
+  const d = new Date(iso);
+  const p = (x: number) => String(x).padStart(2, "0");
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+};
 import { getMarketerLegs, getMajorMinor } from "@/lib/queries/legs";
 import { getMemberRank } from "@/lib/queries/ranks";
 import { getMemberSettlement } from "@/lib/queries/finance";
@@ -102,12 +111,14 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
   const isMarketer = me.role === "marketer";
   const paysSub = me.role !== "registered";
 
-  const [recommender, parent, subs, referred] = await Promise.all([
+  const [recommender, parent, subs, referred, sessions] = await Promise.all([
     me.recommender_id ? getMember(me.recommender_id) : Promise.resolve(null),
     me.parent_id ? getMember(me.parent_id) : Promise.resolve(null),
     getMemberSubscriptions(id),
     listReferred(id),
+    listMemberSessions(id),
   ]);
+  const activeSession = sessions.find((s) => !s.revoked_at) ?? null;
 
   const [legs, mm, rank, settlement] = isMarketer
     ? await Promise.all([getMarketerLegs(id), getMajorMinor(id), getMemberRank(id), getMemberSettlement(id, CYCLE)])
@@ -261,18 +272,41 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
           <SectionCard title="계정 · 보안">
             <div>
               <InfoRow label="계정 상태"><span className="inline-flex items-center gap-1.5 text-green-700"><span className="size-1.5 rounded-full bg-green-700" /> 정상</span></InfoRow>
-              <InfoRow label="2FA">{isMarketer ? "활성" : "미설정"}</InfoRow>
-              <InfoRow label="로그인 방식">이메일 + 비밀번호</InfoRow>
-              <InfoRow label="마지막 접속 IP"><span className="text-text-tertiary">기록 없음</span></InfoRow>
+              <InfoRow label="로그인 방식">이메일 + 비밀번호 · 1기기 제한</InfoRow>
+              <InfoRow label="현재 접속">
+                {activeSession ? (
+                  <span className="inline-flex items-center gap-1.5 text-green-700">
+                    <span className="size-1.5 rounded-full bg-green-700" /> {describeDevice(activeSession.user_agent)} · {activeSession.ip || "IP 없음"}
+                  </span>
+                ) : (
+                  <span className="text-text-tertiary">없음</span>
+                )}
+              </InfoRow>
+              <InfoRow label="마지막 접속">
+                {sessions[0] ? <span>{fmtTs(sessions[0].last_seen_at)}</span> : <span className="text-text-tertiary">기록 없음</span>}
+              </InfoRow>
             </div>
             <div className="mt-3 flex gap-2">
               <button className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-card py-2 text-[12px] font-medium text-text-secondary ring-1 ring-border-strong">
                 <LockIcon className="size-3.5" /> 잠금 해제
               </button>
-              <button className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-card py-2 text-[12px] font-medium text-text-secondary ring-1 ring-border-strong">
-                <ShieldCheckIcon className="size-3.5" /> 강제 로그아웃
-              </button>
+              <ForceLogoutButton memberId={id} activeCount={activeSession ? 1 : 0} />
             </div>
+            {sessions.length > 0 ? (
+              <div className="mt-3 border-t pt-3">
+                <div className="mb-1.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">접속 기록</div>
+                <div className="space-y-1">
+                  {sessions.slice(0, 5).map((s) => (
+                    <div key={s.id} className="flex items-center justify-between gap-2 text-[12px]">
+                      <span className="truncate text-text-primary">{describeDevice(s.user_agent)} <span className="text-text-tertiary">· {s.ip || "IP 없음"}</span></span>
+                      <span className="shrink-0 text-text-tertiary">
+                        {fmtTs(s.created_at)} · {s.revoked_at ? SESSION_END[s.revoke_reason ?? ""] ?? "종료" : <span className="font-semibold text-green-700">접속 중</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </SectionCard>
         </div>
 
