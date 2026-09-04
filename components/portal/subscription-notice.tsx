@@ -36,9 +36,10 @@ export async function SubscriptionNotice({ memberId, role }: { memberId: string;
           <TriangleAlertIcon className={`mt-0.5 size-5 shrink-0 ${membershipDays < 0 ? "text-negative" : "text-warning"}`} />
           <div>
             <div className="text-sm font-bold text-text-primary">
-              {membershipDays < 0 ? `파트너 멤버십이 만료되었습니다 (${annual!.period_end.slice(0, 10)})` : `파트너 멤버십 D-${membershipDays} (${annual!.period_end.slice(0, 10)} 종료)`}
+              {membershipDays < 0 ? `파트너 멤버십이 만료되었습니다 (${annual!.period_end.slice(0, 10)}) · 리워드 지급 정지 중` : `파트너 멤버십 D-${membershipDays} (${annual!.period_end.slice(0, 10)} 종료)`}
             </div>
             <div className="mt-0.5 text-xs text-text-secondary">
+              {membershipDays < 0 ? "만료 기간에는 초대·등급·팀 리워드가 지급되지 않습니다. 갱신하면 다시 지급됩니다. " : "종료 후에는 리워드 지급이 정지됩니다. "}
               갱신 {usd(plans.annual)} · 잔액 {usd(balance)}
               {balance < plans.annual ? ` · ${usd(plans.annual - balance)} 부족 — 먼저 입금하세요` : " · 지금 갱신하면 1년 연장"}
             </div>

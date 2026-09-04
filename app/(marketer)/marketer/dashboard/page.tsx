@@ -19,6 +19,8 @@ import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-requ
 import { getMemberRank } from "@/lib/queries/ranks";
 import { getReferralCode, listReferred, getMember } from "@/lib/queries/members";
 import { SubscriptionNotice } from "@/components/portal/subscription-notice";
+import { getMemberAnnualMembership } from "@/lib/queries/products";
+import { today, daysBetween } from "@/lib/dates";
 import { getMemberWalletData, getMemberSettlement, getMemberCumulativeCommission } from "@/lib/queries/finance";
 import { getMarketerViewerId } from "@/lib/session";
 import { toUid } from "@/lib/uid";
@@ -34,7 +36,7 @@ const CARD = "rounded-[20px] bg-card p-[22px] ring-1 ring-border shadow-[0_2px_1
 
 export default async function MarketerDashboardPage() {
   const ME = await getMarketerViewerId();
-  const [rank, wd, settle, cumulative, code, referred, me] = await Promise.all([
+  const [rank, wd, settle, cumulative, code, referred, me, annual] = await Promise.all([
     getMemberRank(ME),
     getMemberWalletData(ME),
     getMemberSettlement(ME, CYCLE),
@@ -42,9 +44,13 @@ export default async function MarketerDashboardPage() {
     getReferralCode(ME),
     listReferred(ME),
     getMember(ME),
+    getMemberAnnualMembership(ME),
   ]);
 
   const uid = toUid(ME);
+  // 리워드 자격 = 멤버십 유효 + 구독 활성. 만료면 정산·실시간 지급에서 제외된다(is_qualified_marketer).
+  const membershipValid = !!annual && daysBetween(today(), annual.period_end.slice(0, 10)) >= 0;
+  const rewardsActive = membershipValid && (me?.is_active_subscriber ?? false);
   const balance = wd.wallet?.balance_usd ?? 0;
   const monthTotal = settle?.total ?? wd.monthCommission;
   const level = settle?.level ?? 0;
@@ -113,7 +119,10 @@ export default async function MarketerDashboardPage() {
                 <div className="text-[15px] font-bold text-text-primary">내 등급 · 자격</div>
                 <div className="text-xs text-text-secondary">팀 활성 구독자 기준</div>
               </div>
-              <Pill tone="crypto"><TrophyIcon className="size-3" /> {rankLabel}{curRank > 0 ? ` · ${ratePct}%` : ""}</Pill>
+              <div className="flex items-center gap-1.5">
+                <Pill tone={rewardsActive ? "green" : "negative"} dot={rewardsActive}>{rewardsActive ? "리워드 지급 중" : membershipValid ? "리워드 정지 · 구독 만료" : "리워드 정지 · 멤버십 만료"}</Pill>
+                <Pill tone="crypto"><TrophyIcon className="size-3" /> {rankLabel}{curRank > 0 ? ` · ${ratePct}%` : ""}</Pill>
+              </div>
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[12px]">
