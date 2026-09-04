@@ -5,6 +5,7 @@ import * as React from "react";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import type { LedgerEntry } from "@/lib/queries/finance";
+import { toSeoulDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 type TxType = LedgerEntry["tx_type"];
@@ -18,11 +19,7 @@ const META: Record<TxType, { label: string; tone: "green" | "info" | "warning" |
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const signed = (n: number) => (n === 0 || n > 0 ? `+${usd(Math.abs(n))}` : `−${usd(Math.abs(n))}`);
-const fmtDate = (iso: string) => {
-  const d = new Date(iso);
-  const p = (x: number) => String(x).padStart(2, "0");
-  return `${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
-};
+const fmtDate = (iso: string) => toSeoulDateTime(iso); // 서울 기준 MM-DD HH:mm
 
 // 입출금 내역 — 탭으로 유형 필터(전체/입금/리워드/결제/출금). 리워드 탭은 파트너에게만.
 export function LedgerTable({ ledger, showCommission }: { ledger: LedgerEntry[]; showCommission: boolean }) {

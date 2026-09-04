@@ -6,6 +6,7 @@ import { Pill } from "@/components/ui/pill";
 import { NicknameForm, PasswordForm, PayoutAddressForm } from "@/components/profile/profile-forms";
 import type { MemberRow } from "@/lib/supabase/types";
 import { toUid, uidInitials } from "@/lib/uid";
+import { toSeoulDate } from "@/lib/dates";
 
 const ROLE_LABEL = { registered: "등록회원", subscriber: "구독회원", marketer: "파트너" } as const;
 const ROLE_TONE = { registered: "neutral", subscriber: "green", marketer: "crypto" } as const;
@@ -18,7 +19,7 @@ export function ProfileView({ member }: { member: MemberRow }) {
     ["회원 UID", uid],
     ["등급", ROLE_LABEL[member.role]],
     ["초대한 파트너", member.recommender_id ? toUid(member.recommender_id) : "—"],
-    ["가입일", member.joined_at.slice(0, 10)],
+    ["가입일", toSeoulDate(member.joined_at)],
   ];
 
   return (

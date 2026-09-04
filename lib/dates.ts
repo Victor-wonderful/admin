@@ -17,3 +17,15 @@ export function currentCycle(): string {
 export function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86400000);
 }
+
+// timestamptz(ISO) → 서울 기준 YYYY-MM-DD. DB의 UTC 문자열을 그대로 slice 하면 자정 전후로 하루가 밀린다.
+export function toSeoulDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+}
+
+// timestamptz(ISO) → 서울 기준 MM-DD HH:mm
+export function toSeoulDateTime(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: TZ, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date(iso));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
+}

@@ -22,7 +22,7 @@ import { BuyProductButton } from "@/components/orders/buy-product-button";
 import { getMemberWallet } from "@/lib/queries/finance";
 import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
-import { today, daysBetween } from "@/lib/dates";
+import { today, daysBetween, toSeoulDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
@@ -53,8 +53,12 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
   const membershipDays = annual ? daysBetween(TODAY, annual.period_end.slice(0, 10)) : -1;
   const canRenewMembership = role === "marketer" && partnerActive && (!annual || membershipDays <= 30);
 
+  // 현재 이용 기간 진행률(경과일 / 전체 기간)
+  const subProgress = activeSub
+    ? Math.min(100, Math.max(0, Math.round((daysBetween(activeSub.period_start.slice(0, 10), TODAY) / Math.max(1, daysBetween(activeSub.period_start.slice(0, 10), activeSub.period_end.slice(0, 10)))) * 100)))
+    : 0;
   const UPCOMING = activeSub
-    ? [{ name: "포르투나 구독", sub: `월 구독 · ${subNext}`, amount: usd(subPrice), soft: "bg-green-50 text-green-700", prog: 50, bar: "bg-green-600" }]
+    ? [{ name: "포르투나 구독", sub: `월 구독 · ${subNext} 결제 · 기간 ${subProgress}% 경과`, amount: usd(subPrice), soft: "bg-green-50 text-green-700", prog: subProgress, bar: "bg-green-600" }]
     : [];
 
   const ctaClass = "mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md py-2.5 text-[13px] font-bold";
@@ -263,16 +267,16 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
               </Panel>
             ) : null}
             {purchases.length > 0 ? (
-              <Panel title="상품 구매 내역" sub={`건`}>
+              <Panel title="상품 구매 내역" sub={`${purchases.length}건`}>
                 <div>
                   <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
                     <span>구매일</span><span>상품</span><span>이용 기간</span><span className="text-right">금액</span>
                   </div>
                   {purchases.map((r) => (
                     <div key={r.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
-                      <span className="text-text-tertiary tabular-nums">{r.paid_at.slice(0, 10)}</span>
+                      <span className="text-text-tertiary tabular-nums">{toSeoulDate(r.paid_at)}</span>
                       <span className="font-medium text-text-primary">{r.product_name}</span>
-                      <span className="text-xs text-text-secondary tabular-nums">{r.period_start ? ` ~ ` : "일회성"}</span>
+                      <span className="text-xs text-text-secondary tabular-nums">{r.period_start && r.period_end ? `${r.period_start.slice(0, 10)} ~ ${r.period_end.slice(0, 10)}` : "일회성"}</span>
                       <span className="text-right font-semibold tabular-nums text-text-primary">{usd(Number(r.amount_usd))}</span>
                     </div>
                   ))}
@@ -283,14 +287,14 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
         ) : null}
 
         <div id="history" className="scroll-mt-4">
-        <Panel title="결제 내역" sub={`건`}>
+        <Panel title="결제 내역" sub={`${subs.length}건`}>
           <div>
             <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
               <span>결제일</span><span>항목</span><span>금액</span><span className="text-right">상태</span>
             </div>
             {subs.slice(0, 10).map((s) => (
               <div key={s.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
-                <span className="text-text-tertiary tabular-nums">{s.paid_at.slice(0, 10)}</span>
+                <span className="text-text-tertiary tabular-nums">{toSeoulDate(s.paid_at)}</span>
                 <span className="font-medium text-text-primary">{(s.product_id && productName.get(s.product_id)) || "포르투나 구독"}</span>
                 <span className="font-semibold tabular-nums text-text-primary">${Number(s.amount_usd).toFixed(0)}</span>
                 <span className="justify-self-end">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CircleArrowUpIcon, XIcon, ChevronDownIcon, Loader2Icon, CheckCircle2Icon } from "lucide-react";
 
 import { requestWithdrawal } from "@/lib/actions/withdrawals";
+import { useEscapeKey } from "@/hooks/use-escape-key";
 import { cn } from "@/lib/utils";
 
 const inputCls =
@@ -12,9 +13,10 @@ const inputCls =
 const labelCls = "text-xs font-medium text-text-secondary";
 
 const usd = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-const NETWORKS = ["TRC20", "ERC20", "Polygon", "BSC"];
+// 회사 지갑이 받는 체인과 동일(Tron TRC20 / BSC BEP20)
+const NETWORKS = ["TRC20", "BEP20"];
 
-// 마케터 출금 신청 모달 — 잔액 한도(금액+수수료) 검증 후 requestWithdrawal 로 홀드 신청.
+// 출금 신청 모달(전 등급 공용) — 잔액 한도(금액+수수료) 검증 후 requestWithdrawal 로 홀드 신청.
 export function WithdrawalRequestModal({
   memberId,
   balance,
@@ -42,17 +44,15 @@ export function WithdrawalRequestModal({
   const maxAmount = Math.max(0, balance - fee);
   const invalid = !(amt > 0) || !address.trim() || need > balance;
 
-  const reset = () => {
+  const close = React.useCallback(() => {
+    setOpen(false);
     setAmount("");
     setAddress(defaultAddress);
     setNetwork(defaultNetwork);
     setErr(null);
     setDone(false);
-  };
-  const close = () => {
-    setOpen(false);
-    reset();
-  };
+  }, [defaultAddress, defaultNetwork]);
+  useEscapeKey(open, close);
 
   const submit = () =>
     start(async () => {
@@ -71,7 +71,7 @@ export function WithdrawalRequestModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700"
+        className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold whitespace-nowrap text-green-700"
       >
         <CircleArrowUpIcon className="size-[18px]" /> 출금 신청
       </button>

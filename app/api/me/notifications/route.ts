@@ -3,7 +3,7 @@ import { getCurrentMember } from "@/lib/session";
 import { getMemberSubscriptions } from "@/lib/queries/members";
 import { getMemberWalletData } from "@/lib/queries/finance";
 import { getPlanPrices, getMemberAnnualMembership } from "@/lib/queries/products";
-import { today, daysBetween } from "@/lib/dates";
+import { today, daysBetween, toSeoulDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +45,7 @@ export async function GET() {
   for (const r of wd.ledger.slice(0, 5)) {
     const amt = Math.round(Math.abs(r.amount_usd));
     const tone = r.tx_type === "commission" ? "green" : r.tx_type === "deposit" ? "info" : r.tx_type === "withdrawal" ? "warning" : "info";
-    items.push({ id: `tx-${r.ts}-${r.tx_type}`, tone, title: r.desc, sub: `${r.amount_usd >= 0 ? "+" : "−"}$${amt.toLocaleString()} · ${r.ts.slice(0, 10)}`, ts: r.ts });
+    items.push({ id: `tx-${r.ts}-${r.tx_type}`, tone, title: r.desc, sub: `${r.amount_usd >= 0 ? "+" : "−"}$${amt.toLocaleString()} · ${toSeoulDate(r.ts)}`, ts: r.ts });
   }
 
   return NextResponse.json({ items });

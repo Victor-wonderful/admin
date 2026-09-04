@@ -266,6 +266,7 @@ const paymentDesc = (label: string | null | undefined) => {
   const l = (label ?? "").trim();
   if (!l || l === "잔액 차감") return "포르투나 구독 결제";
   if (l.startsWith("구독")) return `포르투나 ${l}`;
+  if (/^(TRC20|BEP20|ERC20|BSC|Polygon)$/i.test(l)) return "포르투나 구독 결제"; // 구 시드: 체인명이 들어간 결제 행
   return l;
 };
 

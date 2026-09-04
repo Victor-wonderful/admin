@@ -27,7 +27,7 @@ import { getMemberWallet } from "@/lib/queries/finance";
 import { requireMember } from "@/lib/session";
 import { FORTUNA_APP_URL } from "@/lib/constants";
 import { toUid } from "@/lib/uid";
-import { today } from "@/lib/dates";
+import { today, toSeoulDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +43,7 @@ export default async function SubscriberDashboardPage() {
   const ME = me.id;
   const [wallet, subs, products] = await Promise.all([getMemberWallet(ME), getMemberSubscriptions(ME), listProducts()]);
   const productName = new Map(products.map((p) => [p.id, p.name]));
-  const { sub: SUB_PRICE } = await getPlanPrices(); // 관리자 상품 카탈로그 가격
+  const { sub: SUB_PRICE, partnerActive } = await getPlanPrices(); // 관리자 상품 카탈로그 가격
 
   const uid = toUid(ME);
   const balance = wallet?.balance_usd ?? 0;
@@ -94,7 +94,7 @@ export default async function SubscriberDashboardPage() {
                   href={FORTUNA_APP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700"
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold whitespace-nowrap text-green-700"
                 >
                   <ExternalLinkIcon className="size-4" /> 포르투나 앱 열기
                 </a>
@@ -103,12 +103,12 @@ export default async function SubscriberDashboardPage() {
                   mode="renew"
                   memberId={ME}
                   amount={SUB_PRICE}
-                  className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700"
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold whitespace-nowrap text-green-700"
                 >
                   <CreditCardIcon className="size-4" /> 구독 갱신 · {usd(SUB_PRICE)}/월
                 </LifecycleButton>
               )}
-              <Link href="/portal/orders" className="inline-flex items-center gap-2 rounded-[10px] bg-white/15 px-5 py-3 text-[15px] font-bold text-white ring-1 ring-white/25">
+              <Link href="/portal/orders" className="inline-flex items-center gap-2 rounded-[10px] bg-white/15 px-5 py-3 text-[15px] font-bold whitespace-nowrap text-white ring-1 ring-white/25">
                 <Settings2Icon className="size-4" /> 구독 관리
               </Link>
             </div>
@@ -171,7 +171,7 @@ export default async function SubscriberDashboardPage() {
             ) : (
               subs.slice(0, 5).map((s) => (
                 <div key={s.id} className="grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
-                  <span className="text-text-tertiary tabular-nums">{s.paid_at.slice(0, 10)}</span>
+                  <span className="text-text-tertiary tabular-nums">{toSeoulDate(s.paid_at)}</span>
                   <span className="font-medium text-text-primary">{(s.product_id && productName.get(s.product_id)) || "포르투나 구독"}</span>
                   <span className="text-xs text-text-secondary tabular-nums">{s.period_start.slice(0, 10)} ~ {s.period_end.slice(0, 10)}</span>
                   <span className="font-semibold tabular-nums text-text-primary">${Number(s.amount_usd).toFixed(0)}</span>
@@ -187,7 +187,8 @@ export default async function SubscriberDashboardPage() {
         {/* Fortuna 앱 기능 바로가기 */}
         <FortunaFeatureTiles title="포르투나 앱에서 이용하기" sub="구독 중 이용할 수 있는 핵심 기능 · 누르면 앱이 새 탭으로 열립니다" />
 
-        {/* 파트너 프로그램 — 절제된 한 줄 안내 */}
+        {/* 파트너 프로그램 — 절제된 한 줄 안내. 멤버십 판매 중(카탈로그)일 때만: 링크 대상 카드가 없으면 노출하지 않는다 */}
+        {partnerActive ? (
         <Link href="/portal/orders#partner" className="flex items-center justify-between gap-3 rounded-lg bg-card px-4 py-3 text-[13px] ring-1 ring-border transition-colors hover:ring-crypto">
           <span className="flex items-center gap-2 text-text-secondary">
             <SparklesIcon className="size-4 text-crypto" />
@@ -195,6 +196,7 @@ export default async function SubscriberDashboardPage() {
           </span>
           <ChevronRightIcon className="size-4 text-text-tertiary" />
         </Link>
+        ) : null}
       </div>
     </>
   );

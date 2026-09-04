@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { XIcon, HashIcon, CopyIcon, CheckIcon, QrCodeIcon, TriangleAlertIcon, Loader2Icon, FlaskConicalIcon } from "lucide-react";
 
 import { chargeWallet } from "@/lib/actions/memberLifecycle";
+import { useEscapeKey } from "@/hooks/use-escape-key";
 import { cn } from "@/lib/utils";
 
 export type DepositNetworkOption = { code: string; label: string; chain: string; address: string | null };
@@ -34,6 +35,10 @@ export function DepositModal({
 
   const net = networks.find((n) => n.code === code) ?? networks[0];
   const address = net?.address ?? null;
+  // 입금 주소 QR — 지갑 앱 카메라로 찍어 주소를 옮겨 적는 실수를 막는다(초대 링크 QR 과 같은 방식)
+  const qr = address ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(address)}` : null;
+  const close = React.useCallback(() => setOpen(false), []);
+  useEscapeKey(open, close);
 
   const copy = async () => {
     if (!address) return;
@@ -100,10 +105,18 @@ export function DepositModal({
                 </div>
               </div>
 
-              {/* 주소 + QR 자리 */}
-              <div className="mx-auto grid size-32 place-items-center rounded-xl bg-surface-muted ring-1 ring-border">
-                <QrCodeIcon className="size-16 text-n-300" />
-              </div>
+              {/* 입금 주소 QR — 주소가 준비된 네트워크에만 표시 */}
+              {qr ? (
+                <div className="mx-auto grid size-36 place-items-center rounded-xl bg-white ring-1 ring-border">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={qr} alt={`${net?.label} 입금 주소 QR`} width={128} height={128} className="rounded-md" />
+                </div>
+              ) : (
+                <div className="mx-auto flex size-36 flex-col items-center justify-center gap-1.5 rounded-xl bg-surface-muted text-center ring-1 ring-border">
+                  <QrCodeIcon className="size-10 text-n-300" />
+                  <span className="px-3 text-[11px] leading-snug text-text-tertiary">주소가 등록되면 QR 이 표시됩니다</span>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">

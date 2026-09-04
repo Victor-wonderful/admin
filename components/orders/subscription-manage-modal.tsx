@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Settings2Icon, XIcon, Loader2Icon, CheckIcon } from "lucide-react";
 
 import { setAutoRenew } from "@/lib/actions/subscriptionSettings";
+import { useEscapeKey } from "@/hooks/use-escape-key";
 import { cn } from "@/lib/utils";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
@@ -30,6 +31,8 @@ export function SubscriptionManageModal({
   const [on, setOn] = React.useState(autoRenew);
   const [pending, start] = React.useTransition();
   const [msg, setMsg] = React.useState<string | null>(null);
+  const close = React.useCallback(() => setOpen(false), []);
+  useEscapeKey(open, close);
 
   const toggle = () =>
     start(async () => {

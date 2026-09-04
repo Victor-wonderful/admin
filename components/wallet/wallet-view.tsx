@@ -93,7 +93,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
             <div className="flex gap-2.5">
               <DepositButton
                 memberId={memberId}
-                className="inline-flex items-center gap-2 rounded-[10px] bg-white px-5 py-3 text-sm font-bold text-green-700"
+                className="inline-flex items-center gap-2 rounded-[10px] bg-white px-5 py-3 text-sm font-bold whitespace-nowrap text-green-700"
               >
                 <PlusIcon className="size-4" /> USDT 입금하기
               </DepositButton>

@@ -80,9 +80,7 @@ export function MemberSidebar({
 
       <SidebarBottomCard>
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-medium text-white/70">
-            {role === "marketer" ? "내 등급" : "내 등급"}
-          </span>
+          <span className="text-[11px] font-medium text-white/70">내 등급</span>
           <span
             className={cn(
               "rounded-md px-2 py-0.5 text-[11px] font-bold",

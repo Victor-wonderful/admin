@@ -76,7 +76,7 @@ export default async function RegisteredDashboardPage() {
               href={FORTUNA_APP_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700"
+              className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold whitespace-nowrap text-green-700"
             >
               <ExternalLinkIcon className="size-[17px]" /> 플랫폼 체험하기
             </a>
