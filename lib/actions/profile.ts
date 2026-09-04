@@ -28,6 +28,30 @@ export async function updateNickname(_prev: ProfileState, formData: FormData): P
   return { ok: true };
 }
 
+// 회원 본인 지갑 주소(출금 목적지 · 입금 보낸 주소 식별). 빈 값은 해제.
+const TRC20_RE = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
+const BEP20_RE = /^0x[0-9a-fA-F]{40}$/;
+
+export async function updatePayoutAddresses(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
+  const me = await getCurrentMember();
+  if (!me) return { error: "로그인이 필요합니다" };
+  const trc20 = String(formData.get("trc20") ?? "").trim();
+  const bep20 = String(formData.get("bep20") ?? "").trim();
+  if (trc20 && !TRC20_RE.test(trc20)) return { error: "Tron(TRC20) 주소 형식이 올바르지 않습니다. T로 시작하는 34자리 주소를 입력하세요" };
+  if (bep20 && !BEP20_RE.test(bep20)) return { error: "BSC(BEP20) 주소 형식이 올바르지 않습니다. 0x로 시작하는 42자리 주소를 입력하세요" };
+
+  const sb = getServerClient();
+  const { error } = await sb
+    .from("members")
+    .update({ payout_address_trc20: trc20 || null, payout_address_bep20: bep20 || null })
+    .eq("id", me.id);
+  if (error) return { error: "지갑 주소 저장에 실패했습니다" };
+  revalidateProfile();
+  revalidatePath("/portal/wallet");
+  revalidatePath("/marketer/wallet");
+  return { ok: true };
+}
+
 const PW_ERRORS: Record<string, string> = {
   PASSWORD_TOO_SHORT: "새 비밀번호는 8자 이상이어야 합니다",
   CURRENT_PASSWORD_WRONG: "현재 비밀번호가 올바르지 않습니다",

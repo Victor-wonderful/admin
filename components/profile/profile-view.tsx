@@ -1,9 +1,9 @@
-import { UserRoundIcon, ShieldCheckIcon } from "lucide-react";
+import { UserRoundIcon, ShieldCheckIcon, WalletIcon } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
-import { NicknameForm, PasswordForm } from "@/components/profile/profile-forms";
+import { NicknameForm, PasswordForm, PayoutAddressForm } from "@/components/profile/profile-forms";
 import type { MemberRow } from "@/lib/supabase/types";
 import { toUid, uidInitials } from "@/lib/uid";
 
@@ -60,6 +60,17 @@ export function ProfileView({ member }: { member: MemberRow }) {
             </div>
           </Panel>
         </div>
+
+        <Panel title="내 지갑 주소" sub="출금을 받을 본인 지갑 주소 · 입금 시 이 주소에서 보내면 자동으로 내 잔액에 반영됩니다">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-info-soft text-info">
+              <WalletIcon className="size-5" />
+            </span>
+            <div className="max-w-[520px] flex-1">
+              <PayoutAddressForm trc20={member.payout_address_trc20 ?? ""} bep20={member.payout_address_bep20 ?? ""} />
+            </div>
+          </div>
+        </Panel>
 
         <Panel title="비밀번호 변경" sub="현재 비밀번호 확인 후 8자 이상의 새 비밀번호로 변경">
           <div className="flex items-start gap-3">

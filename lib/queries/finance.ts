@@ -240,9 +240,9 @@ export interface LedgerEntry {
 export interface MemberWalletData {
   wallet: MemberWallet | null;
   monthCommission: number; // 당월 수당 적립
-  monthDeposit: number; // 당월 충전
+  monthDeposit: number; // 당월 입금
   monthPayment: number; // 당월 결제 차감
-  totalDeposit: number; // 누적 충전 (잔액 구성용)
+  totalDeposit: number; // 누적 입금 (잔액 구성용)
   ledger: LedgerEntry[];
 }
 
@@ -296,7 +296,7 @@ export async function getMemberWalletData(memberId: string): Promise<MemberWalle
     if (r.tx_type === "deposit") {
       totalDeposit += amt;
       if (inMonth) monthDeposit += amt;
-      ledger.push({ ts: r.created_at, tx_type: "deposit", amount_usd: amt, network: r.network, desc: "USDT 입금 (충전)", status: r.status });
+      ledger.push({ ts: r.created_at, tx_type: "deposit", amount_usd: amt, network: r.network, desc: "USDT 입금", status: r.status });
     } else {
       if (inMonth) monthPayment += amt;
       ledger.push({ ts: r.created_at, tx_type: "payment", amount_usd: -amt, network: "잔액 차감", desc: "포르투나 구독 결제", status: r.status });

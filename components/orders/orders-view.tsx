@@ -4,18 +4,15 @@ import {
   Settings2Icon,
   CalendarClockIcon,
   WalletIcon,
-  HashIcon,
-  CopyIcon,
   CircleCheckIcon,
-  ArrowUpRightIcon,
   CreditCardIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
-import { DepositModal } from "@/components/wallet/deposit-modal";
-import { LifecycleButton, ChargeButton } from "@/components/portal/lifecycle-actions";
+import { DepositButton } from "@/components/wallet/deposit-button";
+import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
 import { getMemberWallet } from "@/lib/queries/finance";
 import type { MemberRole } from "@/lib/supabase/types";
@@ -28,7 +25,7 @@ const ANNUAL = 200;
 // 데모 기준일(정산 사이클과 동일).
 const TODAY = "2026-06-15";
 
-// 구독·주문 — 마케터/구독회원/등록회원 공용. 등급별로 두 번째 카드(연회비/승급/구독 시작)가 달라진다.
+// 구독·주문 — 마케터/구독회원/등록회원 공용. 두 번째 카드(연회비)는 마케터에게만, 등록회원 카드1 에는 구독 시작 버튼.
 export async function OrdersView({ memberId, role }: { memberId: string; role: MemberRole }) {
   const [subs, products, wallet] = await Promise.all([
     getMemberSubscriptions(memberId),
@@ -43,7 +40,6 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
   const subNext = (activeSub ?? latestSub)?.period_end?.slice(0, 10) ?? "—";
   const balance = wallet?.balance_usd ?? 0;
   const subPrice = activeSub ? Number(activeSub.amount_usd) : SUB_PRICE;
-  const address = wallet?.deposit_address ?? "—";
 
   const UPCOMING = activeSub
     ? [{ name: "포르투나 구독", sub: `월 구독 · ${subNext}`, amount: usd(subPrice), soft: "bg-green-50 text-green-700", prog: 50, bar: "bg-green-600" }]
@@ -56,7 +52,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
       <Topbar title="구독·주문" sub="내 구독 · 결제 내역" uid={toUid(memberId)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
-        <div className={cn("grid gap-4", role !== "registered" && "lg:grid-cols-2")}>
+        <div className={cn("grid gap-4", role === "marketer" && "lg:grid-cols-2")}>
           {/* 카드 1: 포르투나 구독 (전 등급) */}
           <Panel>
             <div className="flex items-center justify-between">
@@ -94,8 +90,8 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
             )}
           </Panel>
 
-          {/* 카드 2: 등급별 — 마케터: 연회비 / 구독회원: 마케터 승급 / 등록회원: 없음(마케터 관련 노출 안 함) */}
-          {role === "registered" ? null : role === "marketer" ? (
+          {/* 카드 2: 마케터 연회비 — 마케터에게만. 등록·구독회원 화면에는 마케터 관련 요소를 노출하지 않는다. */}
+          {role === "marketer" ? (
             <Panel>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -125,46 +121,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 <Settings2Icon className="size-4" /> 갱신 관리
               </button>
             </Panel>
-          ) : (
-            <Panel>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-[42px] place-items-center rounded-[12px] bg-crypto-soft text-crypto">
-                    <BadgeCheckIcon className="size-[22px]" />
-                  </span>
-                  <div>
-                    <div className="text-[15px] font-semibold text-text-primary">
-                      마케터 승급
-                    </div>
-                    <div className="text-xs text-text-secondary">연회비 결제 → 추천 수당 자격 · 계보도·레퍼럴 해제</div>
-                  </div>
-                </div>
-                <Pill tone="crypto">승급</Pill>
-              </div>
-              <div className="mt-3 flex items-end gap-1">
-                <span className="text-2xl font-bold text-text-primary">{usd(ANNUAL)}</span>
-                <span className="pb-1 text-xs font-medium text-text-tertiary">
-                  / 년 · USDT
-                </span>
-              </div>
-              <div className="mt-3">
-                {[["추천 코드", "승급 시 발급"], ["수당 3종", "직추 · 직급 · 공유"]].map(([k, v]) => (
-                  <div key={k} className="flex items-center justify-between border-b py-2.5 text-[13px] last:border-0">
-                    <span className="text-text-secondary">{k}</span>
-                    <span className="font-semibold text-text-primary">{v}</span>
-                  </div>
-                ))}
-              </div>
-              <LifecycleButton
-                mode="upgrade"
-                memberId={memberId}
-                amount={ANNUAL}
-                className={cn(ctaClass, "w-full bg-crypto text-white")}
-              >
-                <ArrowUpRightIcon className="size-4" /> 마케터 승급 · {usd(ANNUAL)}
-              </LifecycleButton>
-            </Panel>
-          )}
+          ) : null}
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_412px]">
@@ -205,21 +162,12 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                   <WalletIcon className="size-5" />
                 </span>
               </div>
-              <div className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2.5 ring-1 ring-border">
-                <HashIcon className="size-3 text-text-tertiary" />
-                <span className="flex-1 truncate text-xs font-medium text-text-primary">{address}</span>
-                <CopyIcon className="size-3 text-text-tertiary" />
-              </div>
               <div className="flex items-center gap-2 rounded-md bg-green-50 px-3 py-2.5 text-xs font-medium text-green-700">
                 <CircleCheckIcon className="size-4" /> {activeSub ? `다음 결제 ${usd(subPrice)} · 내 지갑 잔액에서 차감` : `구독료 ${usd(SUB_PRICE)} · 내 지갑 잔액에서 차감`}
               </div>
-              {role === "marketer" ? (
-                <DepositModal address={wallet?.deposit_address ?? ""} network={wallet?.network ?? "TRC20"} />
-              ) : (
-                <ChargeButton memberId={memberId} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand py-2.5 text-[13px] font-bold text-white">
-                  <WalletIcon className="size-4" /> USDT 충전하기
-                </ChargeButton>
-              )}
+              <DepositButton memberId={memberId} className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand py-2.5 text-[13px] font-bold text-white">
+                <WalletIcon className="size-4" /> USDT 입금하기
+              </DepositButton>
             </div>
           </Panel>
         </div>

@@ -4,18 +4,20 @@ import {
   ArrowDownToLineIcon,
   ShoppingCartIcon,
   HashIcon,
-  CopyIcon,
   PlusIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
+import Link from "next/link";
 
 import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-request-modal";
-import { DepositModal } from "@/components/wallet/deposit-modal";
-import { ChargeButton } from "@/components/portal/lifecycle-actions";
+import { DepositButton } from "@/components/wallet/deposit-button";
+import { getDepositNetworks } from "@/lib/deposit-config";
 import { getMemberWalletData, type LedgerEntry } from "@/lib/queries/finance";
+import { getMember } from "@/lib/queries/members";
 import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
 import { cn } from "@/lib/utils";
@@ -23,7 +25,7 @@ import { cn } from "@/lib/utils";
 // 수당 적립 추이는 일별 이력 데이터가 없어 정적(예시). 마케터에게만 표시.
 const ACCRUAL = [44, 58, 52, 70, 64, 82, 76, 60, 90, 84, 102, 96, 118, 140];
 
-const TABS = ["전체", "충전", "수당", "결제", "출금"];
+const TABS = ["전체", "입금", "수당", "결제", "출금"];
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 // -0 방지: 0 이면 항상 "+$0".
@@ -31,7 +33,7 @@ const signed = (n: number) => (n === 0 || n > 0 ? `+${usd(Math.abs(n))}` : `−$
 
 const LEDGER_META: Record<LedgerEntry["tx_type"], { label: string; tone: "green" | "info" | "warning" | "neutral" }> = {
   commission: { label: "수당", tone: "green" },
-  deposit: { label: "충전", tone: "info" },
+  deposit: { label: "입금", tone: "info" },
   payment: { label: "결제", tone: "warning" },
   withdrawal: { label: "출금", tone: "neutral" },
 };
@@ -43,14 +45,21 @@ const fmtDate = (iso: string) => {
 };
 
 // 내 지갑 — 마케터/구독회원/등록회원 공용. 수당 관련 요소는 마케터에게만.
+// 입금: 회사 입금 주소(Tron/BSC) 안내. 출금: 회원이 프로필에 등록한 본인 지갑 주소로.
 export async function WalletView({ memberId, role }: { memberId: string; role: MemberRole }) {
   const isMarketer = role === "marketer";
-  const { wallet, monthCommission, monthDeposit, monthPayment, totalDeposit, ledger } =
-    await getMemberWalletData(memberId);
+  const [{ wallet, monthCommission, monthDeposit, monthPayment, totalDeposit, ledger }, member] = await Promise.all([
+    getMemberWalletData(memberId),
+    getMember(memberId),
+  ]);
+  const networks = getDepositNetworks();
+  const profileHref = isMarketer ? "/marketer/profile" : "/portal/profile";
 
   const balance = wallet?.balance_usd ?? 0;
-  const address = wallet?.deposit_address ?? "—";
-  const network = wallet?.network ?? "TRC20";
+  const payoutTrc20 = member?.payout_address_trc20 ?? null;
+  const payoutBep20 = member?.payout_address_bep20 ?? null;
+  const payout = payoutTrc20 ? { address: payoutTrc20, network: "TRC20" } : payoutBep20 ? { address: payoutBep20, network: "BEP20" } : null;
+
   const chargedPart = Math.min(totalDeposit, balance);
   const accruedPart = Math.max(balance - chargedPart, 0);
   const visibleLedger = isMarketer ? ledger : ledger.filter((r) => r.tx_type !== "commission");
@@ -60,21 +69,21 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
     ? [
         { icon: WalletIcon, tone: "green" as const, label: "사용 가능 잔액", value: usd(balance) },
         { icon: TrendingUpIcon, tone: "green" as const, label: "당월 수당 적립", value: signed(monthCommission) },
-        { icon: ArrowDownToLineIcon, tone: "info" as const, label: "당월 충전", value: signed(monthDeposit) },
+        { icon: ArrowDownToLineIcon, tone: "info" as const, label: "당월 입금", value: signed(monthDeposit) },
         { icon: ShoppingCartIcon, tone: "warning" as const, label: "당월 결제 차감", value: signed(-monthPayment) },
       ]
     : [
         { icon: WalletIcon, tone: "green" as const, label: "사용 가능 잔액", value: usd(balance) },
-        { icon: ArrowDownToLineIcon, tone: "info" as const, label: "당월 충전", value: signed(monthDeposit) },
+        { icon: ArrowDownToLineIcon, tone: "info" as const, label: "당월 입금", value: signed(monthDeposit) },
         { icon: ShoppingCartIcon, tone: "warning" as const, label: "당월 결제 차감", value: signed(-monthPayment) },
-        { icon: TrendingUpIcon, tone: "info" as const, label: "누적 충전", value: usd(totalDeposit) },
+        { icon: TrendingUpIcon, tone: "info" as const, label: "누적 입금", value: usd(totalDeposit) },
       ];
 
   return (
     <>
       <Topbar
         title="내 지갑"
-        sub={isMarketer ? "충전 · 수당 · 결제 · 출금 통합 지갑" : "충전 · 결제 · 출금 지갑"}
+        sub={isMarketer ? "입금 · 수당 · 결제 · 출금 통합 지갑" : "입금 · 결제 · 출금 지갑"}
         uid={toUid(memberId)}
       />
 
@@ -85,31 +94,33 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
             <div className="mt-1 text-[42px] leading-none font-bold tabular-nums">
               {usd(balance)} <span className="text-base font-semibold text-white/80">USDT</span>
             </div>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium">
-              <HashIcon className="size-3" /> 출금 주소 · {address} <CopyIcon className="size-3" />
-            </div>
+            {payout ? (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium">
+                <HashIcon className="size-3" /> 출금 주소 · {payout.network} · {payout.address}
+              </div>
+            ) : (
+              <Link href={profileHref} className="mt-3 inline-flex items-center gap-2 rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25">
+                <TriangleAlertIcon className="size-3" /> 출금 주소 미등록 · 프로필에서 내 지갑 주소를 등록하세요
+              </Link>
+            )}
           </div>
           <div className="flex flex-col items-end gap-2.5">
             <div className="flex gap-2.5">
-              {isMarketer ? (
-                <DepositModal address={address} network={network} />
-              ) : (
-                <ChargeButton
-                  memberId={memberId}
-                  className="inline-flex items-center gap-2 rounded-[10px] bg-white px-5 py-3 text-sm font-bold text-green-700"
-                >
-                  <PlusIcon className="size-4" /> USDT 충전하기
-                </ChargeButton>
-              )}
+              <DepositButton
+                memberId={memberId}
+                className="inline-flex items-center gap-2 rounded-[10px] bg-white px-5 py-3 text-sm font-bold text-green-700"
+              >
+                <PlusIcon className="size-4" /> USDT 입금하기
+              </DepositButton>
               <WithdrawalRequestModal
                 memberId={memberId}
                 balance={balance}
-                defaultAddress={address === "—" ? "" : address}
-                defaultNetwork={network}
+                defaultAddress={payout?.address ?? ""}
+                defaultNetwork={payout?.network ?? "TRC20"}
               />
             </div>
             <span className="text-xs font-medium text-white/80">
-              {isMarketer ? `당월 수당 ${signed(monthCommission)} · ` : ""}당월 충전 {signed(monthDeposit)}
+              {isMarketer ? `당월 수당 ${signed(monthCommission)} · ` : ""}당월 입금 {signed(monthDeposit)}
             </span>
           </div>
         </div>
@@ -133,18 +144,23 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
             </Panel>
           ) : null}
 
-          <Panel title="충전 & 잔액 구성" sub="USDT 입금으로 잔액 충전">
+          <Panel title="입금 주소 & 잔액 구성" sub="회사 입금 주소로 USDT 를 보내면 확인 후 잔액에 반영">
             <div className="space-y-3.5">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-text-secondary">충전 입금 주소</span>
-                  <Pill tone="green" dot>USDT · {network}</Pill>
-                </div>
-                <div className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2.5 ring-1 ring-border">
-                  <HashIcon className="size-3 text-text-tertiary" />
-                  <span className="flex-1 text-xs font-medium text-text-primary">{address}</span>
-                  <CopyIcon className="size-3 text-text-tertiary" />
-                </div>
+                {networks.map((n) => (
+                  <div key={n.code} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-text-secondary">{n.label}</span>
+                      <Pill tone="green" dot>USDT · {n.code}</Pill>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2.5 ring-1 ring-border">
+                      <HashIcon className="size-3 shrink-0 text-text-tertiary" />
+                      <span className={cn("flex-1 truncate font-mono text-xs", n.address ? "text-text-primary" : "text-text-tertiary")}>
+                        {n.address ?? "입금 주소 준비 중"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
               <div className="space-y-3 border-t pt-3.5">
                 <div className="text-xs font-semibold text-text-secondary">잔액 구성</div>
@@ -155,7 +171,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
                   </div>
                 ) : null}
                 <div className="flex items-center justify-between text-[13px]">
-                  <span className="text-text-secondary">충전분</span>
+                  <span className="text-text-secondary">입금분</span>
                   <span className="font-bold text-text-primary">{usd(chargedPart)}</span>
                 </div>
                 <div className="flex items-center justify-between border-t pt-2.5 text-[13px]">
