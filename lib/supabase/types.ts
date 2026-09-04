@@ -52,6 +52,20 @@ export interface SubscriptionRow {
   created_at: string;
 }
 
+export interface ProductPurchaseRow {
+  id: string;
+  member_id: string;
+  product_id: string;
+  product_name: string;
+  amount_usd: number;
+  billing: "monthly" | "yearly" | "event";
+  period_start: string | null;
+  period_end: string | null;
+  paid_at: string;
+  status: string;
+  created_at: string;
+}
+
 export interface AnnualMembershipRow {
   id: string;
   member_id: string;

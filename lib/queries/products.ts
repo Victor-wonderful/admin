@@ -1,6 +1,6 @@
 import "server-only";
 import { getServerClient } from "@/lib/supabase/server";
-import type { ProductRow } from "@/lib/supabase/types";
+import type { ProductRow, ProductPurchaseRow } from "@/lib/supabase/types";
 
 // 플랜 코드(고정): 구독 = bot_sub, 파트너 멤버십(연회비) = annual_fee
 export const PLAN_CODES = { subscription: "bot_sub", partner: "annual_fee" } as const;
@@ -12,6 +12,34 @@ export async function listAllProducts(): Promise<ProductRow[]> {
   const { data, error } = await sb.from("products").select("*").order("sort_order").order("code");
   if (error) throw error;
   return (data ?? []) as ProductRow[];
+}
+
+// 회원 스토어 — 판매 중 + 가격 확정(price_usd 있음) + 구독·멤버십(전용 결제) 제외. 가격이 없으면 회원에게 노출하지 않는다.
+export async function listStoreProducts(): Promise<ProductRow[]> {
+  const sb = getServerClient();
+  const { data, error } = await sb
+    .from("products")
+    .select("*")
+    .eq("is_active", true)
+    .not("price_usd", "is", null)
+    .not("code", "in", `(${PLAN_CODES.subscription},${PLAN_CODES.partner})`)
+    .order("sort_order")
+    .order("code");
+  if (error) throw error;
+  return (data ?? []) as ProductRow[];
+}
+
+// 회원 상품 구매 이력(최신순)
+export async function listMemberPurchases(memberId: string, limit = 20): Promise<ProductPurchaseRow[]> {
+  const sb = getServerClient();
+  const { data, error } = await sb
+    .from("product_purchases")
+    .select("*")
+    .eq("member_id", memberId)
+    .order("paid_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as ProductPurchaseRow[];
 }
 
 // 회원 화면 가격 — 상품 테이블의 현재가. 상품이 없거나 비활성이면 기본값.

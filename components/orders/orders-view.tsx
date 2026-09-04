@@ -6,6 +6,7 @@ import {
   WalletIcon,
   CircleCheckIcon,
   CreditCardIcon,
+  PackageIcon,
   SparklesIcon,
 } from "lucide-react";
 
@@ -15,7 +16,8 @@ import { Pill } from "@/components/ui/pill";
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
-import { getPlanPrices } from "@/lib/queries/products";
+import { getPlanPrices, listStoreProducts, listMemberPurchases } from "@/lib/queries/products";
+import { BuyProductButton } from "@/components/orders/buy-product-button";
 import { getMemberWallet } from "@/lib/queries/finance";
 import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
@@ -28,10 +30,12 @@ const TODAY = today();
 
 // 구독·주문 — 마케터/구독회원/등록회원 공용. 두 번째 카드(연회비)는 마케터에게만, 등록회원 카드1 에는 구독 시작 버튼.
 export async function OrdersView({ memberId, role }: { memberId: string; role: MemberRole }) {
-  const [subs, products, wallet] = await Promise.all([
+  const [subs, products, wallet, store, purchases] = await Promise.all([
     getMemberSubscriptions(memberId),
     listProducts(),
     getMemberWallet(memberId),
+    listStoreProducts(),
+    listMemberPurchases(memberId),
   ]);
   const productName = new Map(products.map((p) => [p.id, p.name]));
   const { sub: SUB_PRICE, annual: ANNUAL, subActive, partnerActive } = await getPlanPrices(); // 관리자 상품 카탈로그 가격
@@ -211,6 +215,54 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
             </div>
           </Panel>
         </div>
+
+        {/* 상품 스토어 — 관리자 카탈로그(판매 중, 구독·멤버십 제외). 정산 연결은 다음 단계. */}
+        {store.length > 0 || purchases.length > 0 ? (
+          <div id="store" className="scroll-mt-4 space-y-4">
+            {store.length > 0 ? (
+              <Panel title="상품" sub="내 지갑 잔액으로 결제 · 구매 즉시 이용 안내">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {store.map((p) => (
+                    <div key={p.id} className="flex flex-col rounded-lg bg-card p-4 ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]">
+                      <div className="flex items-start gap-3">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-info-soft text-info"><PackageIcon className="size-[19px]" /></span>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-bold text-text-primary">{p.name}</div>
+                          <div className="text-[11px] text-text-tertiary">{p.billing === "monthly" ? "30일 이용" : p.billing === "yearly" ? "1년 이용" : "일회성"}</div>
+                        </div>
+                      </div>
+                      {p.description ? <p className="mt-2 text-xs leading-relaxed text-text-secondary">{p.description}</p> : null}
+                      <div className="mt-3 flex items-end gap-1">
+                        <span className="text-xl font-bold text-text-primary">{usd(Number(p.price_usd))}</span>
+                        <span className="pb-0.5 text-xs text-text-tertiary">USDT</span>
+                      </div>
+                      <div className="mt-3">
+                        <BuyProductButton productId={p.id} name={p.name} price={Number(p.price_usd)} className="w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            ) : null}
+            {purchases.length > 0 ? (
+              <Panel title="상품 구매 내역" sub={`건`}>
+                <div>
+                  <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
+                    <span>구매일</span><span>상품</span><span>이용 기간</span><span className="text-right">금액</span>
+                  </div>
+                  {purchases.map((r) => (
+                    <div key={r.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
+                      <span className="text-text-tertiary tabular-nums">{r.paid_at.slice(0, 10)}</span>
+                      <span className="font-medium text-text-primary">{r.product_name}</span>
+                      <span className="text-xs text-text-secondary tabular-nums">{r.period_start ? ` ~ ` : "일회성"}</span>
+                      <span className="text-right font-semibold tabular-nums text-text-primary">{usd(Number(r.amount_usd))}</span>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            ) : null}
+          </div>
+        ) : null}
 
         <div id="history" className="scroll-mt-4">
         <Panel title="결제 내역" sub={`건`}>

@@ -62,7 +62,7 @@ export default async function AdminProductsPage() {
                 </div>
                 <div className="mt-3 flex items-center gap-2">
                   <span className="text-[15px] font-bold text-text-primary">{p.name}</span>
-                  {!p.is_active ? <Pill tone="neutral">판매 중지</Pill> : null}
+                  {!p.is_active ? <Pill tone="neutral">판매 중지</Pill> : p.price_usd == null && !plan ? <Pill tone="warning">회원 미노출 · 가격 없음</Pill> : null}
                 </div>
                 <div className="font-mono text-[11px] text-text-tertiary">{p.code}</div>
                 {plan ? <div className="mt-1 text-[11px] font-medium text-green-700">{plan} · 회원 화면 가격 연동</div> : null}
@@ -87,7 +87,7 @@ export default async function AdminProductsPage() {
           <InfoIcon className="mt-0.5 size-4 shrink-0" />
           <div>
             <b>bot_sub</b>(회원 구독)과 <b>annual_fee</b>(파트너 멤버십) 가격은 등록·구독회원 화면의 결제 금액과 자동 갱신 금액에 그대로 쓰입니다.
-            판매 중지하면 회원 화면에서 해당 결제 버튼이 사라집니다. 그 외 상품은 카탈로그에만 등록되며, 회원 구매 화면과 정산 연결은 다음 단계입니다.
+            그 외 상품은 <b>판매 활성 + 가격 입력</b>이 모두 된 것만 회원 구독·주문 페이지의 &ldquo;상품&rdquo; 섹션에 노출되어 잔액으로 구매할 수 있습니다. 가격이 비어 있거나 판매 중지면 회원에게 보이지 않습니다. 상품 매출의 수당·카운팅 연결은 다음 단계입니다.
           </div>
         </div>
       </div>

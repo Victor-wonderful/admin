@@ -261,6 +261,14 @@ export async function getMemberWallet(memberId: string): Promise<MemberWallet | 
     : null;
 }
 
+// 결제 원장 설명 — wallet_transactions.network 에 결제 종류 라벨이 들어간다(구독 결제/구독 자동갱신/구독 갱신/○○ 구매).
+const paymentDesc = (label: string | null | undefined) => {
+  const l = (label ?? "").trim();
+  if (!l || l === "잔액 차감") return "포르투나 구독 결제";
+  if (l.startsWith("구독")) return `포르투나 `;
+  return l;
+};
+
 // 통합 원장 = wallet_transactions(입금/결제) + withdrawals(출금) + settlements(수당) 병합.
 // 잔액·주소는 wallets, 수당은 정산 테이블에서 파생(시드가 commission 거래를 안 만들어서).
 export async function getMemberWalletData(memberId: string): Promise<MemberWalletData> {
@@ -300,7 +308,7 @@ export async function getMemberWalletData(memberId: string): Promise<MemberWalle
       ledger.push({ ts: r.created_at, tx_type: "deposit", amount_usd: amt, network: r.network, desc: "USDT 입금", status: r.status });
     } else {
       if (inMonth) monthPayment += amt;
-      ledger.push({ ts: r.created_at, tx_type: "payment", amount_usd: -amt, network: "잔액 차감", desc: "포르투나 구독 결제", status: r.status });
+      ledger.push({ ts: r.created_at, tx_type: "payment", amount_usd: -amt, network: "잔액 차감", desc: paymentDesc(r.network), status: r.status });
     }
   }
 
