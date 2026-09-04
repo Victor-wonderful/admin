@@ -172,7 +172,8 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
           </Panel>
         </div>
 
-        <Panel title="결제 내역" sub={`${subs.length}건`}>
+        <div id="history" className="scroll-mt-4">
+        <Panel title="결제 내역" sub={`건`}>
           <div>
             <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
               <span>결제일</span><span>항목</span><span>금액</span><span className="text-right">상태</span>
@@ -192,6 +193,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
             ) : null}
           </div>
         </Panel>
+        </div>
       </div>
     </>
   );
