@@ -52,7 +52,7 @@ export default async function RegisteredDashboardPage() {
   const steps = [
     { label: "회원가입", sub: "추천 코드 가입", icon: CheckIcon, state: "done" as const },
     { label: "지갑 충전", sub: balance > 0 ? `${usd(balance)} 보유` : "USDT 입금", icon: WalletIcon, state: balance > 0 ? "done" : "active" },
-    { label: "구독 결제", sub: `Alpha Engine ${usd(SUB_PRICE)}`, icon: CreditCardIcon, state: subscribed ? "done" : canSubscribe ? "active" : "pending" },
+    { label: "구독 결제", sub: `포르투나 ${usd(SUB_PRICE)}`, icon: CreditCardIcon, state: subscribed ? "done" : canSubscribe ? "active" : "pending" },
     { label: "엔진 가동", sub: "자동매매 시작", icon: CpuIcon, state: subscribed ? "active" : "pending" },
   ] as const;
   const doneCount = steps.filter((s) => s.state === "done").length;
@@ -124,7 +124,7 @@ export default async function RegisteredDashboardPage() {
                 <CpuIcon className="size-6" />
               </div>
               <div className="flex-1">
-                <div className="text-base font-bold text-text-primary">Alpha Engine 구독</div>
+                <div className="text-base font-bold text-text-primary">포르투나 구독</div>
                 <div className="text-xs text-text-secondary">월 구독 · 자동 갱신 · 언제든 해지</div>
               </div>
               <div className="text-right">

@@ -192,14 +192,14 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
           </div>
         </section>
 
-        {/* Alpha Engine 구독 상태 */}
+        {/* 포르투나 구독 상태 */}
         {paysSub ? (
           <section className={cn(CARD, "flex flex-wrap items-center justify-between gap-4")}>
             <div className="flex items-center gap-3.5">
               <span className="grid size-11 place-items-center rounded-[12px] bg-crypto-soft text-crypto"><CpuIcon className="size-5" /></span>
               <div>
                 <div className="flex items-center gap-2 text-[15px] font-semibold text-text-primary">
-                  Alpha Engine 구독
+                  포르투나 구독
                   <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold", me.is_active_subscriber ? "bg-green-50 text-green-700" : "bg-warning-soft text-warning")}>
                     <span className={cn("size-1.5 rounded-full", me.is_active_subscriber ? "bg-green-500" : "bg-warning")} />
                     {me.is_active_subscriber ? "엔진 가동 중" : "정지"}
@@ -356,7 +356,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
                 {subs.slice(0, 12).map((s) => (
                   <div key={s.id} className="grid grid-cols-[1.4fr_0.8fr_0.8fr_auto] items-center gap-3 border-b py-2.5 text-sm last:border-0">
                     <span className="tabular-nums text-text-secondary">{s.period_start} ~ {s.period_end}</span>
-                    <span className="text-text-secondary">Alpha Engine</span>
+                    <span className="text-text-secondary">포르투나</span>
                     <span className="text-right font-semibold tabular-nums text-text-primary">{usd(Number(s.amount_usd))}</span>
                     <span className="text-right">
                       <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-semibold", s.status === "active" ? "bg-green-50 text-green-700" : "bg-n-100 text-n-500")}>{s.status === "active" ? "활성" : "만료"}</span>

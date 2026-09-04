@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "포르투나",
-  description: "포르투나 · Alpha Engine 구독 보상 플랫폼",
+  description: "포르투나 · 구독 보상 플랫폼",
 };
 
 export default function RootLayout({

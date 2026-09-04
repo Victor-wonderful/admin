@@ -75,7 +75,7 @@ export default async function SubscriberDashboardPage() {
             <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
               <span className="size-2 rounded-full bg-white" /> {activeSub ? "엔진 가동 중" : "구독 만료"}
             </span>
-            <h2 className="text-[23px] font-bold">Alpha Engine {activeSub ? "가동 중" : "정지"}</h2>
+            <h2 className="text-[23px] font-bold">포르투나 {activeSub ? "가동 중" : "정지"}</h2>
             <p className="text-sm text-white/80">
               구독 {subs.length}건 · 다음 결제 {nextDate} · 잔액 {usd(balance)}
             </p>

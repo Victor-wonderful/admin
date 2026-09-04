@@ -77,7 +77,7 @@ export function AddProductModal() {
             {/* 본문 */}
             <div className="space-y-4 px-6 py-5">
               <Field label="상품명">
-                <input className={inputCls} placeholder="예: Alpha Engine Pro" />
+                <input className={inputCls} placeholder="예: 포르투나 Pro" />
               </Field>
 
               <div className="flex gap-3">

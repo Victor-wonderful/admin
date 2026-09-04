@@ -43,7 +43,7 @@ const KPIS: {
   { icon: CalendarCheckIcon, badge: "bg-green-50 text-green-700", label: "당일 매출", value: "$8,940", delta: { icon: ArrowUpRightIcon, text: "42건 · +6.2%", tone: "positive" } },
   { icon: CircleArrowDownIcon, badge: "bg-green-50 text-green-700", label: "당월 매출", value: "$184,260", delta: { icon: ArrowUpRightIcon, text: "12.4% vs 전월", tone: "positive" } },
   { icon: SigmaIcon, badge: "bg-feature text-n-0", label: "누적 매출", value: "$2.42M", delta: { icon: CalendarRangeIcon, text: "서비스 개시 이후", tone: "tertiary" } },
-  { icon: BadgeCheckIcon, badge: "bg-green-50 text-green-600", label: "활성 구독", value: "856건", delta: { icon: CpuIcon, text: "Alpha Engine 활성", tone: "tertiary" } },
+  { icon: BadgeCheckIcon, badge: "bg-green-50 text-green-600", label: "활성 구독", value: "856건", delta: { icon: CpuIcon, text: "포르투나 활성", tone: "tertiary" } },
   { icon: TimerIcon, badge: "bg-warning text-n-0", warning: true, label: "갱신 임박", value: "47건", delta: { icon: ArrowRightIcon, text: "엔진 39 · 연회비 8", tone: "accent" } },
   { icon: ShoppingCartIcon, badge: "bg-info-soft text-info", label: "당월 신규 주문", value: "124건", delta: { icon: ArrowUpRightIcon, text: "8.2% vs 전월", tone: "positive" } },
 ];
@@ -62,12 +62,12 @@ interface OrderRow {
 }
 
 const ORDERS: OrderRow[] = [
-  { uid: "FT·5D4E0A", email: "k•••@gmail.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Polygon", status: "활성", date: "2026-06-20" },
+  { uid: "FT·5D4E0A", email: "k•••@gmail.com", item: "포르투나 구독", itemType: "engine", amount: 120, network: "Polygon", status: "활성", date: "2026-06-20" },
   { uid: "FT·2B91C7", email: "j•••@naver.com", item: "마케터 연회비", itemType: "annual", amount: 200, network: "Polygon", status: "완료", date: "2026-06-19" },
-  { uid: "FT·1A22F0", email: "h•••@kakao.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Tron", status: "활성", date: "2026-06-18" },
+  { uid: "FT·1A22F0", email: "h•••@kakao.com", item: "포르투나 구독", itemType: "engine", amount: 120, network: "Tron", status: "활성", date: "2026-06-18" },
   { uid: "FT·B2D7E0", email: "f•••@gmail.com", item: "크립토카드", itemType: "product", amount: 300, network: "Ethereum", status: "완료", date: "2026-06-17" },
-  { uid: "FT·7C0F19", email: "p•••@gmail.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Polygon", status: "만료", date: "2026-05-17" },
-  { uid: "FT·C9A410", email: "g•••@naver.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Polygon", status: "활성", date: "2026-06-15" },
+  { uid: "FT·7C0F19", email: "p•••@gmail.com", item: "포르투나 구독", itemType: "engine", amount: 120, network: "Polygon", status: "만료", date: "2026-05-17" },
+  { uid: "FT·C9A410", email: "g•••@naver.com", item: "포르투나 구독", itemType: "engine", amount: 120, network: "Polygon", status: "활성", date: "2026-06-15" },
   { uid: "FT·9C12B2", email: "s•••@daum.net", item: "마케터 연회비", itemType: "annual", amount: 200, network: "Polygon", status: "완료", date: "2026-06-12" },
   { uid: "FT·F3B2A9", email: "q•••@gmail.com", item: "거래소 수수료", itemType: "product", amount: 80, network: "Ethereum", status: "대기", date: "2026-06-11" },
 ];

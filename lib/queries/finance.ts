@@ -299,7 +299,7 @@ export async function getMemberWalletData(memberId: string): Promise<MemberWalle
       ledger.push({ ts: r.created_at, tx_type: "deposit", amount_usd: amt, network: r.network, desc: "USDT 입금 (충전)", status: r.status });
     } else {
       if (inMonth) monthPayment += amt;
-      ledger.push({ ts: r.created_at, tx_type: "payment", amount_usd: -amt, network: "잔액 차감", desc: "Alpha Engine 구독 결제", status: r.status });
+      ledger.push({ ts: r.created_at, tx_type: "payment", amount_usd: -amt, network: "잔액 차감", desc: "포르투나 구독 결제", status: r.status });
     }
   }
 

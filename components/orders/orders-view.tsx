@@ -46,7 +46,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
   const address = wallet?.deposit_address ?? "—";
 
   const UPCOMING = activeSub
-    ? [{ name: "Alpha Engine 구독", sub: `월 구독 · ${subNext}`, amount: usd(subPrice), soft: "bg-green-50 text-green-700", prog: 50, bar: "bg-green-600" }]
+    ? [{ name: "포르투나 구독", sub: `월 구독 · ${subNext}`, amount: usd(subPrice), soft: "bg-green-50 text-green-700", prog: 50, bar: "bg-green-600" }]
     : [];
 
   const ctaClass = "mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md py-2.5 text-[13px] font-bold";
@@ -57,7 +57,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className={cn("grid gap-4", role !== "registered" && "lg:grid-cols-2")}>
-          {/* 카드 1: Alpha Engine 구독 (전 등급) */}
+          {/* 카드 1: 포르투나 구독 (전 등급) */}
           <Panel>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -65,7 +65,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                   <CpuIcon className="size-[22px]" />
                 </span>
                 <div>
-                  <div className="text-[15px] font-semibold text-text-primary">Alpha Engine 구독</div>
+                  <div className="text-[15px] font-semibold text-text-primary">포르투나 구독</div>
                   <div className="text-xs text-text-secondary">AI 크립토 자동매매 엔진</div>
                 </div>
               </div>
@@ -232,7 +232,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
             {subs.slice(0, 10).map((s) => (
               <div key={s.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
                 <span className="text-text-tertiary tabular-nums">{s.paid_at.slice(0, 10)}</span>
-                <span className="font-medium text-text-primary">{(s.product_id && productName.get(s.product_id)) || "Alpha Engine 구독"}</span>
+                <span className="font-medium text-text-primary">{(s.product_id && productName.get(s.product_id)) || "포르투나 구독"}</span>
                 <span className="font-semibold tabular-nums text-text-primary">${Number(s.amount_usd).toFixed(0)}</span>
                 <span className="justify-self-end">
                   <Pill tone={s.status === "active" ? "green" : "neutral"}>{s.status === "active" ? "완료" : "만료"}</Pill>

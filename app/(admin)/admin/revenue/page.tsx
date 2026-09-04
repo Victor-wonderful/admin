@@ -89,13 +89,13 @@ export default async function AdminRevenuePage() {
   ].map((a) => ({ ...a, value: usd((m * a.pct) / 100) }));
 
   const COMPOSITION = [
-    { label: "Alpha Engine 구독", value: usd(rev.monthSub), pct: subPct, dot: "bg-green-500" },
+    { label: "포르투나 구독", value: usd(rev.monthSub), pct: subPct, dot: "bg-green-500" },
     { label: "마케터 연회비", value: usd(rev.monthAnnual), pct: annPct, dot: "bg-crypto" },
   ];
   const donut = `conic-gradient(#1f9d55 0 ${subPct}%, #7c3aed ${subPct}% 100%)`;
 
   const PRODUCTS = [
-    { name: "Alpha Engine 구독", price: "$120 / 월", dot: "bg-green-500", count: rev.monthSubCount, value: rev.monthSub, pct: subPct, avg: rev.monthSubCount ? rev.monthSub / rev.monthSubCount : 0 },
+    { name: "포르투나 구독", price: "$120 / 월", dot: "bg-green-500", count: rev.monthSubCount, value: rev.monthSub, pct: subPct, avg: rev.monthSubCount ? rev.monthSub / rev.monthSubCount : 0 },
     { name: "마케터 연회비", price: "$200 / 년", dot: "bg-crypto", count: rev.monthAnnualCount, value: rev.monthAnnual, pct: annPct, avg: rev.monthAnnualCount ? rev.monthAnnual / rev.monthAnnualCount : 0 },
   ];
 
@@ -103,7 +103,7 @@ export default async function AdminRevenuePage() {
 
   return (
     <>
-      <Topbar title="매출현황" sub="Alpha Engine · 수익 분석 · USDT" uid="운영자" />
+      <Topbar title="매출현황" sub="포르투나 · 수익 분석 · USDT" uid="운영자" />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 상단 KPI 5종 ── */}

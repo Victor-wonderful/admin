@@ -3,7 +3,7 @@ import { ShieldCheckIcon, CpuIcon, TrendingUpIcon } from "lucide-react";
 import { FortunaLogo } from "@/components/brand/fortuna-logo";
 
 const POINTS = [
-  { icon: CpuIcon, t: "AI 자동매매 엔진", s: "Alpha Engine 24/7 무인 운용" },
+  { icon: CpuIcon, t: "AI 자동매매 엔진", s: "포르투나 24/7 무인 운용" },
   { icon: ShieldCheckIcon, t: "USDT 온체인 정산", s: "투명한 수당·출금" },
   { icon: TrendingUpIcon, t: "3단계 보상", s: "직접추천 · 직급 · 공유수당" },
 ];
@@ -32,7 +32,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         </div>
-        <span className="text-xs text-white/50">© 포르투나 · Alpha Engine 보상 플랫폼</span>
+        <span className="text-xs text-white/50">© 포르투나 · 구독 보상 플랫폼</span>
       </div>
 
       <div className="grid place-items-center bg-canvas px-6 py-12">

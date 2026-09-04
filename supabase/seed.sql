@@ -3,7 +3,7 @@
 -- 자동 생성된 시드 (generate-seed.ts). 직접 편집 금지.
 -- 상품
 insert into products(id, code, name, price_usd, billing) values
-  ('bbbbbbbb-0000-0000-0000-000000000001','bot_sub','AI 트레이딩 봇 구독',120.00,'monthly'),
+  ('bbbbbbbb-0000-0000-0000-000000000001','bot_sub','포르투나 구독',120.00,'monthly'),
   ('bbbbbbbb-0000-0000-0000-000000000002','annual_fee','마케터 연회비',200.00,'yearly'),
   ('bbbbbbbb-0000-0000-0000-000000000003','coin_visa','코인 비자 카드',null,'event'),
   ('bbbbbbbb-0000-0000-0000-000000000004','exchange_fee_share','거래소 수수료 분배',null,'event');
