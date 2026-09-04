@@ -1,3 +1,4 @@
+import { currentCycle } from "@/lib/dates";
 import {
   CoinsIcon,
   Share2Icon,
@@ -17,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const CYCLE = "2026-06";
+const CYCLE = currentCycle();
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 const REL: Record<string, { label: string; tone: "green" | "crypto" | "neutral" }> = {

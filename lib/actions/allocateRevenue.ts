@@ -1,5 +1,6 @@
 "use server";
 
+import { currentCycle } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -13,7 +14,7 @@ export interface RevenueAllocationResult {
 
 // 매출 1차 배분 실행. DB 함수 allocate_revenue 가 사이클 매출(구독+연회비)을
 // 60/20/10/10 으로 풀에 배분하고 system_wallets 잔액을 갱신.
-export async function allocateRevenue(cycle = "2026-06"): Promise<RevenueAllocationResult> {
+export async function allocateRevenue(cycle = currentCycle()): Promise<RevenueAllocationResult> {
   const sb = getServerClient();
   const { data, error } = await sb.rpc("allocate_revenue", { p_cycle: cycle });
   if (error) throw error;

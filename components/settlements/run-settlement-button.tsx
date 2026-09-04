@@ -1,5 +1,6 @@
 "use client";
 
+import { currentCycle } from "@/lib/dates";
 import * as React from "react";
 import { RefreshCwIcon } from "lucide-react";
 
@@ -8,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
-export function RunSettlementButton({ cycle = "2026-06" }: { cycle?: string }) {
+export function RunSettlementButton({ cycle = currentCycle() }: { cycle?: string }) {
   const [pending, start] = React.useTransition();
   const [result, setResult] = React.useState<SettlementRunResult | null>(null);
 

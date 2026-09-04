@@ -1,5 +1,6 @@
 "use client";
 
+import { currentCycle } from "@/lib/dates";
 import * as React from "react";
 import { Layers2Icon, Loader2Icon } from "lucide-react";
 
@@ -8,7 +9,7 @@ import { allocateRevenue, type RevenueAllocationResult } from "@/lib/actions/all
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 // 매출 1차 배분 실행 — allocate_revenue 호출(수당풀/회사/지분/예비비 갱신).
-export function AllocateRevenueButton({ cycle = "2026-06" }: { cycle?: string }) {
+export function AllocateRevenueButton({ cycle = currentCycle() }: { cycle?: string }) {
   const [pending, start] = React.useTransition();
   const [res, setRes] = React.useState<RevenueAllocationResult | null>(null);
 

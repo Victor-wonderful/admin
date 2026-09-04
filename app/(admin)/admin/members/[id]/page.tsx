@@ -1,3 +1,4 @@
+import { currentCycle } from "@/lib/dates";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -38,7 +39,7 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const CYCLE = "2026-06";
+const CYCLE = currentCycle();
 
 const ROLE_LABEL: Record<MemberRole, string> = { registered: "등록회원", subscriber: "구독회원", marketer: "마케터" };
 const ROLE_BADGE: Record<MemberRole, string> = {

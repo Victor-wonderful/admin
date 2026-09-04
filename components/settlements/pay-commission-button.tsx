@@ -1,5 +1,6 @@
 "use client";
 
+import { currentCycle } from "@/lib/dates";
 import * as React from "react";
 import { SendIcon } from "lucide-react";
 
@@ -9,7 +10,7 @@ import { cn } from "@/lib/utils";
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 // 지급 실행 — 직추+직급(instant, 상시). 공유(share)는 월 1회 별도.
-export function PayCommissionButton({ cycle = "2026-06" }: { cycle?: string }) {
+export function PayCommissionButton({ cycle = currentCycle() }: { cycle?: string }) {
   const [pending, start] = React.useTransition();
   const [result, setResult] = React.useState<PayResult | null>(null);
 

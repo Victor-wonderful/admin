@@ -1,10 +1,11 @@
 "use server";
 
+import { currentCycle } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 // 일괄 확정: 해당 사이클의 calculated → confirmed. 반영 건수 반환.
-export async function confirmSettlements(cycle = "2026-06"): Promise<number> {
+export async function confirmSettlements(cycle = currentCycle()): Promise<number> {
   const sb = getServerClient();
   const { data, error } = await sb.rpc("confirm_settlements", { p_cycle: cycle });
   if (error) throw error;

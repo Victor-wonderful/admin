@@ -1,5 +1,6 @@
 "use server";
 
+import { today, currentCycle } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
@@ -11,9 +12,9 @@ export interface PayResult {
 // 수당 지급 실행. scope='instant'(직추+직급, 상시) | 'share'(공유, 월 1회).
 // settlements 산정액 중 미지급분(delta)만 지갑에 적립하고 수당풀에서 차감(멱등).
 export async function payCommission(
-  cycle = "2026-06",
+  cycle = currentCycle(),
   scope: "instant" | "share" = "instant",
-  asOf = "2026-06-15",
+  asOf = today(),
 ): Promise<PayResult> {
   const sb = getServerClient();
   const { data, error } = await sb.rpc("pay_commission", {

@@ -1,3 +1,4 @@
+import { currentCycle } from "@/lib/dates";
 import "server-only";
 import { getServerClient } from "@/lib/supabase/server";
 
@@ -98,7 +99,7 @@ export async function getWithdrawalSummary(): Promise<WithdrawalSummary> {
   if (e1) throw e1;
   if (e2) throw e2;
 
-  const month = fmtMonth(new Date("2026-06-15"));
+  const month = currentCycle();
   const s: WithdrawalSummary = {
     pendingCount: 0, pendingAmount: 0, sendingCount: 0, sendingAmount: 0,
     completedMonthAmount: 0, completedTotalAmount: 0,
@@ -137,7 +138,7 @@ export async function getTransactionStats() {
   const { data, error } = await sb.from("wallet_transactions").select("tx_type, amount_usd, fee_usd, status, created_at");
   if (error) throw error;
   const rows = data ?? [];
-  const month = fmtMonth(new Date("2026-06-15"));
+  const month = currentCycle();
   let monthVolume = 0,
     failed = 0,
     feeSum = 0,
@@ -163,7 +164,7 @@ export async function getDepositStats() {
   const { data, error } = await sb.from("wallet_transactions").select("amount_usd, status, created_at").eq("tx_type", "payment");
   if (error) throw error;
   const rows = data ?? [];
-  const month = fmtMonth(new Date("2026-06-15"));
+  const month = currentCycle();
   let monthSum = 0,
     pending = 0;
   for (const r of rows) {
@@ -218,8 +219,8 @@ export async function getSettlementSummary(cycle: string) {
 }
 
 // ── 마케터 통합 지갑 ───────────────────────────────────────────────
-// 현재 사이클 앵커(다른 집계와 동일하게 2026-06-15 기준).
-const CURRENT_CYCLE = fmtMonth(new Date("2026-06-15"));
+// 현재 사이클 = 실제 이번 달(Asia/Seoul).
+const CURRENT_CYCLE = currentCycle();
 
 export interface MemberWallet {
   member_id: string;
@@ -393,7 +394,7 @@ export async function getRevenueSummary() {
   ]);
   if (subs.error) throw subs.error;
   if (annual.error) throw annual.error;
-  const month = fmtMonth(new Date("2026-06-15"));
+  const month = currentCycle();
   const inMonth = (p: unknown) => typeof p === "string" && p.startsWith(month);
 
   let total = 0, monthTotal = 0;

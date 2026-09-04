@@ -1,3 +1,4 @@
+import { currentCycle } from "@/lib/dates";
 import {
   ArrowDownLeftIcon,
   ArrowUpRightIcon,
@@ -35,7 +36,7 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const CYCLE = "2026-06";
+const CYCLE = currentCycle();
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const usd2 = (n: number) => `$${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

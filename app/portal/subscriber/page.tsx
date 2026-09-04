@@ -17,19 +17,22 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { DepositButton } from "@/components/wallet/deposit-button";
+import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { FortunaFeatureTiles } from "@/components/portal/fortuna-feature-tiles";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
 import { getMemberWallet } from "@/lib/queries/finance";
 import { requireMember } from "@/lib/session";
 import { FORTUNA_APP_URL } from "@/lib/constants";
 import { toUid } from "@/lib/uid";
+import { today } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
-// 데모 기준일(정산 사이클과 동일).
-const TODAY = "2026-06-15";
+const SUB_PRICE = 120;
+// 기준일 = 실제 오늘(Asia/Seoul).
+const TODAY = today();
 
 const TILE = "flex items-center gap-3 rounded-lg bg-card p-4 text-left ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)] transition-colors hover:ring-green-500";
 
@@ -73,19 +76,32 @@ export default async function SubscriberDashboardPage() {
             </span>
             <h2 className="text-[23px] font-bold">포르투나 매매 판단 체크 {activeSub ? "이용 중" : "정지"}</h2>
             <p className="text-sm text-white/80">
-              구독 {subs.length}건 · 다음 결제 {nextDate} · 잔액 {usd(balance)}
+              {activeSub
+                ? `이용 기간 ${activeSub.period_start.slice(0, 10)} ~ ${nextDate} · 종료일에 잔액에서 ${usd(SUB_PRICE)} 자동 결제 · 잔액 ${usd(balance)}`
+                : `구독이 만료되었습니다 · 마지막 종료일 ${nextDate} · 잔액 ${usd(balance)} (갱신에 ${usd(SUB_PRICE)} 필요)`}
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
             <div className="flex gap-2.5">
-              <a
-                href={FORTUNA_APP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700"
-              >
-                <ExternalLinkIcon className="size-4" /> 포르투나 앱 열기
-              </a>
+              {activeSub ? (
+                <a
+                  href={FORTUNA_APP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700"
+                >
+                  <ExternalLinkIcon className="size-4" /> 포르투나 앱 열기
+                </a>
+              ) : (
+                <LifecycleButton
+                  mode="subscribe"
+                  memberId={ME}
+                  amount={SUB_PRICE}
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700"
+                >
+                  <CreditCardIcon className="size-4" /> 구독 갱신 · {usd(SUB_PRICE)}/월
+                </LifecycleButton>
+              )}
               <Link href="/portal/orders" className="inline-flex items-center gap-2 rounded-[10px] bg-white/15 px-5 py-3 text-[15px] font-bold text-white ring-1 ring-white/25">
                 <Settings2Icon className="size-4" /> 구독 관리
               </Link>

@@ -1,3 +1,4 @@
+import { currentCycle } from "@/lib/dates";
 import Link from "next/link";
 import {
   CoinsIcon,
@@ -24,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const CYCLE = "2026-06";
+const CYCLE = currentCycle();
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const pct = (p: number, t: number) => (t > 0 ? Math.round((p / t) * 100) : 0);
 

@@ -1,12 +1,13 @@
 "use client";
 
+import { currentCycle } from "@/lib/dates";
 import * as React from "react";
 import { CheckCheckIcon, Loader2Icon } from "lucide-react";
 
 import { confirmSettlements } from "@/lib/actions/settlementWorkflow";
 
 // 일괄 확정 — calculated 산정 건을 confirmed 로 전환.
-export function ConfirmSettlementsButton({ cycle = "2026-06" }: { cycle?: string }) {
+export function ConfirmSettlementsButton({ cycle = currentCycle() }: { cycle?: string }) {
   const [pending, start] = React.useTransition();
   const [done, setDone] = React.useState<number | null>(null);
 

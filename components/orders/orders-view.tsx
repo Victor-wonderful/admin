@@ -17,13 +17,14 @@ import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
 import { getMemberWallet } from "@/lib/queries/finance";
 import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
+import { today } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const SUB_PRICE = 120;
 const ANNUAL = 200;
-// 데모 기준일(정산 사이클과 동일).
-const TODAY = "2026-06-15";
+// 기준일 = 실제 오늘(Asia/Seoul).
+const TODAY = today();
 
 // 구독·주문 — 마케터/구독회원/등록회원 공용. 두 번째 카드(연회비)는 마케터에게만, 등록회원 카드1 에는 구독 시작 버튼.
 export async function OrdersView({ memberId, role }: { memberId: string; role: MemberRole }) {

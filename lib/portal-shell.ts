@@ -2,10 +2,11 @@ import "server-only";
 import { getMemberSubscriptions } from "@/lib/queries/members";
 import { getMemberRank } from "@/lib/queries/ranks";
 import { toUid } from "@/lib/uid";
+import { today } from "@/lib/dates";
 import type { MemberRow } from "@/lib/supabase/types";
 
-// 데모 기준일(정산 사이클과 동일).
-const TODAY = "2026-06-15";
+// 기준일 = 실제 오늘(Asia/Seoul).
+const TODAY = today();
 
 // 회원 사이드바 하단 카드용 등급 요약 문구 — 등급별 실데이터로 계산.
 export async function getGradeSub(member: MemberRow): Promise<string> {
