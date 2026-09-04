@@ -103,7 +103,7 @@ export default async function MarketerDashboardPage() {
 
       <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
         {/* 구독 만료 / 잔액 부족 안내 */}
-        <SubscriptionNotice memberId={ME} />
+        <SubscriptionNotice memberId={ME} role="marketer" />
 
         {/* RowA — 내 등급·자격 + 출금 잔액 */}
         <div className="grid gap-4 lg:grid-cols-[1fr_392px]">

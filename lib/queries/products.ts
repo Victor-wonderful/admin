@@ -42,6 +42,19 @@ export async function listMemberPurchases(memberId: string, limit = 20): Promise
   return (data ?? []) as ProductPurchaseRow[];
 }
 
+// 파트너 멤버십(연회비) 최신 기간 — 없으면 null.
+export async function getMemberAnnualMembership(memberId: string): Promise<{ period_start: string; period_end: string; amount_usd: number } | null> {
+  const sb = getServerClient();
+  const { data } = await sb
+    .from("annual_memberships")
+    .select("period_start, period_end, amount_usd")
+    .eq("member_id", memberId)
+    .order("period_end", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as { period_start: string; period_end: string; amount_usd: number } | null) ?? null;
+}
+
 // 회원 화면 가격 — 상품 테이블의 현재가. 상품이 없거나 비활성이면 기본값.
 export async function getPlanPrices(): Promise<{ sub: number; annual: number; subActive: boolean; partnerActive: boolean }> {
   const sb = getServerClient();

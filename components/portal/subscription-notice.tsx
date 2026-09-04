@@ -4,7 +4,7 @@ import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { getMemberSubscriptions } from "@/lib/queries/members";
 import { getMemberWallet } from "@/lib/queries/finance";
-import { getPlanPrices } from "@/lib/queries/products";
+import { getPlanPrices, getMemberAnnualMembership } from "@/lib/queries/products";
 import { today, daysBetween } from "@/lib/dates";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
@@ -14,17 +14,54 @@ const REMIND_DAYS = 7; // 종료 7일 전부터 잔액 부족 안내
 //  · 만료: "구독이 만료됨" + 지금 갱신 버튼
 //  · 종료 임박(7일) + 잔액 부족: 자동 결제 실패 예고 + 입금 버튼
 //  · 그 외: 렌더하지 않음
-export async function SubscriptionNotice({ memberId }: { memberId: string }) {
-  const [subs, wallet, plans] = await Promise.all([getMemberSubscriptions(memberId), getMemberWallet(memberId), getPlanPrices()]);
+export async function SubscriptionNotice({ memberId, role }: { memberId: string; role?: "subscriber" | "marketer" }) {
+  const [subs, wallet, plans, annual] = await Promise.all([
+    getMemberSubscriptions(memberId),
+    getMemberWallet(memberId),
+    getPlanPrices(),
+    role === "marketer" ? getMemberAnnualMembership(memberId) : Promise.resolve(null),
+  ]);
   const t = today();
   const active = subs.find((s) => s.status === "active" && s.period_start <= t && t <= s.period_end);
   const latest = subs[0] ?? null;
   const price = plans.sub; // 현재 구독 상품가(관리자 카탈로그)
   const balance = wallet?.balance_usd ?? 0;
 
+  // 파트너 멤버십(연) 만료·임박 안내 — 구독 안내와 별도로 위에 붙는다
+  const membershipDays = annual ? daysBetween(t, annual.period_end.slice(0, 10)) : null;
+  const membershipNotice =
+    role === "marketer" && membershipDays != null && membershipDays <= 14 ? (
+      <div className={`flex items-center justify-between gap-4 rounded-xl px-5 py-4 ring-1 ${membershipDays < 0 ? "bg-negative-soft ring-negative/20" : "bg-warning-soft ring-warning/20"}`}>
+        <div className="flex items-start gap-3">
+          <TriangleAlertIcon className={`mt-0.5 size-5 shrink-0 ${membershipDays < 0 ? "text-negative" : "text-warning"}`} />
+          <div>
+            <div className="text-sm font-bold text-text-primary">
+              {membershipDays < 0 ? `파트너 멤버십이 만료되었습니다 (${annual!.period_end.slice(0, 10)})` : `파트너 멤버십 D-${membershipDays} (${annual!.period_end.slice(0, 10)} 종료)`}
+            </div>
+            <div className="mt-0.5 text-xs text-text-secondary">
+              갱신 {usd(plans.annual)} · 잔액 {usd(balance)}
+              {balance < plans.annual ? ` · ${usd(plans.annual - balance)} 부족 — 먼저 입금하세요` : " · 지금 갱신하면 1년 연장"}
+            </div>
+          </div>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          {balance < plans.annual ? (
+            <DepositButton memberId={memberId} className="inline-flex items-center gap-1.5 rounded-md bg-card px-4 py-2 text-[13px] font-semibold text-text-primary ring-1 ring-border-strong">
+              <PlusIcon className="size-4" /> USDT 입금하기
+            </DepositButton>
+          ) : null}
+          <LifecycleButton mode="renew_partner" memberId={memberId} amount={plans.annual} className="inline-flex items-center gap-1.5 rounded-md bg-crypto px-4 py-2 text-[13px] font-bold text-white">
+            <CreditCardIcon className="size-4" /> 멤버십 갱신 · {usd(plans.annual)}
+          </LifecycleButton>
+        </div>
+      </div>
+    ) : null;
+
   if (!active) {
-    if (!latest) return null; // 구독 이력 없음(등록회원 등)
+    if (!latest) return membershipNotice; // 구독 이력 없음(등록회원 등)
     return (
+      <>
+      {membershipNotice}
       <div className="flex items-center justify-between gap-4 rounded-xl bg-negative-soft px-5 py-4 ring-1 ring-negative/20">
         <div className="flex items-start gap-3">
           <TriangleAlertIcon className="mt-0.5 size-5 shrink-0 text-negative" />
@@ -47,13 +84,16 @@ export async function SubscriptionNotice({ memberId }: { memberId: string }) {
           </LifecycleButton>
         </div>
       </div>
+      </>
     );
   }
 
   const dday = daysBetween(t, active.period_end.slice(0, 10));
-  if (dday > REMIND_DAYS || balance >= price) return null;
+  if (dday > REMIND_DAYS || balance >= price) return membershipNotice;
 
   return (
+    <>
+    {membershipNotice}
     <div className="flex items-center justify-between gap-4 rounded-xl bg-warning-soft px-5 py-4 ring-1 ring-warning/20">
       <div className="flex items-start gap-3">
         <CalendarClockIcon className="mt-0.5 size-5 shrink-0 text-warning" />
@@ -70,5 +110,6 @@ export async function SubscriptionNotice({ memberId }: { memberId: string }) {
         <PlusIcon className="size-4" /> USDT 입금하기
       </DepositButton>
     </div>
+    </>
   );
 }

@@ -6,7 +6,6 @@ import {
   UserRoundIcon,
   MousePointerClickIcon,
   GitBranchIcon,
-  ExternalLinkIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
@@ -90,6 +89,7 @@ export default async function MarketerGenealogyPage() {
           ))}
         </div>
 
+        <div id="team-trees" className="scroll-mt-4">
         <GenealogyTrees
           unilevel={
             <Panel bodyClassName="overflow-x-auto" sub="초대 관계 — 레벨리워드 1·2대">
@@ -102,10 +102,11 @@ export default async function MarketerGenealogyPage() {
             </Panel>
           }
         />
+        </div>
 
         <div className="flex items-start gap-2.5 rounded-md bg-info-soft px-3.5 py-3 text-xs leading-relaxed text-info">
           <LayersIcon className="mt-0.5 size-4 shrink-0" />
-          소프트 압축 — 비활성(당월 미결제) 회원은 해당 월 레벨 리워드 집계에서 제외됩니다. 초대 관계은 유지되며 재결제 시 자동 회복·자리 영구 보존됩니다. (레벨 리워드은 1·2대만, 3대 이상 차단)
+          소프트 압축 — 비활성(당월 미결제) 회원은 해당 월 레벨 리워드 집계에서 제외됩니다. 초대 관계는 유지되며 재결제 시 자동 회복·자리 영구 보존됩니다. (레벨 리워드는 1·2대만, 3대 이상 차단)
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_388px]">
@@ -120,18 +121,15 @@ export default async function MarketerGenealogyPage() {
                     <span className="text-base font-bold text-text-primary">{unilevel?.children[0]?.name ?? "—"}</span>
                     <Pill tone="green">1대 · 25%</Pill>
                   </div>
-                  <div className="text-xs text-text-secondary">내 직접 초대 · 노드를 클릭해 상세 보기</div>
+                  <div className="text-xs text-text-secondary">내 직접 초대 1호 · 아래 팀 트리에서 배치를 확인하세요</div>
                 </div>
               </div>
               <Pill tone="neutral"><MousePointerClickIcon className="size-3" /> 선택한 노드</Pill>
             </div>
             <div className="mt-4 flex gap-2.5">
-              <button className="inline-flex flex-1 items-center justify-center gap-2 rounded-md bg-brand py-2.5 text-[13px] font-bold text-white">
-                <GitBranchIcon className="size-4" /> 조직 펼쳐보기
-              </button>
-              <button className="inline-flex flex-1 items-center justify-center gap-2 rounded-md py-2.5 text-[13px] font-bold text-text-secondary ring-1 ring-border-strong">
-                <ExternalLinkIcon className="size-4" /> 회원 상세
-              </button>
+              <a href="#team-trees" className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand py-2.5 text-[13px] font-bold text-white">
+                <GitBranchIcon className="size-4" /> 팀 트리 보기
+              </a>
             </div>
           </Panel>
 

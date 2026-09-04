@@ -1,7 +1,6 @@
 import {
   CpuIcon,
   BadgeCheckIcon,
-  Settings2Icon,
   CalendarClockIcon,
   WalletIcon,
   CircleCheckIcon,
@@ -16,12 +15,14 @@ import { Pill } from "@/components/ui/pill";
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
-import { getPlanPrices, listStoreProducts, listMemberPurchases } from "@/lib/queries/products";
+import { getPlanPrices, listStoreProducts, listMemberPurchases, getMemberAnnualMembership } from "@/lib/queries/products";
+import { getMember } from "@/lib/queries/members";
+import { SubscriptionManageModal } from "@/components/orders/subscription-manage-modal";
 import { BuyProductButton } from "@/components/orders/buy-product-button";
 import { getMemberWallet } from "@/lib/queries/finance";
 import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
-import { today } from "@/lib/dates";
+import { today, daysBetween } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
@@ -30,12 +31,14 @@ const TODAY = today();
 
 // 구독·주문 — 파트너/구독회원/등록회원 공용. 두 번째 카드(파트너 멤버십)는 파트너에게만, 등록회원 카드1 에는 구독 시작 버튼.
 export async function OrdersView({ memberId, role }: { memberId: string; role: MemberRole }) {
-  const [subs, products, wallet, store, purchases] = await Promise.all([
+  const [subs, products, wallet, store, purchases, member, annual] = await Promise.all([
     getMemberSubscriptions(memberId),
     listProducts(),
     getMemberWallet(memberId),
     listStoreProducts(),
     listMemberPurchases(memberId),
+    getMember(memberId),
+    getMemberAnnualMembership(memberId),
   ]);
   const productName = new Map(products.map((p) => [p.id, p.name]));
   const { sub: SUB_PRICE, annual: ANNUAL, subActive, partnerActive } = await getPlanPrices(); // 관리자 상품 카탈로그 가격
@@ -46,6 +49,9 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
   const subNext = (activeSub ?? latestSub)?.period_end?.slice(0, 10) ?? "—";
   const balance = wallet?.balance_usd ?? 0;
   const subPrice = SUB_PRICE; // 다음 결제·표시가 = 현재 상품가(마지막 결제액이 아님)
+  // 파트너 멤버십 상태: 종료일까지 남은 일수(음수=만료). 종료 30일 전부터 갱신 가능.
+  const membershipDays = annual ? daysBetween(TODAY, annual.period_end.slice(0, 10)) : -1;
+  const canRenewMembership = role === "marketer" && partnerActive && (!annual || membershipDays <= 30);
 
   const UPCOMING = activeSub
     ? [{ name: "포르투나 구독", sub: `월 구독 · ${subNext}`, amount: usd(subPrice), soft: "bg-green-50 text-green-700", prog: 50, bar: "bg-green-600" }]
@@ -92,9 +98,14 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 <CreditCardIcon className="size-4" /> 구독 시작 · {usd(SUB_PRICE)}/월
               </LifecycleButton>
             ) : (
-              <button className={cn(ctaClass, "font-medium text-text-secondary ring-1 ring-border-strong")}>
-                <Settings2Icon className="size-4" /> 구독 관리
-              </button>
+              <SubscriptionManageModal
+                active={!!activeSub}
+                periodStart={activeSub?.period_start.slice(0, 10) ?? latestSub?.period_start.slice(0, 10) ?? null}
+                periodEnd={activeSub?.period_end.slice(0, 10) ?? latestSub?.period_end.slice(0, 10) ?? null}
+                price={SUB_PRICE}
+                autoRenew={member?.auto_renew ?? true}
+                className={cn(ctaClass, "font-medium text-text-secondary ring-1 ring-border-strong")}
+              />
             )}
           </Panel>
 
@@ -111,23 +122,30 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                     <div className="text-xs text-text-secondary">초대 리워드 자격</div>
                   </div>
                 </div>
-                <Pill tone="green" dot>유효</Pill>
+                <Pill tone={membershipDays < 0 ? "negative" : "green"} dot={membershipDays >= 0}>{membershipDays < 0 ? "만료" : "유효"}</Pill>
               </div>
               <div className="mt-3 flex items-end gap-1">
                 <span className="text-2xl font-bold text-text-primary">{usd(ANNUAL)}</span>
                 <span className="pb-1 text-xs font-medium text-text-tertiary">/ 년 · USDT</span>
               </div>
               <div className="mt-3">
-                {[["리워드 자격", "활성"], ["갱신", "연 1회"]].map(([k, v]) => (
+                {[
+                  ["유효기간", annual ? `${annual.period_start.slice(0, 10)} ~ ${annual.period_end.slice(0, 10)}` : "—"],
+                  ["상태", !annual ? "정보 없음" : membershipDays < 0 ? `만료 (${-membershipDays}일 경과)` : membershipDays <= 30 ? `D-${membershipDays} · 갱신 가능` : `유효 · D-${membershipDays}`],
+                ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between border-b py-2.5 text-[13px] last:border-0">
                     <span className="text-text-secondary">{k}</span>
                     <span className="font-semibold text-text-primary">{v}</span>
                   </div>
                 ))}
               </div>
-              <button className={cn(ctaClass, "font-medium text-text-secondary ring-1 ring-border-strong")}>
-                <Settings2Icon className="size-4" /> 갱신 관리
-              </button>
+              {canRenewMembership ? (
+                <LifecycleButton mode="renew_partner" memberId={memberId} amount={ANNUAL} className={cn(ctaClass, "w-full bg-crypto text-white")}>
+                  <SparklesIcon className="size-4" /> {membershipDays < 0 ? "멤버십 갱신" : "미리 갱신"} · {usd(ANNUAL)}/년
+                </LifecycleButton>
+              ) : (
+                <div className="mt-3 rounded-md bg-surface-muted px-3 py-2.5 text-[12px] text-text-secondary ring-1 ring-border">종료 30일 전부터 이 카드에서 갱신할 수 있습니다 · 만료 전 알림 제공</div>
+              )}
             </Panel>
           ) : role === "subscriber" && partnerActive ? (
             <div id="partner" className="scroll-mt-4">

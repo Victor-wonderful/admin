@@ -52,6 +52,16 @@ export async function renewSubscription(memberId: string, amount = 120): Promise
   return { ok: true, dest: m?.role === "marketer" ? "/marketer/dashboard" : "/portal/subscriber" };
 }
 
+// 파트너 멤버십 갱신(종료 30일 전 ~ 만료 후). 금액은 상품 카탈로그(annual_fee) 현재가.
+export async function renewPartnerMembership(memberId: string, amount?: number): Promise<LifecycleResult> {
+  const sb = getServerClient();
+  const { error } = await sb.rpc("renew_partner_membership", { p_member: memberId, p_amount: amount ?? null, p_as_of: cycleAsOf() });
+  if (error) return { ok: false, error: toMessage(error, "멤버십 갱신에 실패했습니다") };
+  revalidatePortals();
+  revalidatePath("/marketer/orders");
+  return { ok: true, dest: "/marketer/orders" };
+}
+
 // 구독회원 → 마케터 (연회비 $200 결제). 마케터 홈 경로 반환.
 export async function upgradeToMarketer(memberId: string, amount = 200): Promise<LifecycleResult> {
   const sb = getServerClient();

@@ -16,6 +16,7 @@ export interface MemberRow {
   fortuna_user_id?: string | null; // Fortuna 제품 앱(Supabase Auth) 연결 id
   payout_address_trc20?: string | null; // 회원 본인 지갑(Tron) — 출금 목적지·입금 식별
   payout_address_bep20?: string | null; // 회원 본인 지갑(BSC)
+  auto_renew?: boolean; // 구독 자동 갱신(false = 해지 예약)
 }
 
 export interface ReferralCodeRow {

@@ -3,8 +3,6 @@ import {
   CircleCheckIcon,
   BadgeCheckIcon,
   PercentIcon,
-  CopyIcon,
-  Share2Icon,
   UsersIcon,
   CornerDownRightIcon,
   MessageCircleIcon,
@@ -14,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { toUid } from "@/lib/uid";
+import { InviteLinkActions } from "@/components/marketer/invite-link-actions";
 import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
@@ -75,18 +74,8 @@ export default async function MarketerReferralPage() {
           <div>
             <div className="text-xs font-medium text-white/60">내 초대 코드</div>
             <div className="mt-1 font-mono text-[34px] font-bold tracking-wider">{codeStr}</div>
-            <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-1.5 text-xs text-white/70">
-              <HashIcon className="size-3" /> fortuna.io/r/{codeStr}
-            </div>
           </div>
-          <div className="flex gap-2.5">
-            <button className="inline-flex items-center gap-2 rounded-[10px] bg-white/10 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/20">
-              <CopyIcon className="size-4" /> 링크 복사
-            </button>
-            <button className="inline-flex items-center gap-2 rounded-[10px] bg-crypto px-5 py-3 text-sm font-bold text-white">
-              <Share2Icon className="size-4" /> 공유
-            </button>
-          </div>
+          <InviteLinkActions code={codeStr} />
         </div>
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
