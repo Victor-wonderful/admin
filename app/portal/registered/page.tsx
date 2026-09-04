@@ -25,13 +25,14 @@ export const dynamic = "force-dynamic";
 const usd = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 
 const BENEFITS = [
-  "AI 전략 기반 24/7 자동매매",
-  "실시간 시장 대응 · 무인 운용",
-  "누적 수익·거래 리포트 제공",
+  "AI 리서치 · 진입·손절·목표 시나리오 생성",
+  "후보 레이더 · 거래 가능/차단 판정",
+  "자금 규율 점검 · 포지션 사이징",
+  "거래 일지 · AI 복기 · 성과 분석",
 ];
 
 const TILES = [
-  { icon: CpuIcon, tone: "bg-green-50 text-green-700", title: "AI 자동매매", sub: "24/7 무인 운용" },
+  { icon: CpuIcon, tone: "bg-green-50 text-green-700", title: "매매 판단 체크", sub: "진입 전 AI 검증" },
   { icon: ShieldCheckIcon, tone: "bg-info-soft text-info", title: "투명 정산", sub: "USDT 온체인" },
 ];
 
@@ -53,7 +54,7 @@ export default async function RegisteredDashboardPage() {
     { label: "회원가입", sub: "추천 코드 가입", icon: CheckIcon, state: "done" as const },
     { label: "지갑 충전", sub: balance > 0 ? `${usd(balance)} 보유` : "USDT 입금", icon: WalletIcon, state: balance > 0 ? "done" : "active" },
     { label: "구독 결제", sub: `포르투나 ${usd(SUB_PRICE)}`, icon: CreditCardIcon, state: subscribed ? "done" : canSubscribe ? "active" : "pending" },
-    { label: "엔진 가동", sub: "자동매매 시작", icon: CpuIcon, state: subscribed ? "active" : "pending" },
+    { label: "판단 체크 시작", sub: "포르투나 앱 이용", icon: CpuIcon, state: subscribed ? "active" : "pending" },
   ] as const;
   const doneCount = steps.filter((s) => s.state === "done").length;
 
@@ -89,7 +90,7 @@ export default async function RegisteredDashboardPage() {
         {/* 시작 단계 스테퍼 */}
         <Panel
           title="시작 단계"
-          sub={subscribed ? "구독 완료 · 엔진 가동 중" : "엔진 가동까지 단계를 완료하세요"}
+          sub={subscribed ? "구독 완료 · 매매 판단 체크 이용 중" : "매매 판단 체크 이용까지 단계를 완료하세요"}
           action={<Pill tone="green">{doneCount} / 4 완료</Pill>}
         >
           <div className="flex items-start">

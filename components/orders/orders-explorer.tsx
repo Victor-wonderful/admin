@@ -44,7 +44,7 @@ const KPIS: {
   { icon: CircleArrowDownIcon, badge: "bg-green-50 text-green-700", label: "당월 매출", value: "$184,260", delta: { icon: ArrowUpRightIcon, text: "12.4% vs 전월", tone: "positive" } },
   { icon: SigmaIcon, badge: "bg-feature text-n-0", label: "누적 매출", value: "$2.42M", delta: { icon: CalendarRangeIcon, text: "서비스 개시 이후", tone: "tertiary" } },
   { icon: BadgeCheckIcon, badge: "bg-green-50 text-green-600", label: "활성 구독", value: "856건", delta: { icon: CpuIcon, text: "포르투나 활성", tone: "tertiary" } },
-  { icon: TimerIcon, badge: "bg-warning text-n-0", warning: true, label: "갱신 임박", value: "47건", delta: { icon: ArrowRightIcon, text: "엔진 39 · 연회비 8", tone: "accent" } },
+  { icon: TimerIcon, badge: "bg-warning text-n-0", warning: true, label: "갱신 임박", value: "47건", delta: { icon: ArrowRightIcon, text: "구독 39 · 연회비 8", tone: "accent" } },
   { icon: ShoppingCartIcon, badge: "bg-info-soft text-info", label: "당월 신규 주문", value: "124건", delta: { icon: ArrowUpRightIcon, text: "8.2% vs 전월", tone: "positive" } },
 ];
 
@@ -88,7 +88,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 const TABS: { key: "all" | ItemType; label: string; count: number }[] = [
   { key: "all", label: "전체", count: 2418 },
-  { key: "engine", label: "엔진 구독", count: 1840 },
+  { key: "engine", label: "포르투나 구독", count: 1840 },
   { key: "annual", label: "연회비", count: 312 },
   { key: "product", label: "상품", count: 266 },
 ];

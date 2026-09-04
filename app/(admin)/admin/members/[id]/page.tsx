@@ -202,7 +202,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
                   포르투나 구독
                   <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold", me.is_active_subscriber ? "bg-green-50 text-green-700" : "bg-warning-soft text-warning")}>
                     <span className={cn("size-1.5 rounded-full", me.is_active_subscriber ? "bg-green-500" : "bg-warning")} />
-                    {me.is_active_subscriber ? "엔진 가동 중" : "정지"}
+                    {me.is_active_subscriber ? "이용 중" : "정지"}
                   </span>
                 </div>
                 <div className="mt-0.5 text-xs text-text-tertiary">$120/월 · 구독 {subs.length}회차 · is_active_subscriber {me.is_active_subscriber ? "true" : "false"}</div>

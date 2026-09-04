@@ -42,7 +42,7 @@ const KPIS = [
   { icon: TriangleAlertIcon, tone: "warning" as const, label: "대기·미확인", value: "6건", delta: null, info: "확인 대기 중", warn: true },
 ];
 
-const TABS = ["전체", "엔진 구독", "연회비", "상품"];
+const TABS = ["전체", "포르투나 구독", "연회비", "상품"];
 
 const NET_DOT: Record<string, string> = {
   TRC20: "bg-green-500",
@@ -55,13 +55,13 @@ type Status = "completed" | "confirming" | "failed";
 const ROWS: {
   time: string; uid: string; item: string; itemTone: string; amount: string; net: string; hash: string; status: Status; conf: string;
 }[] = [
-  { time: "06-16 14:32", uid: "FT-8F3A21", item: "엔진 구독", itemTone: "bg-green-500", amount: "$120", net: "TRC20", hash: "0x7a3f…e21b", status: "completed", conf: "19/19" },
+  { time: "06-16 14:32", uid: "FT-8F3A21", item: "포르투나 구독", itemTone: "bg-green-500", amount: "$120", net: "TRC20", hash: "0x7a3f…e21b", status: "completed", conf: "19/19" },
   { time: "06-16 13:58", uid: "FT-2B91C0", item: "연회비", itemTone: "bg-crypto", amount: "$200", net: "TRC20", hash: "0x14c8…9af0", status: "completed", conf: "19/19" },
   { time: "06-16 13:21", uid: "FT-77D4E2", item: "크립토카드", itemTone: "bg-info", amount: "$300", net: "ERC20", hash: "0x9820…3d7c", status: "confirming", conf: "6/12" },
-  { time: "06-16 12:47", uid: "FT-19A0FF", item: "엔진 구독", itemTone: "bg-green-500", amount: "$120", net: "Polygon", hash: "0x5e1d…77aa", status: "completed", conf: "50/50" },
-  { time: "06-16 12:05", uid: "FT-5C32B8", item: "엔진 구독", itemTone: "bg-green-500", amount: "$120", net: "TRC20", hash: "0x2b20…1b3e", status: "completed", conf: "19/19" },
+  { time: "06-16 12:47", uid: "FT-19A0FF", item: "포르투나 구독", itemTone: "bg-green-500", amount: "$120", net: "Polygon", hash: "0x5e1d…77aa", status: "completed", conf: "50/50" },
+  { time: "06-16 12:05", uid: "FT-5C32B8", item: "포르투나 구독", itemTone: "bg-green-500", amount: "$120", net: "TRC20", hash: "0x2b20…1b3e", status: "completed", conf: "19/19" },
   { time: "06-16 11:33", uid: "FT-A1B2C3", item: "연회비", itemTone: "bg-crypto", amount: "$200", net: "BSC", hash: "0x7ffa…c401", status: "confirming", conf: "5/15" },
-  { time: "06-16 10:58", uid: "FT-6E7F88", item: "엔진 구독", itemTone: "bg-green-500", amount: "$120", net: "TRC20", hash: "0x3a0e…ff29", status: "completed", conf: "19/19" },
+  { time: "06-16 10:58", uid: "FT-6E7F88", item: "포르투나 구독", itemTone: "bg-green-500", amount: "$120", net: "TRC20", hash: "0x3a0e…ff29", status: "completed", conf: "19/19" },
   { time: "06-16 10:12", uid: "FT-D33C19", item: "크립토카드", itemTone: "bg-info", amount: "$300", net: "ERC20", hash: "0xe471…0b8d", status: "failed", conf: "—" },
 ];
 

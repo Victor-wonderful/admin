@@ -66,7 +66,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 </span>
                 <div>
                   <div className="text-[15px] font-semibold text-text-primary">포르투나 구독</div>
-                  <div className="text-xs text-text-secondary">AI 크립토 자동매매 엔진</div>
+                  <div className="text-xs text-text-secondary">AI 매매 판단 체크 · 진입 전 검증</div>
                 </div>
               </div>
               <Pill tone={activeSub ? "green" : "neutral"} dot={!!activeSub}>{subState}</Pill>

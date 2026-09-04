@@ -55,7 +55,7 @@ export default async function MarketerReferralPage() {
   const pctOf = (n: number) => (total > 0 ? Math.max(n > 0 ? 8 : 0, Math.round((n / total) * 100)) : 0);
   const funnel = [
     { name: "회원 가입", sub: "내 추천 코드 가입", count: total.toLocaleString(), w: 100, bar: "bg-info", pct: "100%" },
-    { name: "구독 전환", sub: "엔진 구독 결제", count: subscribed.toLocaleString(), w: pctOf(subscribed), bar: "bg-green-600", pct: `${convRate}%` },
+    { name: "구독 전환", sub: "포르투나 구독 결제", count: subscribed.toLocaleString(), w: pctOf(subscribed), bar: "bg-green-600", pct: `${convRate}%` },
     { name: "마케터 전환", sub: "연회비 납부·활동", count: marketers.toLocaleString(), w: pctOf(marketers), bar: "bg-crypto", pct: `${mktRate}%` },
   ];
 

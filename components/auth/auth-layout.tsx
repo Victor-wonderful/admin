@@ -3,7 +3,7 @@ import { ShieldCheckIcon, CpuIcon, TrendingUpIcon } from "lucide-react";
 import { FortunaLogo } from "@/components/brand/fortuna-logo";
 
 const POINTS = [
-  { icon: CpuIcon, t: "AI 자동매매 엔진", s: "포르투나 24/7 무인 운용" },
+  { icon: CpuIcon, t: "AI 매매 판단 체크", s: "진입 전 시나리오·자금 규율 검증" },
   { icon: ShieldCheckIcon, t: "USDT 온체인 정산", s: "투명한 수당·출금" },
   { icon: TrendingUpIcon, t: "3단계 보상", s: "직접추천 · 직급 · 공유수당" },
 ];

@@ -29,11 +29,11 @@ const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const ANNUAL = 200;
 const TODAY = new Date("2026-06-15");
 
-// 엔진 가동 텔레메트리는 외부 데이터 부재로 예시.
+// 매매 판단 체크 이용 지표는 Fortuna 앱 데이터 연동 전이라 예시.
 const METRICS = [
-  { k: "가동률", v: "99.8%", c: "text-green-700" },
-  { k: "누적 거래", v: "1,284건", c: "text-text-primary" },
-  { k: "최근 동기화", v: "2분 전", c: "text-text-primary" },
+  { k: "판정 통과율", v: "61%", c: "text-green-700" },
+  { k: "누적 분석", v: "1,284건", c: "text-text-primary" },
+  { k: "최근 분석", v: "2분 전", c: "text-text-primary" },
 ];
 const BARS = [52, 60, 48, 68, 72, 58, 80, 64, 76, 70, 88, 82, 96, 104];
 const UPGRADE = ["전용 추천 코드 발급", "직추·직급·공유 수당 3종", "계보도·레퍼럴 기능 잠금 해제"];
@@ -66,16 +66,16 @@ export default async function SubscriberDashboardPage() {
 
   return (
     <>
-      <Topbar title="대시보드" sub="엔진 가동 현황 · 구독 관리" uid={uid} />
+      <Topbar title="대시보드" sub="매매 판단 체크 현황 · 구독 관리" uid={uid} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
-        {/* 엔진 가동 히어로 */}
+        {/* 매매 판단 체크 히어로 */}
         <div className="flex items-center justify-between gap-4 rounded-xl bg-gradient-to-br from-lime to-green-600 p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
           <div className="space-y-2.5">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-              <span className="size-2 rounded-full bg-white" /> {activeSub ? "엔진 가동 중" : "구독 만료"}
+              <span className="size-2 rounded-full bg-white" /> {activeSub ? "매매 판단 체크 이용 중" : "구독 만료"}
             </span>
-            <h2 className="text-[23px] font-bold">포르투나 {activeSub ? "가동 중" : "정지"}</h2>
+            <h2 className="text-[23px] font-bold">포르투나 매매 판단 체크 {activeSub ? "이용 중" : "정지"}</h2>
             <p className="text-sm text-white/80">
               구독 {subs.length}건 · 다음 결제 {nextDate} · 잔액 {usd(balance)}
             </p>
@@ -95,7 +95,7 @@ export default async function SubscriberDashboardPage() {
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_400px]">
-          <Panel title="엔진 가동 현황" sub="최근 14일 운용 · 자동매매 (예시)" action={<Pill tone="green" dot>정상 작동</Pill>}>
+          <Panel title="매매 판단 체크 현황" sub="최근 14일 분석 · 거래 (예시)" action={<Pill tone="green" dot>정상 작동</Pill>}>
             <div className="flex items-center gap-0 rounded-lg bg-surface-muted px-1 py-3.5 ring-1 ring-border">
               {METRICS.map((m, i) => (
                 <div key={m.k} className={cn("flex-1 text-center", i > 0 && "border-l")}>

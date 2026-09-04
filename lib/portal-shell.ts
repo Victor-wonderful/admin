@@ -20,9 +20,9 @@ export async function getGradeSub(member: MemberRow): Promise<string> {
     const active = subs.find((s) => s.status === "active" && s.period_start <= TODAY && TODAY <= s.period_end);
     if (!active) return "구독 회원";
     const dday = Math.max(0, Math.round((new Date(active.period_end).getTime() - new Date(TODAY).getTime()) / 86400000));
-    return `엔진 가동중 · 다음 결제 D-${dday}`;
+    return `매매 판단 체크 이용중 · 다음 결제 D-${dday}`;
   }
-  return "구독 시작 전 · 엔진 미가동";
+  return "구독 시작 전 · 매매 판단 체크 미이용";
 }
 
 export async function getShellProps(member: MemberRow) {
