@@ -49,9 +49,9 @@ export function MemberSidebar({
 }) {
   // 마케터 전용 메뉴(계보도·레퍼럴·내 수당): 마케터에게만 노출.
   const isMarketer = role === "marketer";
-  // 등급별 홈. 등록/구독회원의 지갑·주문·프로필 전용 페이지는 아직 없어 포털 홈(대시보드 안에 지갑·구독 포함)으로 보낸다.
+  // 등급별 경로: 마케터는 /marketer/*, 등록·구독회원은 /portal/* (대시보드만 등급별 페이지가 다름)
   const home = role === "marketer" ? "/marketer/dashboard" : role === "subscriber" ? "/portal/subscriber" : "/portal/registered";
-  const sub = (marketerHref: string) => (isMarketer ? marketerHref : home);
+  const sub = (page: string) => (isMarketer ? `/marketer/${page}` : `/portal/${page}`);
 
   return (
     <Sidebar>
@@ -71,9 +71,9 @@ export function MemberSidebar({
             <SidebarNavItem href="/marketer/commissions" icon={CoinsIcon} label="내 수당" sublabel="Commissions" />
           </>
         ) : null}
-        <SidebarNavItem href={sub("/marketer/wallet")} icon={WalletIcon} label="내 지갑" sublabel="My Wallet" />
-        <SidebarNavItem href={sub("/marketer/orders")} icon={ShoppingCartIcon} label="구독·주문" sublabel="Subscription" />
-        <SidebarNavItem href={sub("/marketer/profile")} icon={UserRoundIcon} label="프로필·설정" sublabel="Profile" />
+        <SidebarNavItem href={sub("wallet")} icon={WalletIcon} label="내 지갑" sublabel="My Wallet" />
+        <SidebarNavItem href={sub("orders")} icon={ShoppingCartIcon} label="구독·주문" sublabel="Subscription" />
+        <SidebarNavItem href={sub("profile")} icon={UserRoundIcon} label="프로필·설정" sublabel="Profile" />
       </SidebarSection>
 
       <SidebarSpacer />

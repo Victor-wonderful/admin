@@ -10,7 +10,6 @@ import {
   TrendingUpIcon,
 } from "lucide-react";
 
-import { MemberShell } from "@/components/shell/member-shell";
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
@@ -62,7 +61,7 @@ export default async function RegisteredDashboardPage() {
   const doneCount = steps.filter((s) => s.state === "done").length;
 
   return (
-    <MemberShell role="registered" uid={uid} gradeSub="구독 시작 전 · 엔진 미가동">
+    <>
       <Topbar title="대시보드" sub="환영합니다 · 구독을 시작해 보세요" uid={uid} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
@@ -220,6 +219,6 @@ export default async function RegisteredDashboardPage() {
           ))}
         </div>
       </div>
-    </MemberShell>
+    </>
   );
 }

@@ -12,7 +12,6 @@ import {
   UserRoundIcon,
 } from "lucide-react";
 
-import { MemberShell } from "@/components/shell/member-shell";
 import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
@@ -66,7 +65,7 @@ export default async function SubscriberDashboardPage() {
   ];
 
   return (
-    <MemberShell role="subscriber" uid={uid} gradeSub={dday != null ? `엔진 가동중 · 다음 결제 D-${dday}` : "구독 회원"}>
+    <>
       <Topbar title="대시보드" sub="엔진 가동 현황 · 구독 관리" uid={uid} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
@@ -173,6 +172,6 @@ export default async function SubscriberDashboardPage() {
           )}
         </div>
       </div>
-    </MemberShell>
+    </>
   );
 }

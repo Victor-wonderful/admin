@@ -1,0 +1,30 @@
+import "server-only";
+import { getMemberSubscriptions } from "@/lib/queries/members";
+import { getMemberRank } from "@/lib/queries/ranks";
+import { toUid } from "@/lib/uid";
+import type { MemberRow } from "@/lib/supabase/types";
+
+// 데모 기준일(정산 사이클과 동일).
+const TODAY = "2026-06-15";
+
+// 회원 사이드바 하단 카드용 등급 요약 문구 — 등급별 실데이터로 계산.
+export async function getGradeSub(member: MemberRow): Promise<string> {
+  if (member.role === "marketer") {
+    const rank = await getMemberRank(member.id);
+    return rank && rank.rank > 0
+      ? `${rank.rank}직급 · 활성 산하 ${rank.total_active.toLocaleString()}명`
+      : "무직급 · 활성 산하 집계";
+  }
+  if (member.role === "subscriber") {
+    const subs = await getMemberSubscriptions(member.id);
+    const active = subs.find((s) => s.status === "active" && s.period_start <= TODAY && TODAY <= s.period_end);
+    if (!active) return "구독 회원";
+    const dday = Math.max(0, Math.round((new Date(active.period_end).getTime() - new Date(TODAY).getTime()) / 86400000));
+    return `엔진 가동중 · 다음 결제 D-${dday}`;
+  }
+  return "구독 시작 전 · 엔진 미가동";
+}
+
+export async function getShellProps(member: MemberRow) {
+  return { role: member.role, uid: toUid(member.id), gradeSub: await getGradeSub(member) };
+}
