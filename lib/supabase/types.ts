@@ -13,6 +13,7 @@ export interface MemberRow {
   joined_at: string;
   is_active_subscriber: boolean;
   created_at: string;
+  fortuna_user_id?: string | null; // Fortuna 제품 앱(Supabase Auth) 연결 id
 }
 
 export interface ReferralCodeRow {

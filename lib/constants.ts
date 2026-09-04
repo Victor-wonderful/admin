@@ -4,3 +4,6 @@ export const ROOT_MARKETER_ID = "aaaaaaaa-0000-0000-0000-000000000000";
 // 데모 시점 — 회원 등급별 포털(등록회원/구독회원). 로그인 회원 자리.
 export const DEMO_REGISTERED_ID = "aaaaaaaa-0000-0000-0000-000000000138";
 export const DEMO_SUBSCRIBER_ID = "aaaaaaaa-0000-0000-0000-00000000000b";
+
+// 포르투나 제품 앱(체험/실사용). 등록회원 대시보드 히어로 등에서 새 탭으로 연결.
+export const FORTUNA_APP_URL = "https://fortuna-three-murex.vercel.app/app";

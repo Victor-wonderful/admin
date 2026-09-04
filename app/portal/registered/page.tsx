@@ -1,5 +1,6 @@
 import {
   SparklesIcon,
+  ExternalLinkIcon,
   CheckIcon,
   WalletIcon,
   CreditCardIcon,
@@ -15,6 +16,7 @@ import { Pill } from "@/components/ui/pill";
 import { LifecycleButton, ChargeButton } from "@/components/portal/lifecycle-actions";
 import { getMemberWallet } from "@/lib/queries/finance";
 import { requireMember } from "@/lib/session";
+import { FORTUNA_APP_URL } from "@/lib/constants";
 import { toUid } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
@@ -66,21 +68,21 @@ export default async function RegisteredDashboardPage() {
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
               <SparklesIcon className="size-3" /> 등록회원
             </span>
-            <h2 className="text-[23px] font-bold">구독을 시작하고 Alpha Engine을 가동하세요</h2>
+            <h2 className="text-[23px] font-bold">포르투나 플랫폼을 체험해 보세요</h2>
             <p className="max-w-xl text-sm text-white/80">
-              지갑에 USDT를 충전하고 구독을 결제하면 즉시 자동매매가 시작됩니다.
+              구독 전에도 Fortuna 앱에 들어가 AI 매매 판단 기능을 직접 경험할 수 있습니다.
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <LifecycleButton
-              mode="subscribe"
-              memberId={ME}
-              amount={SUB_PRICE}
+            <a
+              href={FORTUNA_APP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700"
             >
-              <CreditCardIcon className="size-[17px]" /> 구독 시작하기
-            </LifecycleButton>
-            <span className="text-xs font-medium text-white/80">Alpha Engine · {usd(SUB_PRICE)} / 월</span>
+              <ExternalLinkIcon className="size-[17px]" /> 플랫폼 체험하기
+            </a>
+            <span className="text-xs font-medium text-white/80">Fortuna 앱 · 새 탭에서 열림</span>
           </div>
         </div>
 

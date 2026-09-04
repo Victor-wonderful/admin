@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/lib/session";
+import { syncFortunaAccount, updateFortunaDisplayName } from "@/lib/fortuna-auth";
 
 // 프로필 액션은 클라이언트가 보낸 id 를 믿지 않고 세션 회원 기준으로만 동작한다.
 export type ProfileState = { ok?: boolean; error?: string } | undefined;
@@ -12,7 +13,7 @@ function revalidateProfile() {
   revalidatePath("/marketer/profile");
 }
 
-// 닉네임(display_name) 변경
+// 닉네임(display_name) 변경 — Fortuna 앱 프로필 이름도 함께 갱신.
 export async function updateNickname(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
   const me = await getCurrentMember();
   if (!me) return { error: "로그인이 필요합니다" };
@@ -22,6 +23,7 @@ export async function updateNickname(_prev: ProfileState, formData: FormData): P
   const sb = getServerClient();
   const { error } = await sb.from("members").update({ display_name: nickname }).eq("id", me.id);
   if (error) return { error: "닉네임 변경에 실패했습니다" };
+  if (me.fortuna_user_id) await updateFortunaDisplayName(me.fortuna_user_id, nickname);
   revalidateProfile();
   return { ok: true };
 }
@@ -32,7 +34,7 @@ const PW_ERRORS: Record<string, string> = {
   MEMBER_NOT_FOUND: "회원 정보를 찾을 수 없습니다",
 };
 
-// 비밀번호 변경(현재 비밀번호 확인은 DB 함수에서 bcrypt 비교)
+// 비밀번호 변경(현재 비밀번호 확인은 DB 함수에서 bcrypt 비교) — Fortuna 앱 비밀번호도 같은 값으로 갱신.
 export async function changePassword(_prev: ProfileState, formData: FormData): Promise<ProfileState> {
   const me = await getCurrentMember();
   if (!me) return { error: "로그인이 필요합니다" };
@@ -49,5 +51,6 @@ export async function changePassword(_prev: ProfileState, formData: FormData): P
     const code = Object.keys(PW_ERRORS).find((k) => error.message.includes(k));
     return { error: code ? PW_ERRORS[code] : "비밀번호 변경에 실패했습니다" };
   }
+  await syncFortunaAccount({ memberId: me.id, email: me.email, password: next, displayName: me.display_name });
   return { ok: true };
 }

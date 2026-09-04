@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerClient } from "@/lib/supabase/server";
 import { SESSION_COOKIE, roleHome } from "@/lib/session";
+import { syncFortunaAccount } from "@/lib/fortuna-auth";
 import type { MemberRole } from "@/lib/supabase/types";
 
 const MAX_AGE = 60 * 60 * 24 * 7; // 7일
@@ -28,6 +29,10 @@ export async function loginByEmail(_prev: AuthState, formData: FormData): Promis
   const row = Array.isArray(data) ? data[0] : null;
   if (!row) return { error: "ID 또는 비밀번호가 올바르지 않습니다", values: { email } };
 
+  // Fortuna 앱 계정 동기화(기존 회원 backfill): 방금 검증된 비밀번호로 같은 계정을 보장.
+  const { data: m } = await sb.from("members").select("display_name").eq("id", row.id).maybeSingle();
+  await syncFortunaAccount({ memberId: row.id, email, password, displayName: m?.display_name ?? email.split("@")[0] });
+
   await setSession(row.id);
   redirect(roleHome(row.role as MemberRole));
 }
@@ -41,7 +46,7 @@ const SIGNUP_ERRORS: Record<string, string> = {
   EMAIL_TAKEN: "이미 가입된 ID입니다",
 };
 
-// 회원가입: 닉네임 + ID(이메일) + 비밀번호 + 추천 코드 → 등록회원 생성 → 자동 로그인 → 등록회원 포털.
+// 회원가입: 닉네임 + ID(이메일) + 비밀번호 + 추천 코드 → 등록회원 생성 → Fortuna 계정 동기화 → 자동 로그인.
 export async function signup(_prev: AuthState, formData: FormData): Promise<AuthState> {
   const values = {
     nickname: String(formData.get("nickname") ?? "").trim(),
@@ -69,7 +74,10 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
     return { error: code ? SIGNUP_ERRORS[code] : "가입 처리 중 오류가 발생했습니다", values };
   }
 
-  await setSession(String(data));
+  const memberId = String(data);
+  await syncFortunaAccount({ memberId, email: values.email, password, displayName: values.nickname });
+
+  await setSession(memberId);
   redirect(roleHome("registered"));
 }
 
