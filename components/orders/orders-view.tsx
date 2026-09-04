@@ -56,7 +56,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
       <Topbar title="구독·주문" sub="내 구독 · 결제 내역" uid={toUid(memberId)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className={cn("grid gap-4", role !== "registered" && "lg:grid-cols-2")}>
           {/* 카드 1: Alpha Engine 구독 (전 등급) */}
           <Panel>
             <div className="flex items-center justify-between">
@@ -94,8 +94,8 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
             )}
           </Panel>
 
-          {/* 카드 2: 등급별 — 마케터: 연회비 / 구독회원: 마케터 승급 / 등록회원: 한번에 마케터 */}
-          {role === "marketer" ? (
+          {/* 카드 2: 등급별 — 마케터: 연회비 / 구독회원: 마케터 승급 / 등록회원: 없음(마케터 관련 노출 안 함) */}
+          {role === "registered" ? null : role === "marketer" ? (
             <Panel>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -134,7 +134,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                   </span>
                   <div>
                     <div className="text-[15px] font-semibold text-text-primary">
-                      {role === "subscriber" ? "마케터 승급" : "한번에 마케터로 시작"}
+                      마케터 승급
                     </div>
                     <div className="text-xs text-text-secondary">연회비 결제 → 추천 수당 자격 · 계보도·레퍼럴 해제</div>
                   </div>
@@ -142,9 +142,9 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 <Pill tone="crypto">승급</Pill>
               </div>
               <div className="mt-3 flex items-end gap-1">
-                <span className="text-2xl font-bold text-text-primary">{usd(role === "subscriber" ? ANNUAL : SUB_PRICE + ANNUAL)}</span>
+                <span className="text-2xl font-bold text-text-primary">{usd(ANNUAL)}</span>
                 <span className="pb-1 text-xs font-medium text-text-tertiary">
-                  {role === "subscriber" ? "/ 년 · USDT" : "· 구독 $120 + 연회비 $200"}
+                  / 년 · USDT
                 </span>
               </div>
               <div className="mt-3">
@@ -156,12 +156,12 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 ))}
               </div>
               <LifecycleButton
-                mode={role === "subscriber" ? "upgrade" : "subscribe_upgrade"}
+                mode="upgrade"
                 memberId={memberId}
-                amount={role === "subscriber" ? ANNUAL : SUB_PRICE + ANNUAL}
+                amount={ANNUAL}
                 className={cn(ctaClass, "w-full bg-crypto text-white")}
               >
-                <ArrowUpRightIcon className="size-4" /> {role === "subscriber" ? `마케터 승급 · ${usd(ANNUAL)}` : `마케터로 바로 시작 · ${usd(SUB_PRICE + ANNUAL)}`}
+                <ArrowUpRightIcon className="size-4" /> 마케터 승급 · {usd(ANNUAL)}
               </LifecycleButton>
             </Panel>
           )}

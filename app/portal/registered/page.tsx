@@ -7,7 +7,6 @@ import {
   HashIcon,
   CopyIcon,
   ShieldCheckIcon,
-  TrendingUpIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
@@ -27,13 +26,11 @@ const BENEFITS = [
   "AI 전략 기반 24/7 자동매매",
   "실시간 시장 대응 · 무인 운용",
   "누적 수익·거래 리포트 제공",
-  "마케터 승급 시 추천 수당 자격",
 ];
 
 const TILES = [
   { icon: CpuIcon, tone: "bg-green-50 text-green-700", title: "AI 자동매매", sub: "24/7 무인 운용" },
   { icon: ShieldCheckIcon, tone: "bg-info-soft text-info", title: "투명 정산", sub: "USDT 온체인" },
-  { icon: TrendingUpIcon, tone: "bg-crypto-soft text-crypto", title: "마케터 승급", sub: "추천 수당 자격" },
 ];
 
 const SUB_PRICE = 120;
@@ -48,8 +45,6 @@ export default async function RegisteredDashboardPage() {
   const address = wallet?.deposit_address ?? "충전 시 자동 발급";
   const subscribed = false; // requireMember("registered") 통과 = 아직 등록회원
   const canSubscribe = balance >= SUB_PRICE;
-  const FULL_PRICE = SUB_PRICE + 200; // 구독 $120 + 연회비 $200 = 마케터 직행
-  const canFull = balance >= FULL_PRICE;
 
   // 시작 단계 상태(실데이터): 가입 done → 충전(balance>0) → 구독(role!=registered) → 가동
   const steps = [
@@ -154,26 +149,6 @@ export default async function RegisteredDashboardPage() {
             {!canSubscribe && !subscribed ? (
               <p className="mt-2 text-center text-[11px] font-medium text-warning">잔액 부족 — 먼저 충전하세요 (필요 {usd(SUB_PRICE)})</p>
             ) : null}
-
-            {/* 한번에 마케터 직행 */}
-            <div className="mt-3 rounded-lg bg-crypto-soft p-3 ring-1 ring-crypto/20">
-              <div className="flex items-center justify-between">
-                <span className="text-[12px] font-semibold text-crypto">한번에 마케터로 시작</span>
-                <span className="text-[12px] font-bold text-crypto">{usd(FULL_PRICE)}</span>
-              </div>
-              <p className="mt-0.5 text-[11px] text-text-secondary">구독 {usd(SUB_PRICE)} + 연회비 $200 = 추천 수당 자격 즉시 획득</p>
-              <LifecycleButton
-                mode="subscribe_upgrade"
-                memberId={ME}
-                amount={FULL_PRICE}
-                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-md bg-crypto py-2.5 text-[13px] font-bold text-white"
-              >
-                마케터로 바로 시작 · {usd(FULL_PRICE)}
-              </LifecycleButton>
-              {!canFull ? (
-                <p className="mt-1.5 text-center text-[11px] font-medium text-text-tertiary">잔액 부족 — 충전 후 가능 (필요 {usd(FULL_PRICE)})</p>
-              ) : null}
-            </div>
           </Panel>
 
           <Panel title="지갑 충전" sub="구독 결제를 위해 USDT를 충전하세요">
@@ -207,7 +182,7 @@ export default async function RegisteredDashboardPage() {
         </div>
 
         {/* 혜택 */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           {TILES.map((t) => (
             <div key={t.title} className="flex items-center gap-3 rounded-lg bg-card p-4 ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]">
               <span className={cn("grid size-10 place-items-center rounded-[11px]", t.tone)}><t.icon className="size-[19px]" /></span>
