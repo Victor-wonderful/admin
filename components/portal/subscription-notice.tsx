@@ -4,6 +4,7 @@ import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { getMemberSubscriptions } from "@/lib/queries/members";
 import { getMemberWallet } from "@/lib/queries/finance";
+import { getPlanPrices } from "@/lib/queries/products";
 import { today, daysBetween } from "@/lib/dates";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
@@ -14,11 +15,11 @@ const REMIND_DAYS = 7; // 종료 7일 전부터 잔액 부족 안내
 //  · 종료 임박(7일) + 잔액 부족: 자동 결제 실패 예고 + 입금 버튼
 //  · 그 외: 렌더하지 않음
 export async function SubscriptionNotice({ memberId }: { memberId: string }) {
-  const [subs, wallet] = await Promise.all([getMemberSubscriptions(memberId), getMemberWallet(memberId)]);
+  const [subs, wallet, plans] = await Promise.all([getMemberSubscriptions(memberId), getMemberWallet(memberId), getPlanPrices()]);
   const t = today();
   const active = subs.find((s) => s.status === "active" && s.period_start <= t && t <= s.period_end);
   const latest = subs[0] ?? null;
-  const price = Number((active ?? latest)?.amount_usd ?? 120);
+  const price = plans.sub; // 현재 구독 상품가(관리자 카탈로그)
   const balance = wallet?.balance_usd ?? 0;
 
   if (!active) {

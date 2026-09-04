@@ -15,8 +15,9 @@ import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-request-modal";
 import { DepositButton } from "@/components/wallet/deposit-button";
+import { LedgerTable } from "@/components/wallet/ledger-table";
 import { getDepositNetworks } from "@/lib/deposit-config";
-import { getMemberWalletData, type LedgerEntry } from "@/lib/queries/finance";
+import { getMemberWalletData } from "@/lib/queries/finance";
 import { getMember } from "@/lib/queries/members";
 import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
@@ -25,24 +26,9 @@ import { cn } from "@/lib/utils";
 // 수당 적립 추이는 일별 이력 데이터가 없어 정적(예시). 마케터에게만 표시.
 const ACCRUAL = [44, 58, 52, 70, 64, 82, 76, 60, 90, 84, 102, 96, 118, 140];
 
-const TABS = ["전체", "입금", "수당", "결제", "출금"];
-
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 // -0 방지: 0 이면 항상 "+$0".
 const signed = (n: number) => (n === 0 || n > 0 ? `+${usd(Math.abs(n))}` : `−${usd(Math.abs(n))}`);
-
-const LEDGER_META: Record<LedgerEntry["tx_type"], { label: string; tone: "green" | "info" | "warning" | "neutral" }> = {
-  commission: { label: "수당", tone: "green" },
-  deposit: { label: "입금", tone: "info" },
-  payment: { label: "결제", tone: "warning" },
-  withdrawal: { label: "출금", tone: "neutral" },
-};
-
-const fmtDate = (iso: string) => {
-  const d = new Date(iso);
-  const p = (x: number) => String(x).padStart(2, "0");
-  return `${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
-};
 
 // 내 지갑 — 마케터/구독회원/등록회원 공용. 수당 관련 요소는 마케터에게만.
 // 입금: 회사 입금 주소(Tron/BSC) 안내. 출금: 회원이 프로필에 등록한 본인 지갑 주소로.
@@ -63,7 +49,6 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
   const chargedPart = Math.min(totalDeposit, balance);
   const accruedPart = Math.max(balance - chargedPart, 0);
   const visibleLedger = isMarketer ? ledger : ledger.filter((r) => r.tx_type !== "commission");
-  const tabs = isMarketer ? TABS : TABS.filter((t) => t !== "수당");
 
   const kpis = isMarketer
     ? [
@@ -183,40 +168,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
           </Panel>
         </div>
 
-        <Panel
-          title={isMarketer ? "입출금·수당 내역" : "입출금 내역"}
-          action={
-            <div className="flex gap-1 rounded-md bg-surface-muted p-1 ring-1 ring-border">
-              {tabs.map((t, i) => (
-                <span key={t} className={cn("rounded px-3 py-1.5 text-[13px]", i === 0 ? "bg-card font-semibold text-text-primary shadow-sm" : "font-medium text-text-secondary")}>
-                  {t}
-                </span>
-              ))}
-            </div>
-          }
-        >
-          <div>
-            <div className="grid grid-cols-[auto_auto_1fr_auto_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
-              <span>일시</span><span>유형</span><span>내역</span><span>네트워크</span><span className="text-right">금액</span>
-            </div>
-            {visibleLedger.length === 0 ? (
-              <div className="py-8 text-center text-sm text-text-tertiary">거래 내역이 없습니다.</div>
-            ) : (
-              visibleLedger.map((r, i) => {
-                const meta = LEDGER_META[r.tx_type];
-                return (
-                  <div key={i} className="grid grid-cols-[auto_auto_1fr_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
-                    <span className="text-text-tertiary tabular-nums">{fmtDate(r.ts)}</span>
-                    <span><Pill tone={meta.tone}>{meta.label}</Pill></span>
-                    <span className="text-text-secondary">{r.desc}</span>
-                    <span className="text-xs text-text-tertiary">{r.network ?? "—"}</span>
-                    <span className={cn("text-right font-bold tabular-nums", r.amount_usd >= 0 ? "text-green-700" : "text-text-primary")}>{signed(r.amount_usd)}</span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </Panel>
+        <LedgerTable ledger={visibleLedger} showCommission={isMarketer} />
       </div>
     </>
   );

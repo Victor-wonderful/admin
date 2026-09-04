@@ -2875,3 +2875,9 @@ insert into subscriptions(member_id, product_id, amount_usd, period_start, perio
 
 -- 활성 플래그 확정
 select refresh_active_subscribers('2026-06-14');
+
+-- 0030 이후: 상품 운영 플래그 기본값
+update products set counts_active = true,  sort_order = 10 where code = 'bot_sub';
+update products set sort_order = 20 where code = 'annual_fee';
+update products set sort_order = 30 where code = 'coin_visa';
+update products set sort_order = 40 where code = 'exchange_fee_share';

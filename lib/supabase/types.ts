@@ -32,6 +32,12 @@ export interface ProductRow {
   name: string;
   price_usd: number | null;
   billing: "monthly" | "yearly" | "event";
+  is_active: boolean; // 판매 중
+  pool_eligible: boolean; // 매출을 수당 풀에 포함
+  counts_active: boolean; // 구매 시 활성 구독자 카운팅
+  description: string | null;
+  sort_order: number;
+  updated_at?: string;
 }
 
 export interface SubscriptionRow {

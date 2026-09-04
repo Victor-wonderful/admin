@@ -22,6 +22,7 @@ import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { FortunaFeatureTiles } from "@/components/portal/fortuna-feature-tiles";
 import { SubscriptionNotice } from "@/components/portal/subscription-notice";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
+import { getPlanPrices } from "@/lib/queries/products";
 import { getMemberWallet } from "@/lib/queries/finance";
 import { requireMember } from "@/lib/session";
 import { FORTUNA_APP_URL } from "@/lib/constants";
@@ -32,7 +33,6 @@ import { cn } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
-const SUB_PRICE = 120;
 // 기준일 = 실제 오늘(Asia/Seoul).
 const TODAY = today();
 
@@ -43,6 +43,7 @@ export default async function SubscriberDashboardPage() {
   const ME = me.id;
   const [wallet, subs, products] = await Promise.all([getMemberWallet(ME), getMemberSubscriptions(ME), listProducts()]);
   const productName = new Map(products.map((p) => [p.id, p.name]));
+  const { sub: SUB_PRICE } = await getPlanPrices(); // 관리자 상품 카탈로그 가격
 
   const uid = toUid(ME);
   const balance = wallet?.balance_usd ?? 0;

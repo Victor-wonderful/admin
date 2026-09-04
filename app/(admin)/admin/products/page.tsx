@@ -3,15 +3,16 @@ import {
   BadgeCheckIcon,
   CreditCardIcon,
   Share2Icon,
-  PlusIcon,
-  PencilIcon,
+  PackageIcon,
+  InfoIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
-import { AddProductModal } from "@/components/products/add-product-modal";
-import { listProducts } from "@/lib/queries/members";
+import { ProductFormModal } from "@/components/products/product-form-modal";
+import { ActiveToggle } from "@/components/products/active-toggle";
+import { listAllProducts } from "@/lib/queries/products";
 import type { ProductRow } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -20,56 +21,62 @@ export const dynamic = "force-dynamic";
 const BILLING_CYCLE: Record<ProductRow["billing"], string> = {
   monthly: "/ 월",
   yearly: "/ 년",
-  event: "이벤트",
+  event: "일회성",
 };
 
-const ICONS = [
-  { icon: CpuIcon, tone: "bg-green-50 text-green-700" },
-  { icon: BadgeCheckIcon, tone: "bg-crypto-soft text-crypto" },
-  { icon: CreditCardIcon, tone: "bg-info-soft text-info" },
-  { icon: Share2Icon, tone: "bg-warning-soft text-warning" },
-];
+// 코드별 아이콘(알려진 상품) · 그 외는 기본 아이콘
+const ICON_BY_CODE: Record<string, { icon: React.ComponentType<{ className?: string }>; tone: string }> = {
+  bot_sub: { icon: CpuIcon, tone: "bg-green-50 text-green-700" },
+  annual_fee: { icon: BadgeCheckIcon, tone: "bg-crypto-soft text-crypto" },
+  coin_visa: { icon: CreditCardIcon, tone: "bg-info-soft text-info" },
+  exchange_fee_share: { icon: Share2Icon, tone: "bg-warning-soft text-warning" },
+};
+const DEFAULT_ICON = { icon: PackageIcon, tone: "bg-n-100 text-n-600" };
+
+// 회원 화면에 연결된 플랜(가격이 그대로 반영되는 상품)
+const PLAN_LABEL: Record<string, string> = { bot_sub: "회원 구독 플랜(Basic)", annual_fee: "파트너 멤버십(Pro)" };
 
 export default async function AdminProductsPage() {
-  const products = await listProducts();
+  const products = await listAllProducts();
 
   return (
     <>
       <Topbar
         title="상품·구독플랜"
-        sub="상품 카탈로그 · 주문·정산 항목 기준"
+        sub="상품 카탈로그 · 주문·정산 항목 기준 · 가격은 회원 화면에 즉시 반영"
         uid="운영자"
-        actions={<AddProductModal />}
+        actions={<ProductFormModal />}
       />
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {products.map((p, i) => {
-            const { icon: Icon, tone } = ICONS[i % ICONS.length];
-            const counting = p.billing === "monthly";
+          {products.map((p) => {
+            const { icon: Icon, tone } = ICON_BY_CODE[p.code] ?? DEFAULT_ICON;
+            const plan = PLAN_LABEL[p.code];
             return (
-              <Panel key={p.id}>
+              <Panel key={p.id} className={cn(!p.is_active && "opacity-70")}>
                 <div className="flex items-start justify-between">
                   <span className={cn("grid size-11 place-items-center rounded-[12px]", tone)}>
                     <Icon className="size-[22px]" />
                   </span>
-                  <span className="flex h-6 w-10 items-center rounded-full bg-brand px-0.5">
-                    <span className="ml-auto size-5 rounded-full bg-white" />
-                  </span>
+                  <ActiveToggle id={p.id} active={p.is_active} />
                 </div>
-                <div className="mt-3 text-[15px] font-bold text-text-primary">{p.name}</div>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-[15px] font-bold text-text-primary">{p.name}</span>
+                  {!p.is_active ? <Pill tone="neutral">판매 중지</Pill> : null}
+                </div>
                 <div className="font-mono text-[11px] text-text-tertiary">{p.code}</div>
+                {plan ? <div className="mt-1 text-[11px] font-medium text-green-700">{plan} · 회원 화면 가격 연동</div> : null}
                 <div className="mt-2 flex items-end gap-1">
                   <span className="text-2xl font-bold text-text-primary">
                     {p.price_usd != null ? `$${Number(p.price_usd).toFixed(0)}` : "변동"}
                   </span>
                   <span className="pb-1 text-xs font-medium text-text-tertiary">{BILLING_CYCLE[p.billing]}</span>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3">
-                  <Pill tone="green">수당 적용</Pill>
-                  {counting ? <Pill tone="info">카운팅</Pill> : null}
-                  <button className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-text-tertiary">
-                    <PencilIcon className="size-3" /> 수정
-                  </button>
+                {p.description ? <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-text-secondary">{p.description}</p> : null}
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-3">
+                  {p.pool_eligible ? <Pill tone="green">수당 풀</Pill> : <Pill tone="neutral">풀 제외</Pill>}
+                  {p.counts_active ? <Pill tone="info">카운팅</Pill> : null}
+                  <ProductFormModal product={p} />
                 </div>
               </Panel>
             );
@@ -77,8 +84,11 @@ export default async function AdminProductsPage() {
         </div>
 
         <div className="flex items-start gap-2.5 rounded-md bg-info-soft px-3.5 py-3 text-xs leading-relaxed text-info">
-          <PlusIcon className="mt-0.5 size-4 shrink-0" />
-          보상 엔진은 상품에 하드코딩되지 않습니다. 신상품은 카탈로그 추가로 확장되며, 각 상품마다 수당 풀 적용·활성 구독자 카운팅 여부를 설정합니다.
+          <InfoIcon className="mt-0.5 size-4 shrink-0" />
+          <div>
+            <b>bot_sub</b>(회원 구독)과 <b>annual_fee</b>(파트너 멤버십) 가격은 등록·구독회원 화면의 결제 금액과 자동 갱신 금액에 그대로 쓰입니다.
+            판매 중지하면 회원 화면에서 해당 결제 버튼이 사라집니다. 그 외 상품은 카탈로그에만 등록되며, 회원 구매 화면과 정산 연결은 다음 단계입니다.
+          </div>
         </div>
       </div>
     </>

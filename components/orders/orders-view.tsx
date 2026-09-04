@@ -15,6 +15,7 @@ import { Pill } from "@/components/ui/pill";
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
+import { getPlanPrices } from "@/lib/queries/products";
 import { getMemberWallet } from "@/lib/queries/finance";
 import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
@@ -22,8 +23,6 @@ import { today } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
-const SUB_PRICE = 120;
-const ANNUAL = 200;
 // 기준일 = 실제 오늘(Asia/Seoul).
 const TODAY = today();
 
@@ -35,13 +34,14 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
     getMemberWallet(memberId),
   ]);
   const productName = new Map(products.map((p) => [p.id, p.name]));
+  const { sub: SUB_PRICE, annual: ANNUAL, subActive, partnerActive } = await getPlanPrices(); // 관리자 상품 카탈로그 가격
 
   const activeSub = subs.find((s) => s.status === "active" && s.period_start <= TODAY && TODAY <= s.period_end);
   const latestSub = subs[0] ?? null;
   const subState = activeSub ? "가동 중" : role === "registered" ? "미구독" : "비활성";
   const subNext = (activeSub ?? latestSub)?.period_end?.slice(0, 10) ?? "—";
   const balance = wallet?.balance_usd ?? 0;
-  const subPrice = activeSub ? Number(activeSub.amount_usd) : SUB_PRICE;
+  const subPrice = SUB_PRICE; // 다음 결제·표시가 = 현재 상품가(마지막 결제액이 아님)
 
   const UPCOMING = activeSub
     ? [{ name: "포르투나 구독", sub: `월 구독 · ${subNext}`, amount: usd(subPrice), soft: "bg-green-50 text-green-700", prog: 50, bar: "bg-green-600" }]
@@ -81,7 +81,9 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 </div>
               ))}
             </div>
-            {role === "registered" ? (
+            {role === "registered" && !subActive ? (
+              <div className={cn(ctaClass, "bg-surface-muted text-text-tertiary")}>구독 판매 준비 중</div>
+            ) : role === "registered" ? (
               <LifecycleButton mode="subscribe" memberId={memberId} amount={SUB_PRICE} className={cn(ctaClass, "w-full bg-brand text-white")}>
                 <CreditCardIcon className="size-4" /> 구독 시작 · {usd(SUB_PRICE)}/월
               </LifecycleButton>
@@ -123,7 +125,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 <Settings2Icon className="size-4" /> 갱신 관리
               </button>
             </Panel>
-          ) : role === "subscriber" ? (
+          ) : role === "subscriber" && partnerActive ? (
             <div id="partner" className="scroll-mt-4">
             <Panel className="ring-1 ring-crypto/30">
               <div className="flex items-center justify-between">

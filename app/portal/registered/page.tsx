@@ -15,6 +15,7 @@ import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { FortunaFeatureTiles } from "@/components/portal/fortuna-feature-tiles";
 import { getDepositNetworks } from "@/lib/deposit-config";
+import { getPlanPrices } from "@/lib/queries/products";
 import { getMemberWallet } from "@/lib/queries/finance";
 import { requireMember } from "@/lib/session";
 import { FORTUNA_APP_URL } from "@/lib/constants";
@@ -32,12 +33,12 @@ const BENEFITS = [
   "거래 일지 · AI 복기 · 성과 분석",
 ];
 
-const SUB_PRICE = 120;
 
 export default async function RegisteredDashboardPage() {
   const me = await requireMember("registered"); // 로그인 + 역할 가드
   const ME = me.id;
   const wallet = await getMemberWallet(ME);
+  const { sub: SUB_PRICE, subActive } = await getPlanPrices(); // 관리자 상품 카탈로그(bot_sub) 가격
 
   const uid = toUid(ME);
   const balance = wallet?.balance_usd ?? 0;
@@ -137,14 +138,18 @@ export default async function RegisteredDashboardPage() {
                 </li>
               ))}
             </ul>
-            <LifecycleButton
-              mode="subscribe"
-              memberId={ME}
-              amount={SUB_PRICE}
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand py-3 text-sm font-bold text-white"
-            >
-              <CreditCardIcon className="size-4" /> 구독하기 · {usd(SUB_PRICE)}/월
-            </LifecycleButton>
+            {subActive ? (
+              <LifecycleButton
+                mode="subscribe"
+                memberId={ME}
+                amount={SUB_PRICE}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand py-3 text-sm font-bold text-white"
+              >
+                <CreditCardIcon className="size-4" /> 구독하기 · {usd(SUB_PRICE)}/월
+              </LifecycleButton>
+            ) : (
+              <div className="mt-4 rounded-md bg-surface-muted py-3 text-center text-sm font-semibold text-text-tertiary">구독 판매 준비 중</div>
+            )}
             {!canSubscribe && !subscribed ? (
               <p className="mt-2 text-center text-[11px] font-medium text-warning">잔액 부족 — 먼저 입금하세요 (필요 {usd(SUB_PRICE)})</p>
             ) : null}
