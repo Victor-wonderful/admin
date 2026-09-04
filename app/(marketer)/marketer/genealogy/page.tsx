@@ -16,7 +16,7 @@ import { MemberTree } from "@/components/trees/member-tree";
 import { GenealogyTrees } from "@/components/trees/genealogy-trees";
 import { getBothTrees } from "@/lib/queries/trees";
 import { getMajorMinor } from "@/lib/queries/legs";
-import { ROOT_MARKETER_ID } from "@/lib/constants";
+import { getMarketerViewerId } from "@/lib/session";
 import { toUid } from "@/lib/uid";
 import type { TreeNode } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
@@ -29,9 +29,10 @@ function countAll(n: TreeNode | null): number {
 }
 
 export default async function MarketerGenealogyPage() {
+  const viewerId = await getMarketerViewerId();
   const [{ unilevel, placement }, mm] = await Promise.all([
-    getBothTrees(ROOT_MARKETER_ID),
-    getMajorMinor(ROOT_MARKETER_ID),
+    getBothTrees(viewerId),
+    getMajorMinor(viewerId),
   ]);
   const balancePct = mm.total_active > 0 ? Math.round((mm.other_minor / mm.total_active) * 100) : 0;
 
@@ -64,7 +65,7 @@ export default async function MarketerGenealogyPage() {
 
   return (
     <>
-      <Topbar title="계보도" sub="추천 계보(수당) · 후원 배치(스필오버)" uid={toUid(ROOT_MARKETER_ID)} />
+      <Topbar title="계보도" sub="추천 계보(수당) · 후원 배치(스필오버)" uid={toUid(viewerId)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

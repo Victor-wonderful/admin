@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MLM 보상 시스템 어드민",
-  description: "직접추천/후원 계보도 · 대실적/기타소실적 집계",
+  title: "포르투나",
+  description: "포르투나 · Alpha Engine 구독 보상 플랫폼",
 };
 
 export default function RootLayout({
@@ -24,6 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
+      suppressHydrationWarning
       lang="ko"
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >

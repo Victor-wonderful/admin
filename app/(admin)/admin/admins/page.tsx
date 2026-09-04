@@ -28,11 +28,11 @@ const ROLES: { name: string; tone: Tone; count: string; desc: string; perms: str
 const ADMINS: {
   name: string; email: string; role: string; tone: Tone; mfa: boolean; last: string; ip: string; active: boolean;
 }[] = [
-  { name: "김운영", email: "ops@alphagate.io", role: "슈퍼관리자", tone: "crypto", mfa: true, last: "06-16 14:20", ip: "211.45.xx.xx", active: true },
-  { name: "이정산", email: "settle@alphagate.io", role: "정산 관리자", tone: "green", mfa: true, last: "06-16 13:05", ip: "118.32.xx.xx", active: true },
-  { name: "박매니저", email: "manager@alphagate.io", role: "운영 매니저", tone: "info", mfa: true, last: "06-16 09:40", ip: "175.12.xx.xx", active: true },
-  { name: "최조회", email: "view@alphagate.io", role: "조회 전용", tone: "neutral", mfa: false, last: "06-15 18:22", ip: "222.99.xx.xx", active: true },
-  { name: "정현우", email: "staff@alphagate.io", role: "운영 매니저", tone: "info", mfa: false, last: "05-28 11:10", ip: "—", active: false },
+  { name: "김운영", email: "ops@fortuna.io", role: "슈퍼관리자", tone: "crypto", mfa: true, last: "06-16 14:20", ip: "211.45.xx.xx", active: true },
+  { name: "이정산", email: "settle@fortuna.io", role: "정산 관리자", tone: "green", mfa: true, last: "06-16 13:05", ip: "118.32.xx.xx", active: true },
+  { name: "박매니저", email: "manager@fortuna.io", role: "운영 매니저", tone: "info", mfa: true, last: "06-16 09:40", ip: "175.12.xx.xx", active: true },
+  { name: "최조회", email: "view@fortuna.io", role: "조회 전용", tone: "neutral", mfa: false, last: "06-15 18:22", ip: "222.99.xx.xx", active: true },
+  { name: "정현우", email: "staff@fortuna.io", role: "운영 매니저", tone: "info", mfa: false, last: "05-28 11:10", ip: "—", active: false },
 ];
 
 const COLS = "grid-cols-[1.9fr_132px_72px_128px_124px_84px_40px]";

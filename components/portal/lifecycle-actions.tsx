@@ -37,16 +37,18 @@ export function LifecycleButton({
   const run = () =>
     start(async () => {
       setErr(null);
-      try {
-        let dest: string;
-        if (mode === "subscribe") dest = await subscribeMember(memberId, amount);
-        else if (mode === "upgrade") dest = await upgradeToMarketer(memberId, amount);
-        else dest = await subscribeAndUpgrade(memberId);
-        setDone(true);
-        router.push(dest); // 새 등급 화면으로 자동 전환
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : "처리 실패");
+      const res =
+        mode === "subscribe"
+          ? await subscribeMember(memberId, amount)
+          : mode === "upgrade"
+            ? await upgradeToMarketer(memberId, amount)
+            : await subscribeAndUpgrade(memberId);
+      if (!res.ok) {
+        setErr(res.error); // 잔액 부족 등 — DB 함수의 한글 메시지 그대로 표시
+        return;
       }
+      setDone(true);
+      router.push(res.dest); // 새 등급 화면으로 자동 전환
     });
 
   if (done)
@@ -87,13 +89,13 @@ export function ChargeButton({
   const submit = () =>
     start(async () => {
       setErr(null);
-      try {
-        await chargeWallet(memberId, amt);
-        setOpen(false);
-        router.refresh();
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : "충전 실패");
+      const res = await chargeWallet(memberId, amt);
+      if (!res.ok) {
+        setErr(res.error);
+        return;
       }
+      setOpen(false);
+      router.refresh();
     });
 
   return (

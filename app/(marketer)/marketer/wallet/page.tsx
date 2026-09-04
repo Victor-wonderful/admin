@@ -14,7 +14,8 @@ import { Pill } from "@/components/ui/pill";
 import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-request-modal";
 import { DepositModal } from "@/components/wallet/deposit-modal";
 import { getMemberWalletData, type LedgerEntry } from "@/lib/queries/finance";
-import { ROOT_MARKETER_ID } from "@/lib/constants";
+import { getMarketerViewerId } from "@/lib/session";
+import { toUid } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -42,8 +43,9 @@ const fmtDate = (iso: string) => {
 };
 
 export default async function MarketerWalletPage() {
+  const viewerId = await getMarketerViewerId();
   const { wallet, monthCommission, monthDeposit, monthPayment, totalDeposit, ledger } =
-    await getMemberWalletData(ROOT_MARKETER_ID);
+    await getMemberWalletData(viewerId);
 
   const balance = wallet?.balance_usd ?? 0;
   const address = wallet?.deposit_address ?? "—";
@@ -61,7 +63,7 @@ export default async function MarketerWalletPage() {
 
   return (
     <>
-      <Topbar title="내 지갑" sub="충전 · 수당 · 결제 · 출금 통합 지갑" uid="AG·8F3A21" />
+      <Topbar title="내 지갑" sub="충전 · 수당 · 결제 · 출금 통합 지갑" uid={toUid(viewerId)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="flex items-center justify-between gap-4 rounded-xl bg-gradient-to-br from-lime to-green-600 p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
@@ -78,7 +80,7 @@ export default async function MarketerWalletPage() {
             <div className="flex gap-2.5">
               <DepositModal address={address} network={network} />
               <WithdrawalRequestModal
-                memberId={ROOT_MARKETER_ID}
+                memberId={viewerId}
                 balance={balance}
                 defaultAddress={address === "—" ? "" : address}
                 defaultNetwork={network}

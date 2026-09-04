@@ -8,31 +8,69 @@ import type { MemberRole } from "@/lib/supabase/types";
 
 const MAX_AGE = 60 * 60 * 24 * 7; // 7일
 
+export type AuthState = { error?: string; values?: Record<string, string> } | undefined;
+
 async function setSession(memberId: string) {
   const store = await cookies();
   store.set(SESSION_COOKIE, memberId, { path: "/", httpOnly: true, sameSite: "lax", maxAge: MAX_AGE });
 }
 
-// 데모 로그인: 회원 id 로 바로 로그인 → 역할별 홈으로.
-export async function loginAs(memberId: string) {
+// ID(이메일) + 비밀번호 로그인(검증은 DB 함수 member_login 에서 bcrypt 비교). 실패 시 에러 문자열 반환.
+export async function loginByEmail(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (!email) return { error: "ID(이메일)를 입력하세요", values: { email } };
+  if (!password) return { error: "비밀번호를 입력하세요", values: { email } };
+
   const sb = getServerClient();
-  const { data, error } = await sb.from("members").select("id, role").eq("id", memberId).maybeSingle();
-  if (error) throw error;
-  if (!data) throw new Error("회원을 찾을 수 없습니다");
-  await setSession(data.id);
-  redirect(roleHome(data.role as MemberRole));
+  const { data, error } = await sb.rpc("member_login", { p_email: email, p_password: password });
+  if (error) return { error: "로그인 처리 중 오류가 발생했습니다", values: { email } };
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { error: "ID 또는 비밀번호가 올바르지 않습니다", values: { email } };
+
+  await setSession(row.id);
+  redirect(roleHome(row.role as MemberRole));
 }
 
-// 이메일로 로그인(데모: 비밀번호 없음). 미존재 시 에러 문자열 반환(폼에서 표시).
-export async function loginByEmail(_prev: unknown, formData: FormData): Promise<{ error: string } | void> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  if (!email) return { error: "이메일을 입력하세요" };
+// DB 함수가 던지는 코드 → 사용자 메시지
+const SIGNUP_ERRORS: Record<string, string> = {
+  NAME_REQUIRED: "닉네임을 입력하세요",
+  EMAIL_INVALID: "ID는 이메일 형식으로 입력하세요",
+  PASSWORD_TOO_SHORT: "비밀번호는 8자 이상이어야 합니다",
+  REF_CODE_INVALID: "유효하지 않은 추천 코드입니다",
+  EMAIL_TAKEN: "이미 가입된 ID입니다",
+};
+
+// 회원가입: 닉네임 + ID(이메일) + 비밀번호 + 추천 코드 → 등록회원 생성 → 자동 로그인 → 등록회원 포털.
+export async function signup(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const values = {
+    nickname: String(formData.get("nickname") ?? "").trim(),
+    email: String(formData.get("email") ?? "").trim().toLowerCase(),
+    ref: String(formData.get("ref") ?? "").trim().toUpperCase(),
+  };
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (!values.nickname) return { error: SIGNUP_ERRORS.NAME_REQUIRED, values };
+  if (!values.email) return { error: "ID(이메일)를 입력하세요", values };
+  if (password.length < 8) return { error: SIGNUP_ERRORS.PASSWORD_TOO_SHORT, values };
+  if (password !== confirm) return { error: "비밀번호 확인이 일치하지 않습니다", values };
+  if (!values.ref) return { error: "추천 코드를 입력하세요", values };
+
   const sb = getServerClient();
-  const { data, error } = await sb.from("members").select("id, role").ilike("email", email).maybeSingle();
-  if (error) return { error: "조회 중 오류가 발생했습니다" };
-  if (!data) return { error: "해당 이메일의 회원이 없습니다" };
-  await setSession(data.id);
-  redirect(roleHome(data.role as MemberRole));
+  const { data, error } = await sb.rpc("register_member", {
+    p_name: values.nickname,
+    p_email: values.email,
+    p_password: password,
+    p_ref_code: values.ref,
+  });
+  if (error) {
+    const code = Object.keys(SIGNUP_ERRORS).find((k) => error.message.includes(k));
+    return { error: code ? SIGNUP_ERRORS[code] : "가입 처리 중 오류가 발생했습니다", values };
+  }
+
+  await setSession(String(data));
+  redirect(roleHome("registered"));
 }
 
 export async function logout() {

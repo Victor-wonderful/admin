@@ -19,7 +19,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { getReferralCode, listReferred } from "@/lib/queries/members";
-import { ROOT_MARKETER_ID } from "@/lib/constants";
+import { getMarketerViewerId } from "@/lib/session";
 import type { MemberRole } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
@@ -38,9 +38,10 @@ const CHANNELS = [
 ];
 
 export default async function MarketerReferralPage() {
+  const viewerId = await getMarketerViewerId();
   const [code, referred] = await Promise.all([
-    getReferralCode(ROOT_MARKETER_ID),
-    listReferred(ROOT_MARKETER_ID),
+    getReferralCode(viewerId),
+    listReferred(viewerId),
   ]);
 
   const total = referred.length;
@@ -67,7 +68,7 @@ export default async function MarketerReferralPage() {
 
   return (
     <>
-      <Topbar title="레퍼럴" sub="내 추천 코드 · 초대 실적" uid={toUid(ROOT_MARKETER_ID)} />
+      <Topbar title="레퍼럴" sub="내 추천 코드 · 초대 실적" uid={toUid(viewerId)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="flex items-center justify-between gap-4 rounded-xl bg-feature p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
@@ -75,7 +76,7 @@ export default async function MarketerReferralPage() {
             <div className="text-xs font-medium text-white/60">내 추천 코드</div>
             <div className="mt-1 font-mono text-[34px] font-bold tracking-wider">{codeStr}</div>
             <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-white/10 px-3 py-1.5 text-xs text-white/70">
-              <HashIcon className="size-3" /> alphagate.io/r/{codeStr}
+              <HashIcon className="size-3" /> fortuna.io/r/{codeStr}
             </div>
           </div>
           <div className="flex gap-2.5">

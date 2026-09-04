@@ -1,5 +1,5 @@
 import { MemberSidebar } from "@/components/shell/member-sidebar";
-import { getMarketerViewerId } from "@/lib/session";
+import { requireMember } from "@/lib/session";
 import { getMemberRank } from "@/lib/queries/ranks";
 import { toUid } from "@/lib/uid";
 
@@ -10,7 +10,7 @@ export default async function MarketerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const id = await getMarketerViewerId();
+  const { id } = await requireMember("marketer"); // 마케터 외 등급은 각자 포털로 리다이렉트
   const rank = await getMemberRank(id);
   const grade =
     rank && rank.rank > 0

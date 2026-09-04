@@ -59,15 +59,15 @@ const STATE: Record<Status, { label: string; tone: "green" | "warning" | "negati
 const ROWS: {
   time: string; dir: Dir; label: string; uid: string; amount: string; net: string; hash: string; conf: string; status: Status;
 }[] = [
-  { time: "14:40", dir: "in", label: "입금", uid: "AG-8F3A21", amount: "$120", net: "TRC20", hash: "0x7a3f…e21b", conf: "19/19", status: "completed" },
-  { time: "14:32", dir: "out", label: "출금", uid: "AG-2B91C0", amount: "$880", net: "TRC20", hash: "0x14c8…9af0", conf: "19/19", status: "completed" },
-  { time: "14:02", dir: "in", label: "입금", uid: "AG-77D4E2", amount: "$200", net: "TRC20", hash: "0x9820…3d7c", conf: "19/19", status: "completed" },
-  { time: "13:30", dir: "out", label: "출금", uid: "AG-19A0FF", amount: "$640", net: "ERC20", hash: "0x5e1d…77aa", conf: "8/12", status: "confirming" },
-  { time: "12:50", dir: "in", label: "입금", uid: "AG-5C32B8", amount: "$300", net: "ERC20", hash: "0x9b20…1b3e", conf: "19/19", status: "completed" },
-  { time: "12:10", dir: "in", label: "입금", uid: "AG-A1B2C3", amount: "$120", net: "Polygon", hash: "0x7ffa…c401", conf: "50/50", status: "completed" },
-  { time: "11:25", dir: "out", label: "출금", uid: "AG-6E7F88", amount: "$520", net: "Polygon", hash: "0x3a0e…ff29", conf: "50/50", status: "completed" },
-  { time: "10:40", dir: "out", label: "출금", uid: "AG-D33C19", amount: "$300", net: "ERC20", hash: "0xe471…0b8d", conf: "—", status: "failed" },
-  { time: "10:12", dir: "in", label: "입금", uid: "AG-5F8B02", amount: "$120", net: "TRC20", hash: "0x6c91…a3d2", conf: "19/19", status: "completed" },
+  { time: "14:40", dir: "in", label: "입금", uid: "FT-8F3A21", amount: "$120", net: "TRC20", hash: "0x7a3f…e21b", conf: "19/19", status: "completed" },
+  { time: "14:32", dir: "out", label: "출금", uid: "FT-2B91C0", amount: "$880", net: "TRC20", hash: "0x14c8…9af0", conf: "19/19", status: "completed" },
+  { time: "14:02", dir: "in", label: "입금", uid: "FT-77D4E2", amount: "$200", net: "TRC20", hash: "0x9820…3d7c", conf: "19/19", status: "completed" },
+  { time: "13:30", dir: "out", label: "출금", uid: "FT-19A0FF", amount: "$640", net: "ERC20", hash: "0x5e1d…77aa", conf: "8/12", status: "confirming" },
+  { time: "12:50", dir: "in", label: "입금", uid: "FT-5C32B8", amount: "$300", net: "ERC20", hash: "0x9b20…1b3e", conf: "19/19", status: "completed" },
+  { time: "12:10", dir: "in", label: "입금", uid: "FT-A1B2C3", amount: "$120", net: "Polygon", hash: "0x7ffa…c401", conf: "50/50", status: "completed" },
+  { time: "11:25", dir: "out", label: "출금", uid: "FT-6E7F88", amount: "$520", net: "Polygon", hash: "0x3a0e…ff29", conf: "50/50", status: "completed" },
+  { time: "10:40", dir: "out", label: "출금", uid: "FT-D33C19", amount: "$300", net: "ERC20", hash: "0xe471…0b8d", conf: "—", status: "failed" },
+  { time: "10:12", dir: "in", label: "입금", uid: "FT-5F8B02", amount: "$120", net: "TRC20", hash: "0x6c91…a3d2", conf: "19/19", status: "completed" },
 ];
 
 const COLS = "grid-cols-[64px_72px_1.3fr_1.2fr_1.1fr_64px_104px]";

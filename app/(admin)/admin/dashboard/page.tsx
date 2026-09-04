@@ -134,7 +134,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <>
-      <Topbar title="대시보드" sub="운영 현황 요약 · Alpha Gate" uid="운영자" />
+      <Topbar title="대시보드" sub="운영 현황 요약 · 포르투나" uid="운영자" />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 지갑 잔액 + 자금 흐름 ── */}
@@ -143,7 +143,7 @@ export default async function AdminDashboardPage() {
             <div className="space-y-2">
               <div className="text-[13px] font-medium text-text-secondary">어드민 지갑 잔액 · Wallet Balance</div>
               <div className="text-[40px] leading-none font-bold tabular-nums text-text-primary">{usd(operating)}</div>
-              <div className="text-xs text-text-tertiary">Alpha Gate Wallet · Polygon · USDT</div>
+              <div className="text-xs text-text-tertiary">포르투나 지갑 · Polygon · USDT</div>
             </div>
             <div className="flex gap-2">
               <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-green-50 px-3 py-2 text-[13px] font-semibold text-green-700">

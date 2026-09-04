@@ -15,7 +15,7 @@ import { Pill } from "@/components/ui/pill";
 import { DepositModal } from "@/components/wallet/deposit-modal";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
 import { getMemberWallet } from "@/lib/queries/finance";
-import { ROOT_MARKETER_ID } from "@/lib/constants";
+import { getMarketerViewerId } from "@/lib/session";
 import { toUid } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
@@ -24,10 +24,11 @@ export const dynamic = "force-dynamic";
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 export default async function MarketerOrdersPage() {
+  const viewerId = await getMarketerViewerId();
   const [subs, products, wallet] = await Promise.all([
-    getMemberSubscriptions(ROOT_MARKETER_ID),
+    getMemberSubscriptions(viewerId),
     listProducts(),
-    getMemberWallet(ROOT_MARKETER_ID),
+    getMemberWallet(viewerId),
   ]);
   const productName = new Map(products.map((p) => [p.id, p.name]));
 
@@ -51,7 +52,7 @@ export default async function MarketerOrdersPage() {
 
   return (
     <>
-      <Topbar title="구독·주문" sub="내 구독 · 결제 내역" uid={toUid(ROOT_MARKETER_ID)} />
+      <Topbar title="구독·주문" sub="내 구독 · 결제 내역" uid={toUid(viewerId)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="grid gap-4 lg:grid-cols-2">

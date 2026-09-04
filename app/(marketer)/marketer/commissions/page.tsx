@@ -11,7 +11,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { getVisibleSettlements, type VisibleSettlement } from "@/lib/queries/finance";
-import { ROOT_MARKETER_ID } from "@/lib/constants";
+import { getMarketerViewerId } from "@/lib/session";
 import { toUid, uidInitials } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,7 @@ const REL: Record<string, { label: string; tone: "green" | "crypto" | "neutral" 
 
 export default async function MarketerCommissionsPage() {
   // 현재 로그인 마케터 = 데모 루트(M0). 다른 마케터 페이지와 동일 시점.
-  const viewerId = ROOT_MARKETER_ID;
+  const viewerId = await getMarketerViewerId();
 
   const visible = await getVisibleSettlements(viewerId, CYCLE);
   const self =

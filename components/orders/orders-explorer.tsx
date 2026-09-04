@@ -62,14 +62,14 @@ interface OrderRow {
 }
 
 const ORDERS: OrderRow[] = [
-  { uid: "AG·5D4E0A", email: "k•••@gmail.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Polygon", status: "활성", date: "2026-06-20" },
-  { uid: "AG·2B91C7", email: "j•••@naver.com", item: "마케터 연회비", itemType: "annual", amount: 200, network: "Polygon", status: "완료", date: "2026-06-19" },
-  { uid: "AG·1A22F0", email: "h•••@kakao.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Tron", status: "활성", date: "2026-06-18" },
-  { uid: "AG·B2D7E0", email: "f•••@gmail.com", item: "크립토카드", itemType: "product", amount: 300, network: "Ethereum", status: "완료", date: "2026-06-17" },
-  { uid: "AG·7C0F19", email: "p•••@gmail.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Polygon", status: "만료", date: "2026-05-17" },
-  { uid: "AG·C9A410", email: "g•••@naver.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Polygon", status: "활성", date: "2026-06-15" },
-  { uid: "AG·9C12B2", email: "s•••@daum.net", item: "마케터 연회비", itemType: "annual", amount: 200, network: "Polygon", status: "완료", date: "2026-06-12" },
-  { uid: "AG·F3B2A9", email: "q•••@gmail.com", item: "거래소 수수료", itemType: "product", amount: 80, network: "Ethereum", status: "대기", date: "2026-06-11" },
+  { uid: "FT·5D4E0A", email: "k•••@gmail.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Polygon", status: "활성", date: "2026-06-20" },
+  { uid: "FT·2B91C7", email: "j•••@naver.com", item: "마케터 연회비", itemType: "annual", amount: 200, network: "Polygon", status: "완료", date: "2026-06-19" },
+  { uid: "FT·1A22F0", email: "h•••@kakao.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Tron", status: "활성", date: "2026-06-18" },
+  { uid: "FT·B2D7E0", email: "f•••@gmail.com", item: "크립토카드", itemType: "product", amount: 300, network: "Ethereum", status: "완료", date: "2026-06-17" },
+  { uid: "FT·7C0F19", email: "p•••@gmail.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Polygon", status: "만료", date: "2026-05-17" },
+  { uid: "FT·C9A410", email: "g•••@naver.com", item: "Alpha Engine 구독", itemType: "engine", amount: 120, network: "Polygon", status: "활성", date: "2026-06-15" },
+  { uid: "FT·9C12B2", email: "s•••@daum.net", item: "마케터 연회비", itemType: "annual", amount: 200, network: "Polygon", status: "완료", date: "2026-06-12" },
+  { uid: "FT·F3B2A9", email: "q•••@gmail.com", item: "거래소 수수료", itemType: "product", amount: 80, network: "Ethereum", status: "대기", date: "2026-06-11" },
 ];
 
 const ITEM_BADGE: Record<ItemType, string> = {

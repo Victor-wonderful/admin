@@ -52,7 +52,7 @@ const SUB_OPTS: { key: SubStatus; label: string }[] = [
 const PAGE_SIZE = 8;
 
 function initials(name: string): string {
-  // UID(AG·8F3A21) → 뒤 2자리(8F)
+  // UID(FT·8F3A21) → 뒤 2자리(8F)
   const after = name.includes("·") ? name.split("·")[1] : name;
   return (after ?? name).replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
 }

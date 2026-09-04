@@ -11,6 +11,7 @@ import {
   LogOutIcon,
 } from "lucide-react";
 
+import { FortunaMark } from "@/components/brand/fortuna-logo";
 import { logout } from "@/lib/actions/auth";
 
 import { cn } from "@/lib/utils";
@@ -46,24 +47,33 @@ export function MemberSidebar({
   uid: string;
   gradeSub: string;
 }) {
-  const locked = role !== "marketer";
+  // 마케터 전용 메뉴(계보도·레퍼럴·내 수당): 마케터에게만 노출.
+  const isMarketer = role === "marketer";
+  // 등급별 홈. 등록/구독회원의 지갑·주문·프로필 전용 페이지는 아직 없어 포털 홈(대시보드 안에 지갑·구독 포함)으로 보낸다.
+  const home = role === "marketer" ? "/marketer/dashboard" : role === "subscriber" ? "/portal/subscriber" : "/portal/registered";
+  const sub = (marketerHref: string) => (isMarketer ? marketerHref : home);
 
   return (
     <Sidebar>
       <SidebarBrand
-        title="Alpha Gate"
+        icon={FortunaMark}
+        title="포르투나"
         subtitle={role === "marketer" ? "마케터 포털" : "회원"}
         subtitleClassName={role === "marketer" ? "text-crypto" : "text-green-600"}
       />
 
       <SidebarSection>
-        <SidebarNavItem href="/marketer/dashboard" icon={LayoutDashboardIcon} label="대시보드" sublabel="Dashboard" />
-        <SidebarNavItem href="/marketer/genealogy" icon={NetworkIcon} label="계보도" sublabel="Genealogy" locked={locked} />
-        <SidebarNavItem href="/marketer/referral" icon={Share2Icon} label="레퍼럴" sublabel="Referral" locked={locked} />
-        <SidebarNavItem href="/marketer/commissions" icon={CoinsIcon} label="내 수당" sublabel="Commissions" locked={locked} />
-        <SidebarNavItem href="/marketer/wallet" icon={WalletIcon} label="내 지갑" sublabel="My Wallet" />
-        <SidebarNavItem href="/marketer/orders" icon={ShoppingCartIcon} label="구독·주문" sublabel="Subscription" />
-        <SidebarNavItem href="/marketer/profile" icon={UserRoundIcon} label="프로필·설정" sublabel="Profile" />
+        <SidebarNavItem href={home} icon={LayoutDashboardIcon} label="대시보드" sublabel="Dashboard" />
+        {isMarketer ? (
+          <>
+            <SidebarNavItem href="/marketer/genealogy" icon={NetworkIcon} label="계보도" sublabel="Genealogy" />
+            <SidebarNavItem href="/marketer/referral" icon={Share2Icon} label="레퍼럴" sublabel="Referral" />
+            <SidebarNavItem href="/marketer/commissions" icon={CoinsIcon} label="내 수당" sublabel="Commissions" />
+          </>
+        ) : null}
+        <SidebarNavItem href={sub("/marketer/wallet")} icon={WalletIcon} label="내 지갑" sublabel="My Wallet" />
+        <SidebarNavItem href={sub("/marketer/orders")} icon={ShoppingCartIcon} label="구독·주문" sublabel="Subscription" />
+        <SidebarNavItem href={sub("/marketer/profile")} icon={UserRoundIcon} label="프로필·설정" sublabel="Profile" />
       </SidebarSection>
 
       <SidebarSpacer />

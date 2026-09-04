@@ -27,11 +27,12 @@ import {
   SidebarSpacer,
   SidebarBottomCard,
 } from "@/components/shell/sidebar";
+import { FortunaMark } from "@/components/brand/fortuna-logo";
 
 export function AdminSidebar() {
   return (
     <Sidebar>
-      <SidebarBrand title="Alpha Gate" subtitle="운영 콘솔" />
+      <SidebarBrand icon={FortunaMark} title="포르투나" subtitle="운영 콘솔" />
 
       <SidebarSection>
         <SidebarNavItem
@@ -75,7 +76,7 @@ export function AdminSidebar() {
 
       <SidebarBottomCard>
         <div className="text-[11px] font-medium text-white/70">운영 콘솔</div>
-        <div className="mt-1 text-sm font-bold">Alpha Gate Admin</div>
+        <div className="mt-1 text-sm font-bold">포르투나 관리자</div>
         <div className="mt-1 text-[11px] leading-relaxed text-white/60">
           슈퍼관리자 · 2FA 활성
         </div>

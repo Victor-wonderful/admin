@@ -44,13 +44,13 @@ type ATone = "green" | "info" | "warning" | "negative" | "neutral";
 const LOGS: {
   dt: string; admin: string; aTone: ATone; action: string; actionTone: ATone; target: string; ip: string; ok: boolean;
 }[] = [
-  { dt: "06-16 14:32:08", admin: "이정산", aTone: "green", action: "출금 승인", actionTone: "warning", target: "출금 #WD-2418 · AG-8F3A21 · $1,240 TRC20", ip: "118.32.xx.xx", ok: true },
+  { dt: "06-16 14:32:08", admin: "이정산", aTone: "green", action: "출금 승인", actionTone: "warning", target: "출금 #WD-2418 · FT-8F3A21 · $1,240 TRC20", ip: "118.32.xx.xx", ok: true },
   { dt: "06-16 14:20:55", admin: "김운영", aTone: "crypto" as ATone, action: "로그인", actionTone: "info", target: "관리자 콘솔 로그인 · 2FA 인증", ip: "211.45.xx.xx", ok: true },
   { dt: "06-16 13:48:12", admin: "김운영", aTone: "crypto" as ATone, action: "권한 변경", actionTone: "crypto" as ATone, target: "박매니저 역할 변경: 조회 전용 → 운영 매니저", ip: "211.45.xx.xx", ok: true },
   { dt: "06-16 13:05:30", admin: "이정산", aTone: "green", action: "정산 확정", actionTone: "green", target: "2026-06 수당 정산 확정 · 312명 · $52,910", ip: "118.32.xx.xx", ok: true },
-  { dt: "06-16 11:22:41", admin: "박매니저", aTone: "info", action: "회원 정지", actionTone: "negative", target: "회원 AG-A1B2C3 계정 정지 · 사유: 약관 위반", ip: "175.12.xx.xx", ok: true },
+  { dt: "06-16 11:22:41", admin: "박매니저", aTone: "info", action: "회원 정지", actionTone: "negative", target: "회원 FT-A1B2C3 계정 정지 · 사유: 약관 위반", ip: "175.12.xx.xx", ok: true },
   { dt: "06-16 10:15:09", admin: "최조회", aTone: "neutral", action: "데이터 내보내기", actionTone: "neutral", target: "매출 리포트 CSV 내보내기 · 2026-06", ip: "222.99.xx.xx", ok: true },
-  { dt: "06-16 09:03:55", admin: "미식별", aTone: "neutral", action: "로그인 실패", actionTone: "negative", target: "settle@alphagate.io · 비밀번호 5회 오류 · 계정 잠금", ip: "203.88.xx.xx", ok: false },
+  { dt: "06-16 09:03:55", admin: "미식별", aTone: "neutral", action: "로그인 실패", actionTone: "negative", target: "settle@fortuna.io · 비밀번호 5회 오류 · 계정 잠금", ip: "203.88.xx.xx", ok: false },
   { dt: "06-15 18:22:10", admin: "최조회", aTone: "neutral", action: "설정 변경", actionTone: "info", target: "수당 설정 열람 · 직급추천 1차 요율", ip: "222.99.xx.xx", ok: true },
 ];
 

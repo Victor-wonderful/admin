@@ -2,7 +2,6 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getMember } from "@/lib/queries/members";
-import { ROOT_MARKETER_ID } from "@/lib/constants";
 import type { MemberRow, MemberRole } from "@/lib/supabase/types";
 
 export const SESSION_COOKIE = "ag_member";
@@ -36,8 +35,8 @@ export async function requireMember(expected?: MemberRole): Promise<MemberRow> {
   return member;
 }
 
-// 마케터 화면 뷰어 id — 세션 마케터가 있으면 그 id, 없으면 데모 루트(M0)로 폴백(직접 URL 접근 데모).
+// 마케터 화면 뷰어 id — 로그인한 마케터 본인. 미로그인/타 등급은 requireMember 가 각자 홈으로 보낸다(M0 폴백 없음).
 export async function getMarketerViewerId(): Promise<string> {
-  const member = await getCurrentMember();
-  return member?.role === "marketer" ? member.id : ROOT_MARKETER_ID;
+  const member = await requireMember("marketer");
+  return member.id;
 }
