@@ -14,7 +14,7 @@ const DONE_MSG: Record<string, string> = {
   subscribe_upgrade: "파트너 멤버십 시작 — 이동 중…",
 };
 
-// 구독/승급/한번에 실행 버튼 — 성공 시 새 등급 화면으로 자동 이동. 잔액 부족 등 예외는 인라인.
+// 구독/등급 상승/한번에 실행 버튼 — 성공 시 새 등급 화면으로 자동 이동. 잔액 부족 등 예외는 인라인.
 export function LifecycleButton({
   mode,
   memberId,

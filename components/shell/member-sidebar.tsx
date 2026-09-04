@@ -29,7 +29,7 @@ export type MemberRole = "registered" | "subscriber" | "marketer";
 const ROLE_LABEL: Record<MemberRole, string> = {
   registered: "등록회원",
   subscriber: "구독회원",
-  marketer: "마케터",
+  marketer: "파트너",
 };
 
 const ROLE_BADGE: Record<MemberRole, string> = {
@@ -47,9 +47,9 @@ export function MemberSidebar({
   uid: string;
   gradeSub: string;
 }) {
-  // 마케터 전용 메뉴(계보도·레퍼럴·내 수당): 마케터에게만 노출.
+  // 파트너 전용 메뉴(내 팀·초대·내 리워드): 파트너에게만 노출.
   const isMarketer = role === "marketer";
-  // 등급별 경로: 마케터는 /marketer/*, 등록·구독회원은 /portal/* (대시보드만 등급별 페이지가 다름)
+  // 등급별 경로: 파트너는 /marketer/*, 등록·구독회원은 /portal/* (대시보드만 등급별 페이지가 다름)
   const home = role === "marketer" ? "/marketer/dashboard" : role === "subscriber" ? "/portal/subscriber" : "/portal/registered";
   const sub = (page: string) => (isMarketer ? `/marketer/${page}` : `/portal/${page}`);
 
@@ -58,7 +58,7 @@ export function MemberSidebar({
       <SidebarBrand
         icon={FortunaMark}
         title="포르투나"
-        subtitle={role === "marketer" ? "마케터 포털" : "회원"}
+        subtitle={role === "marketer" ? "파트너 포털" : "회원"}
         subtitleClassName={role === "marketer" ? "text-crypto" : "text-green-600"}
       />
 
@@ -66,9 +66,9 @@ export function MemberSidebar({
         <SidebarNavItem href={home} icon={LayoutDashboardIcon} label="대시보드" sublabel="Dashboard" />
         {isMarketer ? (
           <>
-            <SidebarNavItem href="/marketer/genealogy" icon={NetworkIcon} label="계보도" sublabel="Genealogy" />
-            <SidebarNavItem href="/marketer/referral" icon={Share2Icon} label="레퍼럴" sublabel="Referral" />
-            <SidebarNavItem href="/marketer/commissions" icon={CoinsIcon} label="내 수당" sublabel="Commissions" />
+            <SidebarNavItem href="/marketer/genealogy" icon={NetworkIcon} label="내 팀" sublabel="My Team" />
+            <SidebarNavItem href="/marketer/referral" icon={Share2Icon} label="초대" sublabel="Invite" />
+            <SidebarNavItem href="/marketer/commissions" icon={CoinsIcon} label="내 리워드" sublabel="Rewards" />
           </>
         ) : null}
         <SidebarNavItem href={sub("wallet")} icon={WalletIcon} label="내 지갑" sublabel="My Wallet" />
@@ -81,7 +81,7 @@ export function MemberSidebar({
       <SidebarBottomCard>
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-medium text-white/70">
-            {role === "marketer" ? "내 직급" : "내 등급"}
+            {role === "marketer" ? "내 등급" : "내 등급"}
           </span>
           <span
             className={cn(

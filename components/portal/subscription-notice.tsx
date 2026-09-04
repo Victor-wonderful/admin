@@ -10,7 +10,7 @@ import { today, daysBetween } from "@/lib/dates";
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const REMIND_DAYS = 7; // 종료 7일 전부터 잔액 부족 안내
 
-// 구독 상태 안내 배너 — 구독회원·마케터 대시보드 공용.
+// 구독 상태 안내 배너 — 구독회원·파트너 대시보드 공용.
 //  · 만료: "구독이 만료됨" + 지금 갱신 버튼
 //  · 종료 임박(7일) + 잔액 부족: 자동 결제 실패 예고 + 입금 버튼
 //  · 그 외: 렌더하지 않음

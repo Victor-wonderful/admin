@@ -28,7 +28,7 @@ const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 // 기준일 = 실제 오늘(Asia/Seoul).
 const TODAY = today();
 
-// 구독·주문 — 마케터/구독회원/등록회원 공용. 두 번째 카드(연회비)는 마케터에게만, 등록회원 카드1 에는 구독 시작 버튼.
+// 구독·주문 — 파트너/구독회원/등록회원 공용. 두 번째 카드(파트너 멤버십)는 파트너에게만, 등록회원 카드1 에는 구독 시작 버튼.
 export async function OrdersView({ memberId, role }: { memberId: string; role: MemberRole }) {
   const [subs, products, wallet, store, purchases] = await Promise.all([
     getMemberSubscriptions(memberId),
@@ -98,7 +98,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
             )}
           </Panel>
 
-          {/* 카드 2: 마케터 연회비 — 마케터에게만. 등록·구독회원 화면에는 마케터 관련 요소를 노출하지 않는다. */}
+          {/* 카드 2: 파트너 멤버십 — 파트너에게만. 등록·구독회원 화면에는 파트너 관련 요소를 노출하지 않는다. */}
           {role === "marketer" ? (
             <Panel>
               <div className="flex items-center justify-between">
@@ -107,8 +107,8 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                     <BadgeCheckIcon className="size-[22px]" />
                   </span>
                   <div>
-                    <div className="text-[15px] font-semibold text-text-primary">마케터 연회비</div>
-                    <div className="text-xs text-text-secondary">추천 수당 자격</div>
+                    <div className="text-[15px] font-semibold text-text-primary">파트너 멤버십</div>
+                    <div className="text-xs text-text-secondary">초대 리워드 자격</div>
                   </div>
                 </div>
                 <Pill tone="green" dot>유효</Pill>
@@ -118,7 +118,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 <span className="pb-1 text-xs font-medium text-text-tertiary">/ 년 · USDT</span>
               </div>
               <div className="mt-3">
-                {[["수당 자격", "활성"], ["갱신", "연 1회"]].map(([k, v]) => (
+                {[["리워드 자격", "활성"], ["갱신", "연 1회"]].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between border-b py-2.5 text-[13px] last:border-0">
                     <span className="text-text-secondary">{k}</span>
                     <span className="font-semibold text-text-primary">{v}</span>
@@ -139,7 +139,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                   </span>
                   <div>
                     <div className="text-[15px] font-semibold text-text-primary">포르투나 파트너 멤버십</div>
-                    <div className="text-xs text-text-secondary">Basic 이용 + 추천 리워드 · 파트너 대시보드</div>
+                    <div className="text-xs text-text-secondary">Basic 이용 + 초대 리워드 · 파트너 대시보드</div>
                   </div>
                 </div>
                 <Pill tone="crypto">Pro</Pill>

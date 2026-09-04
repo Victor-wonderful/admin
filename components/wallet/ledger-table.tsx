@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 type TxType = LedgerEntry["tx_type"];
 
 const META: Record<TxType, { label: string; tone: "green" | "info" | "warning" | "neutral" }> = {
-  commission: { label: "수당", tone: "green" },
+  commission: { label: "리워드", tone: "green" },
   deposit: { label: "입금", tone: "info" },
   payment: { label: "결제", tone: "warning" },
   withdrawal: { label: "출금", tone: "neutral" },
@@ -24,12 +24,12 @@ const fmtDate = (iso: string) => {
   return `${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
 };
 
-// 입출금 내역 — 탭으로 유형 필터(전체/입금/수당/결제/출금). 수당 탭은 마케터에게만.
+// 입출금 내역 — 탭으로 유형 필터(전체/입금/리워드/결제/출금). 리워드 탭은 파트너에게만.
 export function LedgerTable({ ledger, showCommission }: { ledger: LedgerEntry[]; showCommission: boolean }) {
   const tabs: Array<{ key: TxType | "all"; label: string }> = [
     { key: "all", label: "전체" },
     { key: "deposit", label: "입금" },
-    ...(showCommission ? [{ key: "commission" as const, label: "수당" }] : []),
+    ...(showCommission ? [{ key: "commission" as const, label: "리워드" }] : []),
     { key: "payment", label: "결제" },
     { key: "withdrawal", label: "출금" },
   ];
@@ -39,7 +39,7 @@ export function LedgerTable({ ledger, showCommission }: { ledger: LedgerEntry[];
 
   return (
     <Panel
-      title={showCommission ? "입출금·수당 내역" : "입출금 내역"}
+      title={showCommission ? "입출금·리워드 내역" : "입출금 내역"}
       sub={`${rows.length}건`}
       action={
         <div className="flex gap-1 rounded-md bg-surface-muted p-1 ring-1 ring-border" role="tablist">

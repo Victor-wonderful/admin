@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// 추천 계보(수당) ↔ 후원 배치(스필오버) 트리 토글. 두 트리는 서버에서 렌더되어 props 로 전달.
+// 초대 관계(리워드) ↔ 팀 배치(자동 배치) 트리 토글. 두 트리는 서버에서 렌더되어 props 로 전달.
 export function GenealogyTrees({
   unilevel,
   placement,
@@ -16,8 +16,8 @@ export function GenealogyTrees({
     <div className="space-y-4">
       <div className="flex w-fit gap-1 rounded-md bg-surface-muted p-1 ring-1 ring-border">
         {[
-          { k: "uni" as const, label: "추천 계보 (수당)" },
-          { k: "place" as const, label: "후원 배치 (스필오버)" },
+          { k: "uni" as const, label: "초대 관계 (리워드)" },
+          { k: "place" as const, label: "팀 배치 (자동 배치)" },
         ].map((t) => (
           <button
             key={t.k}

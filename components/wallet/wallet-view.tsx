@@ -23,14 +23,14 @@ import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
-// 수당 적립 추이는 일별 이력 데이터가 없어 정적(예시). 마케터에게만 표시.
+// 리워드 적립 추이는 일별 이력 데이터가 없어 정적(예시). 파트너에게만 표시.
 const ACCRUAL = [44, 58, 52, 70, 64, 82, 76, 60, 90, 84, 102, 96, 118, 140];
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 // -0 방지: 0 이면 항상 "+$0".
 const signed = (n: number) => (n === 0 || n > 0 ? `+${usd(Math.abs(n))}` : `−${usd(Math.abs(n))}`);
 
-// 내 지갑 — 마케터/구독회원/등록회원 공용. 수당 관련 요소는 마케터에게만.
+// 내 지갑 — 파트너/구독회원/등록회원 공용. 리워드 관련 요소는 파트너에게만.
 // 입금: 회사 입금 주소(Tron/BSC) 안내. 출금: 회원이 프로필에 등록한 본인 지갑 주소로.
 export async function WalletView({ memberId, role }: { memberId: string; role: MemberRole }) {
   const isMarketer = role === "marketer";
@@ -53,7 +53,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
   const kpis = isMarketer
     ? [
         { icon: WalletIcon, tone: "green" as const, label: "사용 가능 잔액", value: usd(balance) },
-        { icon: TrendingUpIcon, tone: "green" as const, label: "당월 수당 적립", value: signed(monthCommission) },
+        { icon: TrendingUpIcon, tone: "green" as const, label: "당월 리워드 적립", value: signed(monthCommission) },
         { icon: ArrowDownToLineIcon, tone: "info" as const, label: "당월 입금", value: signed(monthDeposit) },
         { icon: ShoppingCartIcon, tone: "warning" as const, label: "당월 결제 차감", value: signed(-monthPayment) },
       ]
@@ -68,7 +68,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
     <>
       <Topbar
         title="내 지갑"
-        sub={isMarketer ? "입금 · 수당 · 결제 · 출금 통합 지갑" : "입금 · 결제 · 출금 지갑"}
+        sub={isMarketer ? "입금 · 리워드 · 결제 · 출금 통합 지갑" : "입금 · 결제 · 출금 지갑"}
         uid={toUid(memberId)}
       />
 
@@ -105,7 +105,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
               />
             </div>
             <span className="text-xs font-medium text-white/80">
-              {isMarketer ? `당월 수당 ${signed(monthCommission)} · ` : ""}당월 입금 {signed(monthDeposit)}
+              {isMarketer ? `당월 리워드 ${signed(monthCommission)} · ` : ""}당월 입금 {signed(monthDeposit)}
             </span>
           </div>
         </div>
@@ -118,7 +118,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
 
         <div className={cn("grid gap-4", isMarketer && "lg:grid-cols-[1fr_388px]")}>
           {isMarketer ? (
-            <Panel title="수당 적립 추이" sub="최근 14일 적립 수당 (예시)" action={<Pill tone="green" dot>당월 {signed(monthCommission)}</Pill>}>
+            <Panel title="리워드 적립 추이" sub="최근 14일 적립 리워드 (예시)" action={<Pill tone="green" dot>당월 {signed(monthCommission)}</Pill>}>
               <div className="flex h-44 items-end gap-1.5">
                 {ACCRUAL.map((h, i) => (
                   <div key={i} className="flex flex-1 flex-col justify-end">
@@ -151,7 +151,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
                 <div className="text-xs font-semibold text-text-secondary">잔액 구성</div>
                 {isMarketer ? (
                   <div className="flex items-center justify-between text-[13px]">
-                    <span className="text-text-secondary">수당 적립분</span>
+                    <span className="text-text-secondary">리워드 적립분</span>
                     <span className="font-bold text-text-primary">{usd(accruedPart)}</span>
                   </div>
                 ) : null}

@@ -15,14 +15,25 @@ const ROLE_LABEL: Record<MemberRole, string> = {
   subscriber: "구독회원",
   registered: "등록회원",
 };
+// 파트너 포털(회원 화면)용 라벨 — 마케터·스필오버 대신 파트너·자동 배치. 관리자 링크도 없음.
+const PARTNER_ROLE_LABEL: Record<MemberRole, string> = {
+  marketer: "파트너",
+  subscriber: "구독회원",
+  registered: "등록회원",
+};
+export type TreeVariant = "admin" | "partner";
 
-function Card({ n, highlight, label, spillover }: { n: TreeNode; highlight?: boolean; label?: string; spillover?: boolean }) {
+function Card({ n, highlight, label, spillover, variant }: { n: TreeNode; highlight?: boolean; label?: string; spillover?: boolean; variant: TreeVariant }) {
+  const partner = variant === "partner";
+  const roleLabel = partner ? PARTNER_ROLE_LABEL[n.role] : ROLE_LABEL[n.role];
+  const Wrapper: React.ElementType = partner ? "div" : Link;
+  const wrapperProps = partner ? {} : { href: `/admin/members/${n.id}`, title: `${n.name} 상세 보기` };
   return (
-    <Link
-      href={`/admin/members/${n.id}`}
-      title={`${n.name} 상세 보기`}
+    <Wrapper
+      {...wrapperProps}
       className={cn(
-        "relative block w-40 rounded-[11px] bg-card px-3 py-2.5 shadow-sm ring-[1.5px] transition hover:shadow-md hover:ring-green-500",
+        "relative block w-40 rounded-[11px] bg-card px-3 py-2.5 shadow-sm ring-[1.5px] transition",
+        partner ? "" : "hover:shadow-md hover:ring-green-500",
         highlight ? "ring-2 ring-green-600" : spillover ? "ring-warning/70" : ROLE_RING[n.role],
         !n.isActive && "opacity-55",
       )}
@@ -45,12 +56,12 @@ function Card({ n, highlight, label, spillover }: { n: TreeNode; highlight?: boo
         <div className="min-w-0">
           <div className="truncate text-xs font-semibold text-text-primary">{n.name}</div>
           <div className="text-[10px] text-text-tertiary">
-            {ROLE_LABEL[n.role]}
-            {spillover ? <span className="ml-1 font-semibold text-warning">· 스필오버</span> : null}
+            {roleLabel}
+            {spillover ? <span className="ml-1 font-semibold text-warning">· {partner ? "자동 배치" : "스필오버"}</span> : null}
           </div>
         </div>
       </div>
-    </Link>
+    </Wrapper>
   );
 }
 
@@ -74,12 +85,14 @@ function Node({
   spineLine,
   majorHead,
   highlightLabel,
+  variant,
 }: {
   n: TreeNode;
   depth: number;
   maxDepth: number;
   maxChildren: number;
   showSpillover?: boolean;
+  variant: TreeVariant;
   // spine 모드(후원 배치): 좌측 주력(대실적) 한 줄만 깊게, 나머지(소실적)는 얕게.
   spine?: boolean;
   spineLine?: boolean; // 이 노드가 주력 라인 위에 있음(녹색 강조)
@@ -117,6 +130,7 @@ function Node({
         spineLine={childSpineLine}
         majorHead={childMajorHead}
         highlightLabel={highlightLabel}
+        variant={variant}
       />
     );
   });
@@ -124,7 +138,7 @@ function Node({
 
   return (
     <div className="flex flex-col items-center">
-      <Card n={n} highlight={!!spineLine} label={majorHead ? highlightLabel : undefined} spillover={isSpillover} />
+      <Card n={n} highlight={!!spineLine} label={majorHead ? highlightLabel : undefined} spillover={isSpillover} variant={variant} />
       {cols.length > 0 ? (
         <>
           {/* 부모 → 가로 연결바 → 각 자식 세로선 */}
@@ -164,6 +178,7 @@ export function MemberTree({
   showSpillover,
   spine,
   highlightLabel,
+  variant = "admin",
 }: {
   root: TreeNode | null;
   maxDepth?: number;
@@ -171,13 +186,14 @@ export function MemberTree({
   showSpillover?: boolean;
   spine?: boolean;
   highlightLabel?: string;
+  variant?: TreeVariant; // "partner": 파트너 라벨 + 관리자 상세 링크 없음
 }) {
   if (!root) {
-    return <div className="py-8 text-center text-sm text-text-tertiary">조직 데이터가 없습니다.</div>;
+    return <div className="py-8 text-center text-sm text-text-tertiary">{variant === "partner" ? "팀 데이터가 없습니다." : "조직 데이터가 없습니다."}</div>;
   }
   return (
     <div className="flex min-w-max justify-center py-2">
-      <Node n={root} depth={0} maxDepth={maxDepth} maxChildren={maxChildren} showSpillover={showSpillover} spine={spine} highlightLabel={highlightLabel} />
+      <Node n={root} depth={0} maxDepth={maxDepth} maxChildren={maxChildren} showSpillover={showSpillover} spine={spine} highlightLabel={highlightLabel} variant={variant} />
     </div>
   );
 }

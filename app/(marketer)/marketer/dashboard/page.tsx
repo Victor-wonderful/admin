@@ -52,7 +52,7 @@ export default async function MarketerDashboardPage() {
   const share = settle?.share ?? 0;
 
   const curRank = settle?.member_rank ?? (rank && rank.rank > 0 ? rank.rank : 0);
-  const rankLabel = curRank > 0 ? `${curRank}직급` : "무직급";
+  const rankLabel = curRank > 0 ? `${curRank}등급` : "등급 없음";
   const ratePct = rank ? Number(rank.rate_pct) : 0;
   const totalActive = Number(rank?.total_active ?? 0);
   const major = Number(rank?.major_leg ?? 0);
@@ -66,58 +66,58 @@ export default async function MarketerDashboardPage() {
   const shareGated = curRank >= 5;
   const shareOk = rank ? !rank.blocked_by_balance : true;
 
-  // 수당 구성 도넛
+  // 리워드 구성 도넛
   const lp = pct(level, monthTotal);
   const rp = pct(rankAmt, monthTotal);
   const sp = pct(share, monthTotal);
   const donut = `conic-gradient(#1f9d55 0 ${lp}%, #7c3aed ${lp}% ${lp + rp}%, #2f6fed ${lp + rp}% 100%)`;
   const comp = [
-    { label: "직접추천 수당", v: level, p: lp, dot: "bg-green-500" },
-    { label: "직급 수당", v: rankAmt, p: rp, dot: "bg-crypto" },
-    { label: "공유 수당", v: share, p: sp, dot: "bg-info" },
+    { label: "초대 리워드", v: level, p: lp, dot: "bg-green-500" },
+    { label: "등급 리워드", v: rankAmt, p: rp, dot: "bg-crypto" },
+    { label: "팀 리워드", v: share, p: sp, dot: "bg-info" },
   ];
 
-  // 레퍼럴 실적
+  // 초대 실적
   const refTotal = referred.length;
   const refSub = referred.filter((m) => m.is_active_subscriber).length;
   const refMkt = referred.filter((m) => m.role === "marketer").length;
   const codeStr = code?.code ?? "—";
 
   const kpis = [
-    { icon: CoinsIcon, badge: "bg-green-50 text-green-700", label: "당월 수당", value: usd(monthTotal) },
-    { icon: SigmaIcon, badge: "bg-text-primary text-white", label: "누적 수당", value: usd(cumulative) },
-    { icon: UserPlusIcon, badge: "bg-green-50 text-green-700", label: "직추 활성", value: `${direct.toLocaleString()}명` },
-    { icon: NetworkIcon, badge: "bg-n-100 text-n-600", label: "하위 인원", value: `${totalActive.toLocaleString()}명` },
+    { icon: CoinsIcon, badge: "bg-green-50 text-green-700", label: "당월 리워드", value: usd(monthTotal) },
+    { icon: SigmaIcon, badge: "bg-text-primary text-white", label: "누적 리워드", value: usd(cumulative) },
+    { icon: UserPlusIcon, badge: "bg-green-50 text-green-700", label: "초대 활성", value: `${direct.toLocaleString()}명` },
+    { icon: NetworkIcon, badge: "bg-n-100 text-n-600", label: "팀원 수", value: `${totalActive.toLocaleString()}명` },
   ];
 
   const quick = [
-    { href: "/marketer/genealogy", icon: NetworkIcon, label: "계보도", tone: "bg-green-50 text-green-700" },
-    { href: "/marketer/referral", icon: Share2Icon, label: "레퍼럴", tone: "bg-info-soft text-info" },
-    { href: "/marketer/commissions", icon: CoinsIcon, label: "내 수당", tone: "bg-crypto-soft text-crypto" },
+    { href: "/marketer/genealogy", icon: NetworkIcon, label: "내 팀", tone: "bg-green-50 text-green-700" },
+    { href: "/marketer/referral", icon: Share2Icon, label: "초대", tone: "bg-info-soft text-info" },
+    { href: "/marketer/commissions", icon: CoinsIcon, label: "내 리워드", tone: "bg-crypto-soft text-crypto" },
     { href: "/marketer/orders", icon: ShoppingCartIcon, label: "구독·주문", tone: "bg-warning-soft text-warning" },
   ];
 
   return (
     <>
-      <Topbar title="대시보드" sub="내 직급 · 수당 현황" uid={uid} />
+      <Topbar title="대시보드" sub="내 등급 · 리워드 현황" uid={uid} />
 
       <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
         {/* 구독 만료 / 잔액 부족 안내 */}
         <SubscriptionNotice memberId={ME} />
 
-        {/* RowA — 내 직급·자격 + 출금 잔액 */}
+        {/* RowA — 내 등급·자격 + 출금 잔액 */}
         <div className="grid gap-4 lg:grid-cols-[1fr_392px]">
           <div className={cn(CARD, "space-y-4")}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[15px] font-bold text-text-primary">내 직급 · 자격</div>
-                <div className="text-xs text-text-secondary">후원 산하 활성 구독자 기준</div>
+                <div className="text-[15px] font-bold text-text-primary">내 등급 · 자격</div>
+                <div className="text-xs text-text-secondary">팀 활성 구독자 기준</div>
               </div>
               <Pill tone="crypto"><TrophyIcon className="size-3" /> {rankLabel}{curRank > 0 ? ` · ${ratePct}%` : ""}</Pill>
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[12px]">
-                <span className="font-medium text-text-secondary">{nextRank ? `다음 ${nextRank}직급까지` : "최고 직급"}</span>
+                <span className="font-medium text-text-secondary">{nextRank ? `다음 ${nextRank}등급까지` : "최고 등급"}</span>
                 <span className="font-bold tabular-nums text-text-primary">{nextTotal ? `${major.toLocaleString()} / ${nextTotal.toLocaleString()}명` : `${totalActive.toLocaleString()}명`}</span>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-surface-muted">
@@ -126,9 +126,9 @@ export default async function MarketerDashboardPage() {
             </div>
             <div className="grid grid-cols-4 gap-3">
               {[
-                { k: "후원 전체 활성", v: `${totalActive.toLocaleString()}명` },
-                { k: "대실적 (MAX)", v: `${major.toLocaleString()}명` },
-                { k: "기타소실적", v: `${minor.toLocaleString()}명` },
+                { k: "팀 전체 활성", v: `${totalActive.toLocaleString()}명` },
+                { k: "주력 라인", v: `${major.toLocaleString()}명` },
+                { k: "기타 라인", v: `${minor.toLocaleString()}명` },
                 { k: "30% 균형", v: shareGated ? (shareOk ? "충족" : "미충족") : `${balancePct}%` },
               ].map((s) => (
                 <div key={s.k} className="rounded-[10px] bg-surface-muted px-3 py-2.5 ring-1 ring-border">
@@ -167,19 +167,19 @@ export default async function MarketerDashboardPage() {
           ))}
         </div>
 
-        {/* RowC — 수당 구성 도넛 + 내 레퍼럴 */}
+        {/* RowC — 리워드 구성 도넛 + 내 초대 */}
         <div className="grid gap-4 lg:grid-cols-[1fr_392px]">
           <div className={cn(CARD, "flex items-center gap-7")}>
             <div className="relative grid size-[150px] shrink-0 place-items-center rounded-full" style={{ background: donut }}>
               <div className="grid size-[96px] place-items-center rounded-full bg-card text-center">
                 <div>
                   <div className="text-[18px] font-bold tabular-nums text-text-primary">{monthTotal >= 1000 ? `$${(monthTotal / 1000).toFixed(1)}K` : usd(monthTotal)}</div>
-                  <div className="text-[10px] text-text-tertiary">당월 수당</div>
+                  <div className="text-[10px] text-text-tertiary">당월 리워드</div>
                 </div>
               </div>
             </div>
             <div className="flex-1 space-y-3.5">
-              <div className="text-[15px] font-bold text-text-primary">내 수당 구성 (당월)</div>
+              <div className="text-[15px] font-bold text-text-primary">내 리워드 구성 (당월)</div>
               {comp.map((c) => (
                 <div key={c.label} className="flex items-center gap-2.5">
                   <span className={cn("size-2.5 shrink-0 rounded-full", c.dot)} />
@@ -194,10 +194,10 @@ export default async function MarketerDashboardPage() {
           <div className={cn(CARD, "space-y-3.5")}>
             <div className="flex items-center gap-2.5">
               <span className="grid size-9 place-items-center rounded-[10px] bg-crypto-soft text-crypto"><Share2Icon className="size-[18px]" /></span>
-              <span className="text-base font-bold text-text-primary">내 레퍼럴</span>
+              <span className="text-base font-bold text-text-primary">내 초대</span>
             </div>
             <div className="space-y-1.5">
-              <div className="text-[11px] font-medium text-text-tertiary">내 추천 코드</div>
+              <div className="text-[11px] font-medium text-text-tertiary">내 초대 코드</div>
               <div className="flex items-center justify-between rounded-[10px] bg-surface-muted px-3.5 py-2.5 ring-1 ring-border">
                 <span className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-text-primary"><HashIcon className="size-3 text-text-tertiary" /> {codeStr}</span>
                 <span className="inline-flex items-center gap-1 rounded-[7px] bg-green-600 px-2.5 py-1 text-[11px] font-semibold text-white"><CopyIcon className="size-3" /> 복사</span>
@@ -207,7 +207,7 @@ export default async function MarketerDashboardPage() {
               {[
                 { k: "가입", v: refTotal },
                 { k: "구독 전환", v: refSub },
-                { k: "마케터", v: refMkt },
+                { k: "파트너", v: refMkt },
               ].map((s) => (
                 <div key={s.k} className="rounded-[10px] bg-surface-muted py-2.5 text-center ring-1 ring-border">
                   <div className="text-[17px] font-bold tabular-nums text-text-primary">{s.v}</div>
@@ -218,38 +218,38 @@ export default async function MarketerDashboardPage() {
           </div>
         </div>
 
-        {/* RowD — 직급 승급 진행 + 빠른 작업 */}
+        {/* RowD — 등급 상승 진행 + 빠른 작업 */}
         <div className="grid gap-4 lg:grid-cols-[1fr_412px]">
           <div className={cn(CARD, "space-y-4")}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[15px] font-bold text-text-primary">직급 승급 진행</div>
-                <div className="text-xs text-text-secondary">현재 {rankLabel} {nextRank ? `→ 다음 ${nextRank}직급` : "· 최고 직급"}</div>
+                <div className="text-[15px] font-bold text-text-primary">등급 상승 진행</div>
+                <div className="text-xs text-text-secondary">현재 {rankLabel} {nextRank ? `→ 다음 ${nextRank}등급` : "· 최고 등급"}</div>
               </div>
               <Pill tone="crypto">달성 {majorPct}%</Pill>
             </div>
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[13px]">
-                  <span className="font-semibold text-text-primary">대실적 라인 (주력)</span>
+                  <span className="font-semibold text-text-primary">주력 라인 라인 (주력)</span>
                   <span className="font-bold tabular-nums text-text-primary">{nextTotal ? `${major.toLocaleString()} / ${nextTotal.toLocaleString()}명` : `${major.toLocaleString()}명`}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full rounded-full bg-green-600" style={{ width: `${majorPct}%` }} /></div>
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[13px]">
-                  <span className="font-semibold text-text-primary">기타 소실적 합계</span>
+                  <span className="font-semibold text-text-primary">기타 라인 합계</span>
                   <span className="font-bold tabular-nums text-text-primary">{minor.toLocaleString()}명 ({balancePct}%)</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full rounded-full bg-info" style={{ width: "100%" }} /></div>
               </div>
               <div className={cn("flex items-center justify-between rounded-[10px] px-3.5 py-3 text-[13px]", !shareGated ? "bg-surface-muted text-text-secondary" : shareOk ? "bg-green-50 text-green-700" : "bg-warning-soft text-warning")}>
-                <span className="font-semibold">공유수당 30% 자격 (5직급↑)</span>
-                <span className="font-bold">{!shareGated ? "5직급부터" : shareOk ? "충족" : "미충족"}</span>
+                <span className="font-semibold">팀 리워드 30% 자격 (5등급↑)</span>
+                <span className="font-bold">{!shareGated ? "5등급부터" : shareOk ? "충족" : "미충족"}</span>
               </div>
             </div>
             {nextRank ? (
-              <p className="border-t pt-3 text-[12px] text-text-secondary">다음 직급({nextRank}직급)까지 주력 라인 대실적 {remain.toLocaleString()}명 남았습니다.</p>
+              <p className="border-t pt-3 text-[12px] text-text-secondary">다음 등급({nextRank}등급)까지 주력 라인 주력 라인 {remain.toLocaleString()}명 남았습니다.</p>
             ) : null}
           </div>
 
@@ -266,19 +266,19 @@ export default async function MarketerDashboardPage() {
           </div>
         </div>
 
-        {/* 최근 수당 내역 */}
+        {/* 최근 리워드 내역 */}
         <div className={cn(CARD, "pt-3")}>
-          <div className="mb-1 text-[15px] font-bold text-text-primary">최근 수당 내역</div>
+          <div className="mb-1 text-[15px] font-bold text-text-primary">최근 리워드 내역</div>
           <div className="grid grid-cols-[auto_1fr_1.5fr_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
             <span>사이클</span><span>유형</span><span>내역</span><span className="text-right">금액</span>
           </div>
           {comp.filter((c) => c.v > 0).length === 0 ? (
-            <div className="py-8 text-center text-sm text-text-tertiary">당월 수당 내역이 없습니다.</div>
+            <div className="py-8 text-center text-sm text-text-tertiary">당월 리워드 내역이 없습니다.</div>
           ) : (
             comp.filter((c) => c.v > 0).map((c) => (
               <div key={c.label} className="grid grid-cols-[auto_1fr_1.5fr_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
                 <span className="text-text-tertiary tabular-nums">{CYCLE}</span>
-                <span><Pill tone={c.dot.includes("green") ? "green" : c.dot.includes("crypto") ? "crypto" : "info"}>{c.label.replace(" 수당", "")}</Pill></span>
+                <span><Pill tone={c.dot.includes("green") ? "green" : c.dot.includes("crypto") ? "crypto" : "info"}>{c.label.replace(" 리워드", "")}</Pill></span>
                 <span className="text-text-secondary">당월 정산 적립</span>
                 <span className="text-right font-bold tabular-nums text-green-700">+{usd(c.v)}</span>
               </div>

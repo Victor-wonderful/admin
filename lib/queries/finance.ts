@@ -320,7 +320,7 @@ export async function getMemberWalletData(memberId: string): Promise<MemberWalle
   for (const r of stRes.data ?? []) {
     const amt = Number(r.total_amount);
     if (r.cycle === CURRENT_CYCLE) monthCommission += amt;
-    ledger.push({ ts: r.created_at, tx_type: "commission", amount_usd: amt, network: "수당 풀 분배", desc: `수당 정산 (${r.cycle})`, status: r.status });
+    ledger.push({ ts: r.created_at, tx_type: "commission", amount_usd: amt, network: "리워드 풀 분배", desc: `리워드 정산 (${r.cycle})`, status: r.status });
   }
 
   ledger.sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0));

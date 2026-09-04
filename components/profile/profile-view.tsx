@@ -7,7 +7,7 @@ import { NicknameForm, PasswordForm, PayoutAddressForm } from "@/components/prof
 import type { MemberRow } from "@/lib/supabase/types";
 import { toUid, uidInitials } from "@/lib/uid";
 
-const ROLE_LABEL = { registered: "등록회원", subscriber: "구독회원", marketer: "마케터" } as const;
+const ROLE_LABEL = { registered: "등록회원", subscriber: "구독회원", marketer: "파트너" } as const;
 const ROLE_TONE = { registered: "neutral", subscriber: "green", marketer: "crypto" } as const;
 
 // 프로필·설정 — 전 등급 공용. 계정 정보(읽기) + 닉네임/비밀번호 변경.
@@ -17,7 +17,7 @@ export function ProfileView({ member }: { member: MemberRow }) {
     ["ID", member.email ?? "—"],
     ["회원 UID", uid],
     ["등급", ROLE_LABEL[member.role]],
-    ["추천인", member.recommender_id ? toUid(member.recommender_id) : "—"],
+    ["초대한 파트너", member.recommender_id ? toUid(member.recommender_id) : "—"],
     ["가입일", member.joined_at.slice(0, 10)],
   ];
 
