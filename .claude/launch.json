@@ -7,6 +7,12 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3002,
       "autoPort": true
+    },
+    {
+      "name": "fortuna",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "D:/fortuna", "exec", "next", "dev", "-p", "3010"],
+      "port": 3010
     }
   ]
 }
