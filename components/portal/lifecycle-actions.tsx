@@ -4,13 +4,14 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2Icon, CheckCircle2Icon } from "lucide-react";
 
-import { subscribeMember, upgradeToMarketer, subscribeAndUpgrade } from "@/lib/actions/memberLifecycle";
+import { subscribeMember, upgradeToMarketer, subscribeAndUpgrade, renewSubscription } from "@/lib/actions/memberLifecycle";
 import { cn } from "@/lib/utils";
 
 const DONE_MSG: Record<string, string> = {
   subscribe: "구독 완료 — 구독회원 전환",
-  upgrade: "승급 완료 — 마케터 전환",
-  subscribe_upgrade: "마케터 전환 완료 — 이동 중…",
+  renew: "구독 갱신 완료 — 30일 연장",
+  upgrade: "파트너 멤버십 시작 — 파트너 포털로 이동 중…",
+  subscribe_upgrade: "파트너 멤버십 시작 — 이동 중…",
 };
 
 // 구독/승급/한번에 실행 버튼 — 성공 시 새 등급 화면으로 자동 이동. 잔액 부족 등 예외는 인라인.
@@ -21,7 +22,7 @@ export function LifecycleButton({
   className,
   children,
 }: {
-  mode: "subscribe" | "upgrade" | "subscribe_upgrade";
+  mode: "subscribe" | "renew" | "upgrade" | "subscribe_upgrade";
   memberId: string;
   amount: number;
   className?: string;
@@ -38,9 +39,11 @@ export function LifecycleButton({
       const res =
         mode === "subscribe"
           ? await subscribeMember(memberId, amount)
-          : mode === "upgrade"
-            ? await upgradeToMarketer(memberId, amount)
-            : await subscribeAndUpgrade(memberId);
+          : mode === "renew"
+            ? await renewSubscription(memberId, amount)
+            : mode === "upgrade"
+              ? await upgradeToMarketer(memberId, amount)
+              : await subscribeAndUpgrade(memberId);
       if (!res.ok) {
         setErr(res.error); // 잔액 부족 등 — DB 함수의 한글 메시지 그대로 표시
         return;

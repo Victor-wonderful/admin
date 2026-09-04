@@ -10,6 +10,7 @@ import {
   UserRoundIcon,
   ExternalLinkIcon,
   ChevronRightIcon,
+  SparklesIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
@@ -19,6 +20,7 @@ import { Pill } from "@/components/ui/pill";
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { FortunaFeatureTiles } from "@/components/portal/fortuna-feature-tiles";
+import { SubscriptionNotice } from "@/components/portal/subscription-notice";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
 import { getMemberWallet } from "@/lib/queries/finance";
 import { requireMember } from "@/lib/session";
@@ -68,6 +70,9 @@ export default async function SubscriberDashboardPage() {
       <Topbar title="대시보드" sub="구독 관리 · 결제 · 지갑" uid={uid} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
+        {/* 만료 / 잔액 부족 안내 */}
+        <SubscriptionNotice memberId={ME} />
+
         {/* 히어로: 앱 바로가기 + 구독 관리 */}
         <div className="flex items-center justify-between gap-4 rounded-xl bg-gradient-to-br from-lime to-green-600 p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
           <div className="space-y-2.5">
@@ -94,7 +99,7 @@ export default async function SubscriberDashboardPage() {
                 </a>
               ) : (
                 <LifecycleButton
-                  mode="subscribe"
+                  mode="renew"
                   memberId={ME}
                   amount={SUB_PRICE}
                   className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-green-700"
@@ -180,6 +185,15 @@ export default async function SubscriberDashboardPage() {
 
         {/* Fortuna 앱 기능 바로가기 */}
         <FortunaFeatureTiles title="포르투나 앱에서 이용하기" sub="구독 중 이용할 수 있는 핵심 기능 · 누르면 앱이 새 탭으로 열립니다" />
+
+        {/* 파트너 프로그램 — 절제된 한 줄 안내 */}
+        <Link href="/portal/orders#partner" className="flex items-center justify-between gap-3 rounded-lg bg-card px-4 py-3 text-[13px] ring-1 ring-border transition-colors hover:ring-crypto">
+          <span className="flex items-center gap-2 text-text-secondary">
+            <SparklesIcon className="size-4 text-crypto" />
+            <span><b className="font-semibold text-text-primary">파트너 프로그램 알아보기</b> · 초대한 친구가 구독하면 매달 리워드 · 파트너 대시보드</span>
+          </span>
+          <ChevronRightIcon className="size-4 text-text-tertiary" />
+        </Link>
       </div>
     </>
   );

@@ -6,6 +6,7 @@ import {
   WalletIcon,
   CircleCheckIcon,
   CreditCardIcon,
+  SparklesIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
@@ -53,7 +54,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
       <Topbar title="구독·주문" sub="내 구독 · 결제 내역" uid={toUid(memberId)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
-        <div className={cn("grid gap-4", role === "marketer" && "lg:grid-cols-2")}>
+        <div className={cn("grid gap-4", role !== "registered" && "lg:grid-cols-2")}>
           {/* 카드 1: 포르투나 구독 (전 등급) */}
           <Panel>
             <div className="flex items-center justify-between">
@@ -66,7 +67,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                   <div className="text-xs text-text-secondary">AI 매매 판단 체크 · 진입 전 검증</div>
                 </div>
               </div>
-              <Pill tone={activeSub ? "green" : "neutral"} dot={!!activeSub}>{subState}</Pill>
+              <div className="flex items-center gap-1.5">{role !== "registered" ? <Pill tone="neutral">Basic</Pill> : null}<Pill tone={activeSub ? "green" : "neutral"} dot={!!activeSub}>{subState}</Pill></div>
             </div>
             <div className="mt-3 flex items-end gap-1">
               <span className="text-2xl font-bold text-text-primary">{usd(subPrice)}</span>
@@ -122,6 +123,42 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 <Settings2Icon className="size-4" /> 갱신 관리
               </button>
             </Panel>
+          ) : role === "subscriber" ? (
+            <div id="partner" className="scroll-mt-4">
+            <Panel className="ring-1 ring-crypto/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-[42px] place-items-center rounded-[12px] bg-crypto-soft text-crypto">
+                    <SparklesIcon className="size-[22px]" />
+                  </span>
+                  <div>
+                    <div className="text-[15px] font-semibold text-text-primary">포르투나 파트너 멤버십</div>
+                    <div className="text-xs text-text-secondary">Basic 이용 + 추천 리워드 · 파트너 대시보드</div>
+                  </div>
+                </div>
+                <Pill tone="crypto">Pro</Pill>
+              </div>
+              <div className="mt-3 flex items-end gap-1">
+                <span className="text-2xl font-bold text-text-primary">{usd(ANNUAL)}</span>
+                <span className="pb-1 text-xs font-medium text-text-tertiary">/ 년 · Basic 구독에 추가</span>
+              </div>
+              <ul className="mt-3 space-y-2">
+                {[
+                  "초대한 친구가 구독하면 매달 25% 리워드 (2단계 9%)",
+                  "파트너 전용 대시보드 · 초대 링크 · 리워드 정산 내역",
+                  "팀 성과에 따른 파트너 등급 보너스",
+                ].map((b) => (
+                  <li key={b} className="flex items-center gap-2 text-[13px] text-text-secondary">
+                    <CircleCheckIcon className="size-4 shrink-0 text-crypto" /> {b}
+                  </li>
+                ))}
+              </ul>
+              <LifecycleButton mode="upgrade" memberId={memberId} amount={ANNUAL} className={cn(ctaClass, "w-full bg-crypto text-white")}>
+                <SparklesIcon className="size-4" /> 파트너 멤버십 시작 · {usd(ANNUAL)}/년
+              </LifecycleButton>
+              <p className="mt-2 text-center text-[11px] text-text-tertiary">초대 코드로 가입한 구독자에게 열려 있는 프로그램입니다 · 잔액에서 결제</p>
+            </Panel>
+            </div>
           ) : null}
         </div>
 

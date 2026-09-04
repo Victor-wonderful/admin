@@ -17,7 +17,8 @@ import { Topbar } from "@/components/shell/topbar";
 import { Pill } from "@/components/ui/pill";
 import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-request-modal";
 import { getMemberRank } from "@/lib/queries/ranks";
-import { getReferralCode, listReferred } from "@/lib/queries/members";
+import { getReferralCode, listReferred, getMember } from "@/lib/queries/members";
+import { SubscriptionNotice } from "@/components/portal/subscription-notice";
 import { getMemberWalletData, getMemberSettlement, getMemberCumulativeCommission } from "@/lib/queries/finance";
 import { getMarketerViewerId } from "@/lib/session";
 import { toUid } from "@/lib/uid";
@@ -33,13 +34,14 @@ const CARD = "rounded-[20px] bg-card p-[22px] ring-1 ring-border shadow-[0_2px_1
 
 export default async function MarketerDashboardPage() {
   const ME = await getMarketerViewerId();
-  const [rank, wd, settle, cumulative, code, referred] = await Promise.all([
+  const [rank, wd, settle, cumulative, code, referred, me] = await Promise.all([
     getMemberRank(ME),
     getMemberWalletData(ME),
     getMemberSettlement(ME, CYCLE),
     getMemberCumulativeCommission(ME),
     getReferralCode(ME),
     listReferred(ME),
+    getMember(ME),
   ]);
 
   const uid = toUid(ME);
@@ -100,6 +102,9 @@ export default async function MarketerDashboardPage() {
       <Topbar title="대시보드" sub="내 직급 · 수당 현황" uid={uid} />
 
       <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
+        {/* 구독 만료 / 잔액 부족 안내 */}
+        <SubscriptionNotice memberId={ME} />
+
         {/* RowA — 내 직급·자격 + 출금 잔액 */}
         <div className="grid gap-4 lg:grid-cols-[1fr_392px]">
           <div className={cn(CARD, "space-y-4")}>
@@ -143,8 +148,8 @@ export default async function MarketerDashboardPage() {
             <WithdrawalRequestModal
               memberId={ME}
               balance={balance}
-              defaultAddress={wd.wallet?.deposit_address ?? ""}
-              defaultNetwork={wd.wallet?.network ?? "TRC20"}
+              defaultAddress={me?.payout_address_trc20 ?? me?.payout_address_bep20 ?? ""}
+              defaultNetwork={me?.payout_address_trc20 ? "TRC20" : me?.payout_address_bep20 ? "BEP20" : "TRC20"}
             />
           </div>
         </div>

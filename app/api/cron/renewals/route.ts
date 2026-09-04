@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerClient } from "@/lib/supabase/server";
 import { today } from "@/lib/dates";
+import { sendEmail, renewalReminderText } from "@/lib/notify";
 
 export const dynamic = "force-dynamic";
 
-// 구독 자동 갱신·만료 배치(크론용). 매일 1회 호출: Vercel Cron 또는 외부 스케줄러.
+// 구독 일일 배치(크론용). 매일 1회 호출: Vercel Cron 또는 외부 스케줄러.
+//  1) 종료일 지난 구독 자동 갱신/만료
+//  2) 3일 안에 종료되는데 잔액이 부족한 회원에게 이메일 안내(제공자 미설정이면 로그만)
 // 인증: Authorization: Bearer <CRON_SECRET> (Vercel Cron 은 자동으로 붙여 보낸다).
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
@@ -14,8 +17,26 @@ export async function GET(req: Request) {
   }
 
   const sb = getServerClient();
-  const { data, error } = await sb.rpc("process_subscription_renewals", { p_today: today() });
+  const t = today();
+
+  const { data: batch, error } = await sb.rpc("process_subscription_renewals", { p_today: t });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  const row = Array.isArray(data) ? data[0] : data;
-  return NextResponse.json({ ok: true, today: today(), ...row });
+  const counts = Array.isArray(batch) ? batch[0] : batch;
+
+  const { data: reminders, error: rErr } = await sb.rpc("list_renewal_reminders", { p_today: t, p_days: 3 });
+  if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
+
+  const sent = { sent: 0, skipped: 0, failed: 0 };
+  for (const r of (reminders ?? []) as Array<{ email: string; display_name: string; period_end: string; amount_usd: number; balance_usd: number }>) {
+    const { subject, text } = renewalReminderText({
+      nickname: r.display_name,
+      endDate: String(r.period_end).slice(0, 10),
+      price: Number(r.amount_usd),
+      balance: Number(r.balance_usd),
+    });
+    const res = await sendEmail(r.email, subject, text);
+    sent[res] += 1;
+  }
+
+  return NextResponse.json({ ok: true, today: t, renewals: counts, reminders: { candidates: reminders?.length ?? 0, ...sent } });
 }

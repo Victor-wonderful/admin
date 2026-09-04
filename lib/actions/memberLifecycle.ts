@@ -42,6 +42,16 @@ export async function subscribeMember(memberId: string, amount = 120): Promise<L
   return { ok: true, dest: "/portal/subscriber" };
 }
 
+// 만료된 구독 즉시 갱신(구독회원·마케터 공용). 오늘부터 30일. 성공 시 등급 홈 경로 반환.
+export async function renewSubscription(memberId: string, amount = 120): Promise<LifecycleResult> {
+  const sb = getServerClient();
+  const { error } = await sb.rpc("renew_subscription_now", { p_member: memberId, p_amount: amount, p_as_of: cycleAsOf() });
+  if (error) return { ok: false, error: toMessage(error, "구독 갱신에 실패했습니다") };
+  const { data: m } = await sb.from("members").select("role").eq("id", memberId).maybeSingle();
+  revalidatePortals();
+  return { ok: true, dest: m?.role === "marketer" ? "/marketer/dashboard" : "/portal/subscriber" };
+}
+
 // 구독회원 → 마케터 (연회비 $200 결제). 마케터 홈 경로 반환.
 export async function upgradeToMarketer(memberId: string, amount = 200): Promise<LifecycleResult> {
   const sb = getServerClient();
