@@ -265,7 +265,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
             </div>
             {recommender && parent && recommender.id !== parent.id ? (
               <p className="mt-3 rounded-md bg-warning-soft px-3 py-2 text-[11px] leading-relaxed text-warning">
-                추천인 ≠ 후원 부모 — 스필오버로 배치된 회원입니다.
+                추천인 ≠ 후원 부모 — 추천인의 주력 라인 아래로 후원배치된 회원입니다.
               </p>
             ) : null}
           </SectionCard>

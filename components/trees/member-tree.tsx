@@ -15,7 +15,7 @@ const ROLE_LABEL: Record<MemberRole, string> = {
   subscriber: "구독회원",
   registered: "등록회원",
 };
-// 파트너 포털(회원 화면)용 라벨 — 마케터·스필오버 대신 파트너·자동 배치. 관리자 링크도 없음.
+// 파트너 포털(회원 화면)용 라벨 — 마케터·후원배치 대신 파트너·자동 배치. 관리자 링크도 없음.
 const PARTNER_ROLE_LABEL: Record<MemberRole, string> = {
   marketer: "파트너",
   subscriber: "구독회원",
@@ -57,7 +57,7 @@ function Card({ n, highlight, label, spillover, variant }: { n: TreeNode; highli
           <div className="truncate text-xs font-semibold text-text-primary">{n.name}</div>
           <div className="text-[10px] text-text-tertiary">
             {roleLabel}
-            {spillover ? <span className="ml-1 font-semibold text-warning">· {partner ? "자동 배치" : "스필오버"}</span> : null}
+            {spillover ? <span className="ml-1 font-semibold text-warning">· {partner ? "자동 배치" : "후원배치"}</span> : null}
           </div>
         </div>
       </div>
@@ -99,7 +99,7 @@ function Node({
   majorHead?: boolean; // 주력 라인의 머리(라벨 표시)
   highlightLabel?: string;
 }) {
-  // 스필오버 배치 = 추천인 ≠ 후원 부모. 루트(기준회원)·주력 라인 머리는 제외.
+  // 후원배치(추천인 ≠ 후원 부모) 표시. 루트(기준회원)·주력 라인 머리는 제외.
   const isSpillover =
     !!showSpillover && depth > 0 && !majorHead && !!n.meta?.recommenderId && n.meta.recommenderId !== n.meta.parentId;
 
