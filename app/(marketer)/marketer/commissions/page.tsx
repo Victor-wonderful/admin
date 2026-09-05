@@ -44,7 +44,7 @@ export default async function MarketerCommissionsPage() {
   const kpis = [
     { icon: CoinsIcon, tone: "green" as const, label: "내 당월 리워드", value: usd(self.total_amount) },
     { icon: Share2Icon, tone: "green" as const, label: "초대", value: usd(self.level_amount) },
-    { icon: LayersIcon, tone: "crypto" as const, label: "등급", value: usd(self.rank_amount) },
+    { icon: LayersIcon, tone: "crypto" as const, label: "직급", value: usd(self.rank_amount) },
     { icon: UsersIcon, tone: "info" as const, label: "팀", value: usd(self.share_amount) },
   ];
 
@@ -79,7 +79,7 @@ export default async function MarketerCommissionsPage() {
               <span>회원</span>
               <span>관계</span>
               <span className="text-right">초대</span>
-              <span className="text-right">등급</span>
+              <span className="text-right">직급</span>
               <span className="text-right">팀</span>
               <span className="text-right">합계</span>
             </div>

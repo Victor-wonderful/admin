@@ -174,7 +174,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
                 {[
                   "초대한 친구가 구독하면 매달 25% 리워드 (2단계 9%)",
                   "파트너 전용 대시보드 · 초대 링크 · 리워드 정산 내역",
-                  "팀 성과에 따른 파트너 등급 보너스",
+                  "팀 성과에 따른 파트너 직급 보너스",
                 ].map((b) => (
                   <li key={b} className="flex items-center gap-2 text-[13px] text-text-secondary">
                     <CircleCheckIcon className="size-4 shrink-0 text-crypto" /> {b}

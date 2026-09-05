@@ -97,7 +97,7 @@ export default async function MarketerGenealogyPage() {
             </Panel>
           }
           placement={
-            <Panel bodyClassName="overflow-x-auto" sub="후원배치 — 등급·팀 리워드 산정 기준 조직 (자동 배치)">
+            <Panel bodyClassName="overflow-x-auto" sub="후원배치 — 직급·팀 리워드 산정 기준 조직 (자동 배치)">
               <MemberTree root={placement} maxDepth={3} maxChildren={6} variant="partner" />
             </Panel>
           }

@@ -13,8 +13,8 @@ export async function getGradeSub(member: MemberRow): Promise<string> {
   if (member.role === "marketer") {
     const rank = await getMemberRank(member.id);
     return rank && rank.rank > 0
-      ? `${rank.rank}등급 · 활성 팀원 ${rank.total_active.toLocaleString()}명`
-      : "등급 없음 · 활성 팀원 집계";
+      ? `${rank.rank}직급 · 활성 팀원 ${rank.total_active.toLocaleString()}명`
+      : "직급 없음 · 활성 팀원 집계";
   }
   if (member.role === "subscriber") {
     const subs = await getMemberSubscriptions(member.id);

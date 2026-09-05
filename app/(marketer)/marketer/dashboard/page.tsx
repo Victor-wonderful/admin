@@ -65,7 +65,7 @@ export default async function MarketerDashboardPage() {
   const share = settle?.share ?? 0;
 
   const curRank = settle?.member_rank ?? (rank && rank.rank > 0 ? rank.rank : 0);
-  const rankLabel = curRank > 0 ? `${curRank}등급` : "등급 없음";
+  const rankLabel = curRank > 0 ? `${curRank}직급` : "직급 없음";
   const ratePct = rank ? Number(rank.rate_pct) : 0;
   const totalActive = Number(rank?.total_active ?? 0);
   const major = Number(rank?.major_leg ?? 0);
@@ -86,7 +86,7 @@ export default async function MarketerDashboardPage() {
   const donut = `conic-gradient(#1f9d55 0 ${lp}%, #7c3aed ${lp}% ${lp + rp}%, #2f6fed ${lp + rp}% 100%)`;
   const comp = [
     { label: "초대 리워드", v: level, p: lp, dot: "bg-green-500" },
-    { label: "등급 리워드", v: rankAmt, p: rp, dot: "bg-crypto" },
+    { label: "직급 리워드", v: rankAmt, p: rp, dot: "bg-crypto" },
     { label: "팀 리워드", v: share, p: sp, dot: "bg-info" },
   ];
 
@@ -112,7 +112,7 @@ export default async function MarketerDashboardPage() {
 
   return (
     <>
-      <Topbar title="대시보드" sub="내 등급 · 리워드 현황" uid={uid} />
+      <Topbar title="대시보드" sub="내 직급 · 리워드 현황" uid={uid} />
 
       <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
         {/* 구독 만료 / 잔액 부족 안내 */}
@@ -150,12 +150,12 @@ export default async function MarketerDashboardPage() {
           )}
         </div>
 
-        {/* RowA — 내 등급·자격 + 출금 잔액 */}
+        {/* RowA — 내 직급·자격 + 출금 잔액 */}
         <div className="grid gap-4 lg:grid-cols-[1fr_392px]">
           <div className={cn(CARD, "space-y-4")}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[15px] font-bold text-text-primary">내 등급 · 자격</div>
+                <div className="text-[15px] font-bold text-text-primary">내 직급 · 자격</div>
                 <div className="text-xs text-text-secondary">팀 활성 구독자 기준</div>
               </div>
               <div className="flex items-center gap-1.5">
@@ -165,7 +165,7 @@ export default async function MarketerDashboardPage() {
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[12px]">
-                <span className="font-medium text-text-secondary">{nextRank ? `다음 ${nextRank}등급까지` : "최고 등급"}</span>
+                <span className="font-medium text-text-secondary">{nextRank ? `다음 ${nextRank}직급까지` : "최고 직급"}</span>
                 <span className="font-bold tabular-nums text-text-primary">{nextTotal ? `${major.toLocaleString()} / ${nextTotal.toLocaleString()}명` : `${totalActive.toLocaleString()}명`}</span>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-surface-muted">
@@ -266,13 +266,13 @@ export default async function MarketerDashboardPage() {
           </div>
         </div>
 
-        {/* RowD — 등급 상승 진행 + 빠른 작업 */}
+        {/* RowD — 직급 상승 진행 + 빠른 작업 */}
         <div className="grid gap-4 lg:grid-cols-[1fr_412px]">
           <div className={cn(CARD, "space-y-4")}>
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[15px] font-bold text-text-primary">등급 상승 진행</div>
-                <div className="text-xs text-text-secondary">현재 {rankLabel} {nextRank ? `→ 다음 ${nextRank}등급` : "· 최고 등급"}</div>
+                <div className="text-[15px] font-bold text-text-primary">직급 상승 진행</div>
+                <div className="text-xs text-text-secondary">현재 {rankLabel} {nextRank ? `→ 다음 ${nextRank}직급` : "· 최고 직급"}</div>
               </div>
               <Pill tone="crypto">달성 {majorPct}%</Pill>
             </div>
@@ -292,12 +292,12 @@ export default async function MarketerDashboardPage() {
                 <div className="h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full rounded-full bg-info" style={{ width: `${Math.min(100, balancePct)}%` }} /></div>
               </div>
               <div className={cn("flex items-center justify-between rounded-[10px] px-3.5 py-3 text-[13px]", !shareGated ? "bg-surface-muted text-text-secondary" : shareOk ? "bg-green-50 text-green-700" : "bg-warning-soft text-warning")}>
-                <span className="font-semibold">팀 리워드 30% 자격 (5등급↑)</span>
-                <span className="font-bold">{!shareGated ? "5등급부터" : shareOk ? "충족" : "미충족"}</span>
+                <span className="font-semibold">팀 리워드 30% 자격 (5직급↑)</span>
+                <span className="font-bold">{!shareGated ? "5직급부터" : shareOk ? "충족" : "미충족"}</span>
               </div>
             </div>
             {nextRank ? (
-              <p className="border-t pt-3 text-[12px] text-text-secondary">다음 등급({nextRank}등급)까지 주력 라인 {remain.toLocaleString()}명 남았습니다.</p>
+              <p className="border-t pt-3 text-[12px] text-text-secondary">다음 직급({nextRank}직급)까지 주력 라인 {remain.toLocaleString()}명 남았습니다.</p>
             ) : null}
           </div>
 
