@@ -78,8 +78,7 @@ export default async function AdminProductsPage() {
                 </div>
                 {p.description ? <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-text-secondary">{p.description}</p> : null}
                 <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-3">
-                  {p.pool_eligible ? <Pill tone="green">수당 풀</Pill> : <Pill tone="neutral">풀 제외</Pill>}
-                  {p.counts_active ? <Pill tone="info">카운팅</Pill> : null}
+                  {p.pool_eligible ? <Pill tone="green">매출 배분</Pill> : <Pill tone="neutral">배분 제외 · 회사 100%</Pill>}
                   {readOnly ? null : <ProductFormModal product={p} />}
                 </div>
               </Panel>
@@ -91,7 +90,7 @@ export default async function AdminProductsPage() {
           <InfoIcon className="mt-0.5 size-4 shrink-0" />
           <div>
             <b>bot_sub</b>(회원 구독)과 <b>annual_fee</b>(파트너 멤버십) 가격은 등록·구독회원 화면의 결제 금액과 자동 갱신 금액에 그대로 쓰입니다.
-            그 외 상품은 <b>판매 활성 + 가격 입력</b>이 모두 된 것만 회원 구독·주문 페이지의 &ldquo;상품&rdquo; 섹션에 노출되어 잔액으로 구매할 수 있습니다. 가격이 비어 있거나 판매 중지면 회원에게 보이지 않습니다. 상품 매출의 수당·카운팅 연결은 다음 단계입니다.
+            그 외 상품은 <b>판매 활성 + 가격 입력</b>이 모두 된 것만 회원 구독·주문 페이지의 &ldquo;상품&rdquo; 섹션에 노출되어 잔액으로 구매할 수 있습니다. 가격이 비어 있거나 판매 중지면 회원에게 보이지 않습니다. <b>매출 배분</b>을 켠 상품의 매출은 수당체계의 비율로 배분되고, 끈 상품은 회사 수익으로 전액 귀속됩니다. 상품 구매에 초대·직급 리워드나 활성 카운팅을 붙일지는 결정 대기입니다.
           </div>
         </div>
       </div>

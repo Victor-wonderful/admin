@@ -7,6 +7,7 @@ import { AddAdminButton, AdminRowActions } from "@/components/admin/admins-manag
 import { getServerClient } from "@/lib/supabase/server";
 import { ADMIN_ROLE_LABEL, type AdminRole } from "@/lib/admin-session";
 import { requireAdminPage } from "@/lib/admin-guard";
+import { ROLE_PAGES, ROLE_CAPS, CAPABILITY_LABEL, PAGE_LABEL } from "@/lib/admin-permissions";
 import { toSeoulDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
@@ -16,13 +17,21 @@ export const dynamic = "force-dynamic";
 type Tone = "crypto" | "green" | "info" | "neutral";
 const CARD = "rounded-xl bg-card p-[18px] ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]";
 const avatarTone: Record<Tone, string> = { crypto: "bg-crypto-soft text-crypto", green: "bg-green-50 text-green-700", info: "bg-info-soft text-info", neutral: "bg-n-100 text-n-500" };
-const ROLE_META: Record<AdminRole, { tone: Tone; desc: string; perms: string[] }> = {
-  super: { tone: "crypto", desc: "모든 기능 · 설정 · 관리자 권한", perms: ["전체 권한"] },
-  settlement: { tone: "green", desc: "정산·자금 처리 및 출금 승인 권한", perms: ["수당 정산", "출금 승인", "매출"] },
-  ops: { tone: "info", desc: "회원·조직·구독 운영 (정산 제외)", perms: ["회원", "조직", "구독"] },
-  viewer: { tone: "neutral", desc: "읽기 전용 · 수정/승인 불가", perms: ["대시보드", "리포트"] },
+// 역할 카드 — 설명은 고정, 권한 태그는 lib/admin-permissions 매트릭스에서 파생(화면과 실제 가드가 항상 일치).
+const ROLE_META: Record<AdminRole, { tone: Tone; desc: string }> = {
+  super: { tone: "crypto", desc: "모든 기능 · 설정 · 관리자 권한" },
+  settlement: { tone: "green", desc: "정산·자금 처리 및 출금 승인 권한 · 나머지 조회" },
+  ops: { tone: "info", desc: "회원·조직 운영 · 회원·주문·매출·상품 조회 (정산·자금 없음)" },
+  viewer: { tone: "neutral", desc: "읽기 전용 · 수정/승인 불가" },
 };
-const COLS = "grid-cols-[1.9fr_132px_84px_150px_140px_84px_330px]";
+function rolePerms(r: AdminRole): string[] {
+  const caps = ROLE_CAPS[r].map((c) => `실행: ${CAPABILITY_LABEL[c]}`);
+  const pages = ROLE_PAGES[r].filter((p) => p !== "dashboard" && p !== "account" && p !== "audit");
+  const view = r === "super" ? ["조회: 전체 화면"] : [`조회: ${pages.length}개 화면`];
+  return [...caps, ...view];
+}
+const ROLE_PAGE_HINT = (r: AdminRole) => ROLE_PAGES[r].map((p) => PAGE_LABEL[p]).join(" · ");
+const COLS = "grid-cols-[1.9fr_120px_84px_150px_130px_84px_430px]";
 
 type AdminListRow = { id: string; email: string; display_name: string; role: AdminRole; is_active: boolean; totp_enabled: boolean; last_login_at: string | null; created_at: string };
 
@@ -54,8 +63,8 @@ export default async function AdminAdminsPage() {
                   <span className="flex items-center gap-1 text-[13px] font-semibold text-text-secondary"><UserIcon className="size-3.5 text-text-tertiary" /> {roleCount(r)}명</span>
                 </div>
                 <p className="text-xs leading-relaxed text-text-secondary">{m.desc}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {m.perms.map((p) => <span key={p} className="rounded bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-text-secondary ring-1 ring-border">{p}</span>)}
+                <div className="flex flex-wrap gap-1.5" title={ROLE_PAGE_HINT(r)}>
+                  {rolePerms(r).map((p) => <span key={p} className="rounded bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-text-secondary ring-1 ring-border">{p}</span>)}
                 </div>
               </div>
             );
@@ -63,7 +72,7 @@ export default async function AdminAdminsPage() {
         </section>
 
         <Panel title="관리자 계정" sub={`총 ${rows.length}명 · 활성 ${rows.filter((a) => a.is_active).length}명 · 로그인 = 이메일 + 비밀번호 + 인증 앱 코드`} bodyClassName="overflow-x-auto">
-          <div className="min-w-[1090px]">
+          <div className="min-w-[1180px]">
             <div className={cn("grid items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary", COLS)}>
               <span>관리자</span><span>역할</span><span>2FA</span><span>마지막 로그인</span><span>접속 IP</span><span>상태</span><span className="text-right">관리</span>
             </div>
@@ -85,7 +94,7 @@ export default async function AdminAdminsPage() {
                   <span className="text-[12px] tabular-nums text-text-secondary">{a.last_login_at ? toSeoulDateTime(a.last_login_at) : "—"}</span>
                   <span className="text-[12px] tabular-nums text-text-tertiary">{lastIp.get(a.id) ?? "—"}</span>
                   <span><Pill tone={a.is_active ? "green" : "neutral"} dot={a.is_active}>{a.is_active ? "활성" : "비활성"}</Pill></span>
-                  <AdminRowActions adminId={a.id} email={a.email} active={a.is_active} isSelf={a.id === me.id} canManage={canManage} />
+                  <AdminRowActions adminId={a.id} email={a.email} role={a.role} active={a.is_active} isSelf={a.id === me.id} canManage={canManage} />
                 </div>
               );
             })}

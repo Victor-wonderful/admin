@@ -51,6 +51,8 @@ const ACTION_META: Record<string, { label: string; tone: Tone }> = {
   admin_deactivate: { label: "관리자 비활성화", tone: "negative" },
   admin_totp_reset: { label: "2FA 재설정", tone: "crypto" },
   admin_password_reset: { label: "비밀번호 초기화", tone: "crypto" },
+  admin_role_change: { label: "역할 변경", tone: "crypto" },
+  session_revoke: { label: "기기 세션 종료", tone: "neutral" },
   permission_denied: { label: "권한 거부", tone: "negative" },
   settlement_run: { label: "정산 재산정", tone: "green" },
   settlement_confirm: { label: "정산 확정", tone: "green" },

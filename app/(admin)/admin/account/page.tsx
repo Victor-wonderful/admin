@@ -4,7 +4,8 @@ import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { AdminPasswordForm, AdminTotpRestartForm } from "@/components/admin/account-forms";
-import { ADMIN_ROLE_LABEL } from "@/lib/admin-session";
+import { ADMIN_ROLE_LABEL, getCurrentAdmin, hashAdminToken } from "@/lib/admin-session";
+import { SessionRevokeButton } from "@/components/admin/session-revoke-button";
 import { requireAdminPage } from "@/lib/admin-guard";
 import { getServerClient } from "@/lib/supabase/server";
 import { toSeoulDateTime } from "@/lib/dates";
@@ -16,8 +17,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminAccountPage() {
   const me = await requireAdminPage("account");
   const sb = getServerClient();
-  const { data: sessions } = await sb.from("admin_sessions").select("id, user_agent, ip, created_at, last_seen_at").eq("admin_id", me.id).is("revoked_at", null).order("last_seen_at", { ascending: false });
-  const rows = (sessions ?? []) as Array<{ id: string; user_agent: string | null; ip: string | null; created_at: string; last_seen_at: string }>;
+  const cur = await getCurrentAdmin();
+  const curHash = cur ? hashAdminToken(cur.token) : "";
+  const { data: sessions } = await sb.from("admin_sessions").select("id, token_hash, user_agent, ip, created_at, last_seen_at").eq("admin_id", me.id).is("revoked_at", null).order("last_seen_at", { ascending: false });
+  const rows = (sessions ?? []) as Array<{ id: string; token_hash: string; user_agent: string | null; ip: string | null; created_at: string; last_seen_at: string }>;
 
   const info: [string, React.ReactNode][] = [
     ["이메일", me.email],
@@ -65,7 +68,10 @@ export default async function AdminAccountPage() {
               {rows.map((s) => (
                 <div key={s.id} className="flex items-center justify-between gap-3 border-b py-2.5 text-[13px] last:border-0">
                   <span className="flex items-center gap-2 text-text-primary"><MonitorSmartphoneIcon className="size-4 text-text-tertiary" /> {describeDevice(s.user_agent)}</span>
-                  <span className="text-[12px] tabular-nums text-text-tertiary">{s.ip || "—"} · {toSeoulDateTime(s.last_seen_at)}</span>
+                  <span className="flex items-center gap-3">
+                    <span className="text-[12px] tabular-nums text-text-tertiary">{s.ip || "—"} · {toSeoulDateTime(s.last_seen_at)}</span>
+                    <SessionRevokeButton sessionId={s.id} isCurrent={s.token_hash === curHash} />
+                  </span>
                 </div>
               ))}
             </div>

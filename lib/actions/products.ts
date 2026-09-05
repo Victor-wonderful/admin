@@ -12,6 +12,9 @@ const CODE_RE = /^[a-z0-9_]{2,32}$/;
 
 function revalidateAll() {
   revalidatePath("/admin/products");
+  revalidatePath("/admin/revenue");
+  revalidatePath("/admin/wallet");
+  revalidatePath("/admin/dashboard");
   revalidatePath("/portal/registered");
   revalidatePath("/portal/subscriber");
   revalidatePath("/portal/orders");

@@ -5,7 +5,8 @@ import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlusIcon, Loader2Icon, CheckIcon, XIcon, KeyRoundIcon, PowerIcon, LockKeyholeIcon, CopyIcon } from "lucide-react";
 
-import { createAdmin, setAdminActive, resetAdminTotp, resetAdminPassword } from "@/lib/actions/admin-auth";
+import { createAdmin, setAdminActive, resetAdminTotp, resetAdminPassword, setAdminRole } from "@/lib/actions/admin-auth";
+import type { AdminRole } from "@/lib/admin-session";
 import { Field } from "@/components/auth/field";
 import { useEscapeKey } from "@/hooks/use-escape-key";
 import { cn } from "@/lib/utils";
@@ -105,7 +106,7 @@ function TempPasswordModal({ email, password, onClose }: { email: string; passwo
 }
 
 // 행 액션 — 활성/비활성 토글, 2FA 재설정, 비밀번호 초기화(슈퍼관리자만)
-export function AdminRowActions({ adminId, email, active, isSelf, canManage }: { adminId: string; email: string; active: boolean; isSelf: boolean; canManage: boolean }) {
+export function AdminRowActions({ adminId, email, role, active, isSelf, canManage }: { adminId: string; email: string; role: AdminRole; active: boolean; isSelf: boolean; canManage: boolean }) {
   const router = useRouter();
   const [pending, start] = React.useTransition();
   const [err, setErr] = React.useState<string | null>(null);
@@ -131,6 +132,19 @@ export function AdminRowActions({ adminId, email, active, isSelf, canManage }: {
     <span className="flex flex-col items-end gap-1">
       {temp ? <TempPasswordModal email={email} password={temp} onClose={() => setTemp(null)} /> : null}
       <span className="flex gap-1.5">
+        <select
+          value={role}
+          disabled={pending || isSelf}
+          title={isSelf ? "본인 역할은 다른 슈퍼관리자가 변경" : "역할 변경 · 즉시 적용"}
+          onChange={(e) => {
+            const next = e.target.value as AdminRole;
+            if (!window.confirm(`${email} 의 역할을 '${ROLE_OPTS.find((o) => o.v === next)?.l}' 로 바꿀까요?`)) { e.target.value = role; return; }
+            run(() => setAdminRole(adminId, next));
+          }}
+          className="rounded-md bg-card px-2 py-1 text-[11px] font-semibold text-text-secondary ring-1 ring-border-strong outline-none disabled:opacity-50"
+        >
+          {ROLE_OPTS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}
+        </select>
         <button type="button" disabled={pending || isSelf} onClick={resetPassword} title={isSelf ? "본인은 내 계정에서 변경" : "비밀번호 분실 시 임시 비밀번호 발급"} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-text-secondary ring-1 ring-border-strong disabled:opacity-50">
           <LockKeyholeIcon className="size-3" /> 비밀번호 초기화
         </button>

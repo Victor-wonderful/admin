@@ -127,17 +127,17 @@ export function ProductFormModal({ product, trigger }: { product?: ProductRow; t
                 <div className="text-[11px] font-semibold tracking-wide text-text-tertiary">수당 · 카운팅 설정</div>
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="text-[13px] font-semibold text-text-primary">수당 풀 적용</div>
-                    <div className="text-[11px] text-text-tertiary">이 상품 매출을 수당 풀(60%)에 포함</div>
+                    <div className="text-[13px] font-semibold text-text-primary">매출 배분 적용</div>
+                    <div className="text-[11px] text-text-tertiary">켬: 이 상품 매출을 수당 풀·회사·지분·예비비 비율로 배분 · 끔: 배분 없이 회사 수익 100%</div>
                   </div>
                   <Toggle name="pool_eligible" defaultOn={product?.pool_eligible ?? true} />
                 </div>
-                <div className="flex items-center justify-between gap-3 border-t pt-3">
+                <div className="flex items-center justify-between gap-3 border-t pt-3 opacity-60" title="상품 구매를 활성 구독자로 셀지는 아직 결정 전 · 정산 엔진이 이 값을 읽지 않습니다">
                   <div>
-                    <div className="text-[13px] font-semibold text-text-primary">활성 구독자 카운팅</div>
-                    <div className="text-[11px] text-text-tertiary">구매 시 활성 구독자로 집계 · 직급 자격에 반영</div>
+                    <div className="text-[13px] font-semibold text-text-primary">활성 구독자 카운팅 <span className="ml-1 rounded bg-n-100 px-1.5 py-0.5 text-[10px] font-semibold text-n-500">준비 중</span></div>
+                    <div className="text-[11px] text-text-tertiary">상품 구매를 직급 자격(활성 구독자)에 셀지는 결정 대기 · 현재 엔진은 구독 결제만 카운팅</div>
                   </div>
-                  <Toggle name="counts_active" defaultOn={product?.counts_active ?? false} />
+                  <span className="pointer-events-none"><Toggle name="counts_active" defaultOn={product?.counts_active ?? false} /></span>
                 </div>
               </div>
 

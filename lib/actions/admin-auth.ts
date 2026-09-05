@@ -301,3 +301,39 @@ export async function checkAdminPasswordReset(token: string): Promise<{ email: s
   const row = Array.isArray(data) ? data[0] : null;
   return row ? { email: row.email as string } : null;
 }
+
+// 역할 변경(슈퍼관리자만 · 본인 제외). 즉시 사이드바·페이지 가드에 반영(세션은 유지).
+export async function setAdminRole(adminId: string, role: AdminRole): Promise<{ ok: boolean; error?: string }> {
+  const cur = await getCurrentAdmin();
+  if (!cur || !cur.mfaOk || cur.admin.role !== "super") {
+    await audit({ category: "permission", action: "permission_denied", target: "관리자 역할 변경 시도(권한 없음)", targetId: adminId, ok: false, risk: true });
+    return { ok: false, error: "슈퍼관리자만 역할을 바꿀 수 있습니다" };
+  }
+  if (cur.admin.id === adminId) return { ok: false, error: "본인 역할은 바꿀 수 없습니다(다른 슈퍼관리자에게 요청)" };
+  if (!(role in ADMIN_ROLE_LABEL)) return { ok: false, error: "알 수 없는 역할입니다" };
+  const sb = getServerClient();
+  const { data: before } = await sb.from("admins").select("role").eq("id", adminId).maybeSingle();
+  const prev = (before as { role: AdminRole } | null)?.role;
+  if (prev === role) return { ok: true };
+  const { error } = await sb.from("admins").update({ role }).eq("id", adminId);
+  if (error) return { ok: false, error: error.message };
+  await audit({ category: "permission", action: "admin_role_change", target: `${await adminLabel(adminId)} 역할 변경: ${prev ? ADMIN_ROLE_LABEL[prev] : "?"} → ${ADMIN_ROLE_LABEL[role]}`, targetId: adminId, risk: true });
+  revalidatePath("/admin/admins");
+  return { ok: true };
+}
+
+// 내 다른 기기 세션 종료(현재 세션 제외 · 본인 세션만).
+export async function revokeAdminSession(sessionId: string): Promise<{ ok: boolean; error?: string }> {
+  const cur = await getCurrentAdmin();
+  if (!cur) return { ok: false, error: "로그인이 필요합니다" };
+  const sb = getServerClient();
+  const { data: s } = await sb.from("admin_sessions").select("id, admin_id, token_hash, user_agent").eq("id", sessionId).maybeSingle();
+  const row = s as { id: string; admin_id: string; token_hash: string; user_agent: string | null } | null;
+  if (!row || row.admin_id !== cur.admin.id) return { ok: false, error: "내 세션이 아닙니다" };
+  if (row.token_hash === hashAdminToken(cur.token)) return { ok: false, error: "현재 기기는 로그아웃 버튼을 사용하세요" };
+  const { error } = await sb.from("admin_sessions").update({ revoked_at: new Date().toISOString(), revoke_reason: "admin" }).eq("id", sessionId).is("revoked_at", null);
+  if (error) return { ok: false, error: error.message };
+  await audit({ category: "auth", action: "session_revoke", target: "내 다른 기기 세션 종료", targetId: sessionId });
+  revalidatePath("/admin/account");
+  return { ok: true };
+}
