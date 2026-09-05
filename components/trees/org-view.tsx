@@ -94,8 +94,8 @@ export function OrgView({
   const legend = view === "unilevel" ? LEGEND_UNI : LEGEND_PLACE;
 
   const toggles: { key: View; label: string }[] = [
-    { key: "unilevel", label: "추천 계보 (수당)" },
-    { key: "placement", label: "후원 배치 (스필오버)" },
+    { key: "unilevel", label: "추천조직 (수당)" },
+    { key: "placement", label: "후원배치 (스필오버)" },
   ];
 
   return (
@@ -159,15 +159,15 @@ export function OrgView({
       {/* TreeCanvas — 마우스 휠 확대/축소 + 드래그 이동 */}
       <ZoomPanCanvas>{view === "unilevel" ? unilevelTree : placementTree}</ZoomPanCanvas>
 
-      {/* 안내 — 후원 배치: 풍부한 스필오버 설명 / 추천 계보: 레벨 수당 안내 */}
+      {/* 안내 — 후원배치: 풍부한 스필오버 설명 / 추천조직: 레벨 수당 안내 */}
       {view === "placement" ? (
         <div className="rounded-[14px] bg-warning-soft p-4 ring-1 ring-warning/40">
           <div className="flex gap-3">
             <span className="grid size-8 shrink-0 place-items-center rounded-[10px] bg-warning text-white"><CornerDownRightIcon className="size-[18px]" /></span>
             <div className="space-y-1.5">
-              <div className="text-[13px] font-bold text-warning">스필오버(Spillover) — 후원 배치란?</div>
+              <div className="text-[13px] font-bold text-warning">스필오버(Spillover) — 후원배치란?</div>
               <p className="text-xs leading-relaxed text-text-secondary">
-                추천한 회원을 본인 바로 밑이 아니라 후원 배치 라인의 더 아래(하위 마케터 밑)에 꽂는 것입니다. 추천선(수당)은 본인 그대로지만 후원 부모는 달라집니다 — 즉 <b className="text-text-primary">추천인 ≠ 후원부모</b>.
+                추천한 회원을 본인 바로 밑이 아니라 후원배치 라인의 더 아래(하위 마케터 밑)에 꽂는 것입니다. 추천선(수당)은 본인 그대로지만 후원 부모는 달라집니다 — 즉 <b className="text-text-primary">추천인 ≠ 후원부모</b>.
                 <b className="text-warning"> ★ 아무 데나가 아니라 정해진 ‘단일 주력 라인(보통 왼쪽 한 라인)’에만</b> 계속 몰아줘(밀어주기) 그 라인을 깊게 누적시킵니다 → 대실적(MAX leg). 나머지 직추 라인은 소실적이 되고, 라인 위쪽 전원의 후원 하부로 함께 카운트돼 직급이 도미노로 상승합니다.
               </p>
               <div className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-card px-3 py-1.5 text-[11px] font-medium text-text-secondary ring-1 ring-warning/40">
@@ -179,7 +179,7 @@ export function OrgView({
       ) : (
         <div className="flex items-start gap-2.5 rounded-md bg-surface-muted px-3.5 py-3 text-xs leading-relaxed text-text-secondary">
           <SearchIcon className="mt-0.5 size-4 shrink-0 text-text-tertiary" />
-          추천 계보 — 추천인(recommender) 기준 트리입니다. 레벨 수당은 1대 25% · 2대 9%로 지급되며 3대 이상은 차단됩니다.
+          추천조직 — 추천인(recommender) 기준 트리입니다. 레벨 수당은 1대 25% · 2대 9%로 지급되며 3대 이상은 차단됩니다.
         </div>
       )}
     </div>

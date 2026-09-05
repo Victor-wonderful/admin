@@ -3,11 +3,11 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// 초대 관계(리워드) ↔ 팀 배치(자동 배치) 트리 토글. 두 트리는 서버에서 렌더되어 props 로 전달.
+// 추천조직 ↔ 후원배치 트리 토글. 두 트리는 서버에서 렌더되어 props 로 전달.
 export function GenealogyTrees({
   unilevel,
   placement,
-  labels = { uni: "초대 관계 (리워드)", place: "팀 배치 (자동 배치)" },
+  labels = { uni: "추천조직", place: "후원배치" },
 }: {
   unilevel: React.ReactNode;
   placement: React.ReactNode;

@@ -43,7 +43,7 @@ export default async function AdminOrgPage() {
 
   return (
     <>
-      <Topbar title="조직도" sub="계보 트리 · 추천 계보 / 후원 배치" uid="운영자" />
+      <Topbar title="조직도" sub="추천조직 · 후원배치" uid="운영자" />
       <OrgView
         rootName={rootName}
         rootRole={rootRole}
