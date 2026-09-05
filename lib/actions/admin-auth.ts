@@ -105,7 +105,7 @@ export async function adminLogout() {
 const CREATE_ERRORS: Record<string, string> = { EMAIL_INVALID: "이메일 형식이 아닙니다", PASSWORD_TOO_SHORT: "임시 비밀번호는 8자 이상", EMAIL_TAKEN: "이미 등록된 이메일입니다" };
 export async function createAdmin(_prev: AdminAuthState, formData: FormData): Promise<AdminAuthState> {
   const cur = await getCurrentAdmin();
-  if (!cur || !cur.mfaOk || cur.admin.role !== "super") {
+  if (!cur || (isMfaRequired() && !cur.mfaOk) || cur.admin.role !== "super") {
     await audit({ category: "permission", action: "permission_denied", target: "관리자 추가 시도(권한 없음)", ok: false, risk: true });
     return { error: "슈퍼관리자만 관리자를 추가할 수 있습니다" };
   }
@@ -127,7 +127,7 @@ export async function createAdmin(_prev: AdminAuthState, formData: FormData): Pr
 
 export async function setAdminActive(adminId: string, active: boolean): Promise<{ ok: boolean; error?: string }> {
   const cur = await getCurrentAdmin();
-  if (!cur || !cur.mfaOk || cur.admin.role !== "super") return { ok: false, error: "슈퍼관리자만 변경할 수 있습니다" };
+  if (!cur || (isMfaRequired() && !cur.mfaOk) || cur.admin.role !== "super") return { ok: false, error: "슈퍼관리자만 변경할 수 있습니다" };
   if (cur.admin.id === adminId && !active) return { ok: false, error: "본인 계정은 비활성화할 수 없습니다" };
   const sb = getServerClient();
   const { error } = await sb.from("admins").update({ is_active: active }).eq("id", adminId);
@@ -141,7 +141,7 @@ export async function setAdminActive(adminId: string, active: boolean): Promise<
 // 2FA 재설정(슈퍼관리자가 다른 관리자의 인증 앱 분실 시): 키 삭제 → 다음 로그인에서 재등록
 export async function resetAdminTotp(adminId: string): Promise<{ ok: boolean; error?: string }> {
   const cur = await getCurrentAdmin();
-  if (!cur || !cur.mfaOk || cur.admin.role !== "super") return { ok: false, error: "슈퍼관리자만 변경할 수 있습니다" };
+  if (!cur || (isMfaRequired() && !cur.mfaOk) || cur.admin.role !== "super") return { ok: false, error: "슈퍼관리자만 변경할 수 있습니다" };
   const sb = getServerClient();
   const { error } = await sb.from("admins").update({ totp_secret: null, totp_enabled: false }).eq("id", adminId);
   if (error) return { ok: false, error: error.message };
@@ -218,7 +218,7 @@ const RESET_ERRORS: Record<string, string> = {
 };
 export async function resetAdminPassword(adminId: string): Promise<{ ok: boolean; tempPassword?: string; error?: string }> {
   const cur = await getCurrentAdmin();
-  if (!cur || !cur.mfaOk || cur.admin.role !== "super") {
+  if (!cur || (isMfaRequired() && !cur.mfaOk) || cur.admin.role !== "super") {
     await audit({ category: "permission", action: "permission_denied", target: "관리자 비밀번호 초기화 시도(권한 없음)", targetId: adminId, ok: false, risk: true });
     return { ok: false, error: RESET_ERRORS.NOT_SUPER };
   }
@@ -307,7 +307,7 @@ export async function checkAdminPasswordReset(token: string): Promise<{ email: s
 // 역할 변경(슈퍼관리자만 · 본인 제외). 즉시 사이드바·페이지 가드에 반영(세션은 유지).
 export async function setAdminRole(adminId: string, role: AdminRole): Promise<{ ok: boolean; error?: string }> {
   const cur = await getCurrentAdmin();
-  if (!cur || !cur.mfaOk || cur.admin.role !== "super") {
+  if (!cur || (isMfaRequired() && !cur.mfaOk) || cur.admin.role !== "super") {
     await audit({ category: "permission", action: "permission_denied", target: "관리자 역할 변경 시도(권한 없음)", targetId: adminId, ok: false, risk: true });
     return { ok: false, error: "슈퍼관리자만 역할을 바꿀 수 있습니다" };
   }
