@@ -17,14 +17,11 @@ import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-requ
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { LedgerTable } from "@/components/wallet/ledger-table";
 import { getDepositNetworks } from "@/lib/deposit-config";
-import { getMemberWalletData } from "@/lib/queries/finance";
+import { getMemberWalletData, listMemberSettlementCycles } from "@/lib/queries/finance";
 import { getMember } from "@/lib/queries/members";
 import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
 import { cn } from "@/lib/utils";
-
-// 리워드 적립 추이는 일별 이력 데이터가 없어 정적(예시). 파트너에게만 표시.
-const ACCRUAL = [44, 58, 52, 70, 64, 82, 76, 60, 90, 84, 102, 96, 118, 140];
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 // -0 방지: 0 이면 항상 "+$0".
@@ -34,10 +31,12 @@ const signed = (n: number) => (n === 0 || n > 0 ? `+${usd(Math.abs(n))}` : `−$
 // 입금: 회사 입금 주소(Tron/BSC) 안내. 출금: 회원이 프로필에 등록한 본인 지갑 주소로.
 export async function WalletView({ memberId, role }: { memberId: string; role: MemberRole }) {
   const isMarketer = role === "marketer";
-  const [{ wallet, monthCommission, monthDeposit, monthPayment, totalDeposit, ledger }, member] = await Promise.all([
+  const [{ wallet, monthCommission, monthDeposit, monthPayment, totalDeposit, ledger }, member, cycles] = await Promise.all([
     getMemberWalletData(memberId),
     getMember(memberId),
+    isMarketer ? listMemberSettlementCycles(memberId, 6) : Promise.resolve([]),
   ]);
+  const cycleMax = Math.max(1, ...cycles.map((c) => c.total));
   const networks = getDepositNetworks();
   const profileHref = isMarketer ? "/marketer/profile" : "/portal/profile";
 
@@ -118,14 +117,20 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
 
         <div className={cn("grid gap-4", isMarketer && "lg:grid-cols-[1fr_388px]")}>
           {isMarketer ? (
-            <Panel title="리워드 적립 추이" sub="최근 14일 적립 리워드 (예시)" action={<Pill tone="green" dot>당월 {signed(monthCommission)}</Pill>}>
-              <div className="flex h-44 items-end gap-1.5">
-                {ACCRUAL.map((h, i) => (
-                  <div key={i} className="flex flex-1 flex-col justify-end">
-                    <div className={cn("rounded-t", i === ACCRUAL.length - 1 ? "bg-green-600" : "bg-green-300")} style={{ height: `${h * 0.7}%` }} />
-                  </div>
-                ))}
-              </div>
+            <Panel title="리워드 적립 추이" sub="정산 사이클(월)별 리워드 · 최근 6개월" action={<Pill tone="green" dot>당월 {signed(monthCommission)}</Pill>}>
+              {cycles.length === 0 ? (
+                <div className="grid h-44 place-items-center text-sm text-text-tertiary">정산된 리워드가 아직 없습니다.</div>
+              ) : (
+                <div className="flex h-44 items-end gap-3">
+                  {cycles.map((c, i) => (
+                    <div key={c.cycle} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${c.cycle} · ${usd(c.total)}`}>
+                      <span className="text-[11px] font-semibold tabular-nums text-text-secondary">{usd(c.total)}</span>
+                      <div className={cn("w-full rounded-t", i === cycles.length - 1 ? "bg-green-600" : "bg-green-300")} style={{ height: `${Math.max(4, Math.round((c.total / cycleMax) * 80))}%` }} />
+                      <span className="text-[10px] tabular-nums text-text-tertiary">{c.cycle.slice(2).replace("-", "/")}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Panel>
           ) : null}
 

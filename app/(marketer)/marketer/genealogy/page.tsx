@@ -4,7 +4,6 @@ import {
   UserPlusIcon,
   LayersIcon,
   UserRoundIcon,
-  MousePointerClickIcon,
   GitBranchIcon,
 } from "lucide-react";
 
@@ -57,7 +56,7 @@ export default async function MarketerGenealogyPage() {
   const SUMMARY = [
     { icon: UsersIcon, k: "1대 직접 초대", v: `${oneL}명` },
     { icon: UsersIcon, k: "2대", v: `${twoL}명` },
-    { icon: LayersIcon, k: "주력 라인 라인 (주력)", v: `${mm.major_leg.toLocaleString()}명` },
+    { icon: LayersIcon, k: "주력 라인", v: `${mm.major_leg.toLocaleString()}명` },
     { icon: GitBranchIcon, k: `기타 라인 (${balancePct}%)`, v: `${mm.other_minor.toLocaleString()}명` },
     { icon: LayersIcon, k: "활성 팀원 전체", v: `${mm.total_active.toLocaleString()}명` },
   ];
@@ -124,7 +123,7 @@ export default async function MarketerGenealogyPage() {
                   <div className="text-xs text-text-secondary">내 직접 초대 1호 · 아래 팀 트리에서 배치를 확인하세요</div>
                 </div>
               </div>
-              <Pill tone="neutral"><MousePointerClickIcon className="size-3" /> 선택한 노드</Pill>
+              <Pill tone="neutral">첫 초대</Pill>
             </div>
             <div className="mt-4 flex gap-2.5">
               <a href="#team-trees" className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand py-2.5 text-[13px] font-bold text-white">

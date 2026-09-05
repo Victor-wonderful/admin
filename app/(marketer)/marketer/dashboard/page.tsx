@@ -7,7 +7,6 @@ import {
   NetworkIcon,
   TrophyIcon,
   Share2Icon,
-  CopyIcon,
   HashIcon,
   ShoppingCartIcon,
   WalletIcon,
@@ -16,6 +15,7 @@ import {
 import { Topbar } from "@/components/shell/topbar";
 import { Pill } from "@/components/ui/pill";
 import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-request-modal";
+import { CopyButton } from "@/components/marketer/copy-button";
 import { getMemberRank } from "@/lib/queries/ranks";
 import { getReferralCode, listReferred, getMember } from "@/lib/queries/members";
 import { SubscriptionNotice } from "@/components/portal/subscription-notice";
@@ -209,7 +209,7 @@ export default async function MarketerDashboardPage() {
               <div className="text-[11px] font-medium text-text-tertiary">내 초대 코드</div>
               <div className="flex items-center justify-between rounded-[10px] bg-surface-muted px-3.5 py-2.5 ring-1 ring-border">
                 <span className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-text-primary"><HashIcon className="size-3 text-text-tertiary" /> {codeStr}</span>
-                <span className="inline-flex items-center gap-1 rounded-[7px] bg-green-600 px-2.5 py-1 text-[11px] font-semibold text-white"><CopyIcon className="size-3" /> 복사</span>
+                <CopyButton text={codeStr} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2.5 pt-1">
@@ -240,7 +240,7 @@ export default async function MarketerDashboardPage() {
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-[13px]">
-                  <span className="font-semibold text-text-primary">주력 라인 라인 (주력)</span>
+                  <span className="font-semibold text-text-primary">주력 라인</span>
                   <span className="font-bold tabular-nums text-text-primary">{nextTotal ? `${major.toLocaleString()} / ${nextTotal.toLocaleString()}명` : `${major.toLocaleString()}명`}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full rounded-full bg-green-600" style={{ width: `${majorPct}%` }} /></div>
@@ -250,7 +250,7 @@ export default async function MarketerDashboardPage() {
                   <span className="font-semibold text-text-primary">기타 라인 합계</span>
                   <span className="font-bold tabular-nums text-text-primary">{minor.toLocaleString()}명 ({balancePct}%)</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full rounded-full bg-info" style={{ width: "100%" }} /></div>
+                <div className="h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full rounded-full bg-info" style={{ width: `${Math.min(100, balancePct)}%` }} /></div>
               </div>
               <div className={cn("flex items-center justify-between rounded-[10px] px-3.5 py-3 text-[13px]", !shareGated ? "bg-surface-muted text-text-secondary" : shareOk ? "bg-green-50 text-green-700" : "bg-warning-soft text-warning")}>
                 <span className="font-semibold">팀 리워드 30% 자격 (5등급↑)</span>
@@ -258,7 +258,7 @@ export default async function MarketerDashboardPage() {
               </div>
             </div>
             {nextRank ? (
-              <p className="border-t pt-3 text-[12px] text-text-secondary">다음 등급({nextRank}등급)까지 주력 라인 주력 라인 {remain.toLocaleString()}명 남았습니다.</p>
+              <p className="border-t pt-3 text-[12px] text-text-secondary">다음 등급({nextRank}등급)까지 주력 라인 {remain.toLocaleString()}명 남았습니다.</p>
             ) : null}
           </div>
 

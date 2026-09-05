@@ -28,7 +28,7 @@ const REL: Record<string, { label: string; tone: "green" | "crypto" | "neutral" 
 };
 
 export default async function MarketerCommissionsPage() {
-  // 현재 로그인 파트너 = 데모 루트(M0). 다른 파트너 페이지와 동일 시점.
+  // 현재 로그인 파트너(세션).
   const viewerId = await getMarketerViewerId();
 
   const visible = await getVisibleSettlements(viewerId, CYCLE);
@@ -45,7 +45,7 @@ export default async function MarketerCommissionsPage() {
     { icon: CoinsIcon, tone: "green" as const, label: "내 당월 리워드", value: usd(self.total_amount) },
     { icon: Share2Icon, tone: "green" as const, label: "초대", value: usd(self.level_amount) },
     { icon: LayersIcon, tone: "crypto" as const, label: "등급", value: usd(self.rank_amount) },
-    { icon: UsersIcon, tone: "info" as const, label: "공유", value: usd(self.share_amount) },
+    { icon: UsersIcon, tone: "info" as const, label: "팀", value: usd(self.share_amount) },
   ];
 
   const COLS = "grid-cols-[1.6fr_auto_1fr_1fr_1fr_1.1fr]";
@@ -80,7 +80,7 @@ export default async function MarketerCommissionsPage() {
               <span>관계</span>
               <span className="text-right">초대</span>
               <span className="text-right">등급</span>
-              <span className="text-right">공유</span>
+              <span className="text-right">팀</span>
               <span className="text-right">합계</span>
             </div>
             {downline.length === 0 ? (

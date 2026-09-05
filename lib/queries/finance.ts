@@ -361,6 +361,14 @@ export async function getMemberSettlement(memberId: string, cycle: string) {
 }
 
 // 회원 누적 수당(전 사이클 정산 합계).
+// 회원 정산 사이클별 리워드(최근 n개, 오래된 순) — 지갑 "리워드 적립 추이"
+export async function listMemberSettlementCycles(memberId: string, n = 6): Promise<Array<{ cycle: string; total: number }>> {
+  const sb = getServerClient();
+  const { data, error } = await sb.from("settlements").select("cycle, total_amount").eq("member_id", memberId).order("cycle", { ascending: false }).limit(n);
+  if (error) throw error;
+  return ((data ?? []) as Array<{ cycle: string; total_amount: number }>).map((r) => ({ cycle: r.cycle, total: Number(r.total_amount) })).reverse();
+}
+
 export async function getMemberCumulativeCommission(memberId: string): Promise<number> {
   const sb = getServerClient();
   const { data, error } = await sb.from("settlements").select("total_amount").eq("member_id", memberId);

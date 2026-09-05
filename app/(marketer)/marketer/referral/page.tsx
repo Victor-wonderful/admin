@@ -5,13 +5,12 @@ import {
   PercentIcon,
   UsersIcon,
   CornerDownRightIcon,
-  MessageCircleIcon,
-  SendIcon,
-  HashIcon,
-  LinkIcon,
+  UserRoundIcon,
+  BadgeCheckIcon as PartnerIcon,
 } from "lucide-react";
 
 import { toUid } from "@/lib/uid";
+import { toSeoulDate, today, currentCycle } from "@/lib/dates";
 import { InviteLinkActions } from "@/components/marketer/invite-link-actions";
 import { Topbar } from "@/components/shell/topbar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
@@ -27,14 +26,11 @@ export const dynamic = "force-dynamic";
 const ROLE_LABEL: Record<MemberRole, string> = { registered: "등록회원", subscriber: "구독회원", marketer: "파트너" };
 const ROLE_TONE: Record<MemberRole, "neutral" | "green" | "crypto"> = { registered: "neutral", subscriber: "green", marketer: "crypto" };
 
-// 가입 추이·채널은 클릭 트래킹 인프라 부재로 정적(예시).
-const SIGNUPS = [40, 28, 52, 44, 64, 38, 72, 56, 48, 84, 60, 92, 70, 110];
-const CHANNELS = [
-  { icon: MessageCircleIcon, name: "카카오톡", count: "98명", w: 40, color: "bg-green-600" },
-  { icon: SendIcon, name: "텔레그램", count: "64명", w: 26, color: "bg-info" },
-  { icon: HashIcon, name: "X (트위터)", count: "42명", w: 17, color: "bg-feature" },
-  { icon: LinkIcon, name: "직접 링크", count: "44명", w: 17, color: "bg-crypto" },
-];
+// 최근 N일 날짜 목록(서울, 오래된 순)
+function lastDays(n: number): string[] {
+  const end = Date.parse(today() + "T00:00:00Z");
+  return Array.from({ length: n }, (_, i) => new Date(end - (n - 1 - i) * 86400000).toISOString().slice(0, 10));
+}
 
 export default async function MarketerReferralPage() {
   const viewerId = await getMarketerViewerId();
@@ -49,6 +45,19 @@ export default async function MarketerReferralPage() {
   const convRate = total > 0 ? ((subscribed / total) * 100).toFixed(1) : "0.0";
   const mktRate = total > 0 ? ((marketers / total) * 100).toFixed(1) : "0.0";
   const codeStr = code?.code ?? "—";
+
+  // 가입 추이(실데이터) — 최근 14일 내 초대 가입 수(서울 날짜) + 당월 가입 수
+  const joinDates = referred.map((m) => toSeoulDate(m.created_at));
+  const days = lastDays(14);
+  const signups = days.map((d) => joinDates.filter((j) => j === d).length);
+  const signupMax = Math.max(1, ...signups);
+  const monthSignups = joinDates.filter((d) => d.startsWith(currentCycle())).length;
+  // 등급 구성(실데이터) — 초대한 회원의 현재 등급 분포(채널별 유입은 클릭 트래킹이 없어 제공하지 않는다)
+  const byRole = [
+    { icon: UserRoundIcon, name: "등록회원", count: referred.filter((m) => m.role === "registered").length, color: "bg-n-400" },
+    { icon: CircleCheckIcon, name: "구독회원", count: referred.filter((m) => m.role === "subscriber").length, color: "bg-green-600" },
+    { icon: PartnerIcon, name: "파트너", count: marketers, color: "bg-crypto" },
+  ];
 
   // 퍼널 — 초대 코드 가입 → 구독 → 파트너 (실데이터). 링크 클릭은 트래킹 부재로 제외.
   const pctOf = (n: number) => (total > 0 ? Math.max(n > 0 ? 8 : 0, Math.round((n / total) * 100)) : 0);
@@ -106,19 +115,25 @@ export default async function MarketerReferralPage() {
         </Panel>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_388px]">
-          <Panel title="가입 추이" sub="최근 14일 내 초대 가입 수" action={<Pill tone="green" dot>당월 +32명</Pill>}>
-            <div className="flex h-44 items-end gap-1.5">
-              {SIGNUPS.map((h, i) => (
-                <div key={i} className="flex flex-1 flex-col justify-end">
-                  <div className={cn("rounded-t", i === SIGNUPS.length - 1 ? "bg-green-600" : "bg-green-300")} style={{ height: `${h * 0.8}%` }} />
-                </div>
-              ))}
-            </div>
+          <Panel title="가입 추이" sub="최근 14일 내 초대 가입 수" action={<Pill tone="green" dot>당월 +{monthSignups}명</Pill>}>
+            {signups.every((n) => n === 0) ? (
+              <div className="grid h-44 place-items-center text-sm text-text-tertiary">최근 14일 가입이 없습니다.</div>
+            ) : (
+              <div className="flex h-44 items-end gap-1.5">
+                {signups.map((n, i) => (
+                  <div key={days[i]} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${days[i]} · ${n}명`}>
+                    <span className="text-[10px] tabular-nums text-text-tertiary">{n > 0 ? n : ""}</span>
+                    <div className={cn("w-full rounded-t", i === signups.length - 1 ? "bg-green-600" : "bg-green-300")} style={{ height: `${Math.max(n > 0 ? 6 : 2, Math.round((n / signupMax) * 85))}%` }} />
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-1.5 flex justify-between text-[10px] text-text-tertiary"><span>{days[0].slice(5)}</span><span>{days[days.length - 1].slice(5)}</span></div>
           </Panel>
 
-          <Panel title="채널별 유입" sub="공유 채널별 가입 전환">
+          <Panel title="초대 회원 등급 구성" sub="내가 초대한 회원의 현재 등급">
             <div className="space-y-4">
-              {CHANNELS.map((c) => (
+              {byRole.map((c) => (
                 <div key={c.name} className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 text-[13px] font-semibold text-text-primary">
@@ -127,10 +142,10 @@ export default async function MarketerReferralPage() {
                       </span>
                       {c.name}
                     </span>
-                    <span className="text-[13px] font-bold text-text-primary">{c.count}</span>
+                    <span className="text-[13px] font-bold text-text-primary">{c.count.toLocaleString()}명</span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-n-100">
-                    <div className={cn("h-full rounded-full", c.color)} style={{ width: `${c.w}%` }} />
+                    <div className={cn("h-full rounded-full", c.color)} style={{ width: `${total > 0 ? Math.round((c.count / total) * 100) : 0}%` }} />
                   </div>
                 </div>
               ))}
@@ -143,11 +158,11 @@ export default async function MarketerReferralPage() {
             <div className="grid grid-cols-[1.4fr_1fr_1fr_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
               <span>회원</span><span>등급</span><span>가입일</span><span className="text-right">구독</span>
             </div>
-            {referred.slice(0, 8).map((m) => (
+            {referred.slice(0, 20).map((m) => (
               <div key={m.id} className="grid grid-cols-[1.4fr_1fr_1fr_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
                 <span className="font-semibold text-text-primary">{toUid(m.id)}</span>
                 <span><Pill tone={ROLE_TONE[m.role]}>{ROLE_LABEL[m.role]}</Pill></span>
-                <span className="text-text-secondary tabular-nums">{m.created_at.slice(0, 10)}</span>
+                <span className="text-text-secondary tabular-nums">{toSeoulDate(m.created_at)}</span>
                 <span className="justify-self-end">
                   <Pill tone={m.is_active_subscriber ? "green" : "neutral"}>{m.is_active_subscriber ? "활성" : "미구독"}</Pill>
                 </span>
@@ -155,6 +170,8 @@ export default async function MarketerReferralPage() {
             ))}
             {referred.length === 0 ? (
               <div className="py-8 text-center text-sm text-text-tertiary">초대한 회원이 없습니다.</div>
+            ) : referred.length > 20 ? (
+              <div className="pt-3 text-center text-[12px] text-text-tertiary">최근 가입 20명 표시 · 외 {(referred.length - 20).toLocaleString()}명</div>
             ) : null}
           </div>
         </Panel>
