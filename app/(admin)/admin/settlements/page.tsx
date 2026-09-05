@@ -129,7 +129,7 @@ export default async function AdminSettlementsPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
               <button className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border"><ChevronLeftIcon className="size-4" /></button>
-              <span className="text-sm font-bold text-text-primary">2026년 6월 정산</span>
+              <span className="text-sm font-bold text-text-primary">{CYCLE.slice(0, 4)}년 {Number(CYCLE.slice(5, 7))}월 정산</span>
               <button className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border"><ChevronRightIcon className="size-4" /></button>
             </div>
             <div className="flex items-center gap-2">
