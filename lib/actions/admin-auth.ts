@@ -337,3 +337,33 @@ export async function revokeAdminSession(sessionId: string): Promise<{ ok: boole
   revalidatePath("/admin/account");
   return { ok: true };
 }
+
+// 내 표시 이름 변경(2~30자). 감사 로그·사이드바·Topbar 에 즉시 반영.
+export async function updateMyName(_prev: AdminAuthState, formData: FormData): Promise<AdminAuthState> {
+  const cur = await getCurrentAdmin();
+  if (!cur) redirect("/admin-login");
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2 || name.length > 30) return { error: "이름은 2~30자로 입력하세요" };
+  if (name === cur.admin.display_name) return { error: "현재 이름과 같습니다" };
+  const sb = getServerClient();
+  const { error } = await sb.from("admins").update({ display_name: name }).eq("id", cur.admin.id);
+  if (error) return { error: "변경 처리 중 오류가 발생했습니다" };
+  await audit({ category: "auth", action: "profile_name_change", target: `내 이름 변경: ${cur.admin.display_name} → ${name}`, actor: { id: cur.admin.id, name, email: cur.admin.email } });
+  revalidatePath("/admin/account");
+  revalidatePath("/admin", "layout");
+  return { ok: true };
+}
+
+// 내 다른 기기 세션 전부 종료(현재 세션 유지).
+export async function revokeOtherAdminSessions(): Promise<{ ok: boolean; count?: number; error?: string }> {
+  const cur = await getCurrentAdmin();
+  if (!cur) return { ok: false, error: "로그인이 필요합니다" };
+  const sb = getServerClient();
+  const { data, error } = await sb.from("admin_sessions").update({ revoked_at: new Date().toISOString(), revoke_reason: "admin" })
+    .eq("admin_id", cur.admin.id).is("revoked_at", null).neq("token_hash", hashAdminToken(cur.token)).select("id");
+  if (error) return { ok: false, error: error.message };
+  const n = (data ?? []).length;
+  if (n > 0) await audit({ category: "auth", action: "session_revoke_all", target: `내 다른 기기 세션 ${n}개 종료` });
+  revalidatePath("/admin/account");
+  return { ok: true, count: n };
+}

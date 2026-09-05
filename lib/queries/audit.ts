@@ -16,6 +16,8 @@ export interface AuditRow {
   ok: boolean;
   risk: boolean;
   ip: string | null;
+  user_agent: string | null;
+  meta: Record<string, unknown> | null;
 }
 
 export interface AuditStats {
@@ -39,7 +41,7 @@ export async function listAuditLogs(limit = 2000): Promise<AuditRow[]> {
   const sb = getServerClient();
   const { data, error } = await sb
     .from("admin_audit_logs")
-    .select("id, at, admin_id, admin_name, admin_email, category, action, target, target_id, ok, risk, ip")
+    .select("id, at, admin_id, admin_name, admin_email, category, action, target, target_id, ok, risk, ip, user_agent, meta")
     .order("at", { ascending: false })
     .limit(limit);
   if (error) throw error;

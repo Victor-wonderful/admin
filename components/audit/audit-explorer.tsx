@@ -13,11 +13,15 @@ import {
   DownloadIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
+  ExternalLinkIcon,
   SearchIcon,
   ShieldAlertIcon,
   XIcon,
   RotateCcwIcon,
 } from "lucide-react";
+
+import Link from "next/link";
 
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
@@ -77,9 +81,25 @@ const ACTION_META: Record<string, { label: string; tone: Tone }> = {
   product_activate: { label: "상품 판매 활성", tone: "green" },
   product_deactivate: { label: "상품 판매 중지", tone: "neutral" },
   ranks_update: { label: "직급 요율 변경", tone: "crypto" },
+  profile_name_change: { label: "이름 변경", tone: "info" },
+  session_revoke_all: { label: "다른 기기 모두 종료", tone: "neutral" },
   comp_settings_update: { label: "수당체계 설정 변경", tone: "crypto" },
 };
 const actionMeta = (code: string) => ACTION_META[code] ?? { label: code, tone: "neutral" as Tone };
+
+// 기록에서 바로 갈 수 있는 관련 화면
+function relatedHref(r: AuditRow): { href: string; label: string } | null {
+  const a = r.action;
+  if (a.startsWith("member_") && r.target_id) return { href: `/admin/members/${r.target_id}`, label: "회원 상세" };
+  if (a.startsWith("withdrawal_")) return { href: "/admin/withdrawals", label: "출금내역" };
+  if (a.startsWith("deposit_")) return { href: "/admin/deposits", label: "입금내역" };
+  if (a.startsWith("settlement_") || a === "commission_pay") return { href: r.target_id && /^\d{4}-\d{2}$/.test(r.target_id) ? `/admin/settlements?cycle=${r.target_id}` : "/admin/settlements", label: "수당 정산" };
+  if (a === "revenue_allocate") return { href: r.target_id ? `/admin/revenue?cycle=${r.target_id}` : "/admin/revenue", label: "매출현황" };
+  if (a.startsWith("admin_")) return { href: "/admin/admins", label: "관리자·권한" };
+  if (a.startsWith("product_")) return { href: "/admin/products", label: "상품·구독플랜" };
+  if (a === "ranks_update" || a === "comp_settings_update") return { href: "/admin/ranks", label: "수당체계·직급" };
+  return null;
+}
 
 const CATEGORY_AVATAR: Record<AuditCategory, string> = {
   auth: "bg-info-soft text-info", permission: "bg-crypto-soft text-crypto", settlement: "bg-green-50 text-green-700",
@@ -102,8 +122,10 @@ export function AuditExplorer({ rows, stats }: { rows: AuditRow[]; stats: AuditS
   const [query, setQuery] = React.useState("");
   const [from, setFrom] = React.useState("");
   const [to, setTo] = React.useState("");
+  const [actionFilter, setActionFilter] = React.useState("all");
+  const [openId, setOpenId] = React.useState<number | null>(null);
   const [pageState, setPageState] = React.useState<{ key: string; page: number }>({ key: "", page: 1 });
-  const filterKey = `${tab}|${admin}|${result}|${riskOnly}|${query.trim().toLowerCase()}|${from}|${to}`;
+  const filterKey = `${tab}|${admin}|${result}|${riskOnly}|${actionFilter}|${query.trim().toLowerCase()}|${from}|${to}`;
   const page = pageState.key === filterKey ? pageState.page : 1;
   const setPage = (p: number) => setPageState({ key: filterKey, page: p });
 
@@ -112,6 +134,11 @@ export function AuditExplorer({ rows, stats }: { rows: AuditRow[]; stats: AuditS
     for (const r of rows) if (r.admin_id && r.admin_name) m.set(r.admin_id, r.admin_name);
     return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [rows]);
+  const actions = React.useMemo(() => {
+    const set = new Map<string, number>();
+    for (const r of rows) if (tab === "all" || r.category === tab) set.set(r.action, (set.get(r.action) ?? 0) + 1);
+    return [...set.entries()].sort((a, b) => actionMeta(a[0]).label.localeCompare(actionMeta(b[0]).label));
+  }, [rows, tab]);
   const counts = React.useMemo(() => {
     const c: Record<string, number> = { all: rows.length };
     for (const k of CATEGORY_ORDER) c[k] = 0;
@@ -127,6 +154,7 @@ export function AuditExplorer({ rows, stats }: { rows: AuditRow[]; stats: AuditS
       if (result === "ok" && !r.ok) return false;
       if (result === "fail" && r.ok) return false;
       if (riskOnly && !r.risk) return false;
+      if (actionFilter !== "all" && r.action !== actionFilter) return false;
       const day = toSeoulDateTime(r.at).slice(0, 10);
       if (from && day < from) return false;
       if (to && day > to) return false;
@@ -136,7 +164,7 @@ export function AuditExplorer({ rows, stats }: { rows: AuditRow[]; stats: AuditS
       }
       return true;
     });
-  }, [rows, tab, admin, result, riskOnly, query, from, to]);
+  }, [rows, tab, admin, result, riskOnly, actionFilter, query, from, to]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -152,9 +180,10 @@ export function AuditExplorer({ rows, stats }: { rows: AuditRow[]; stats: AuditS
   if (admin !== "all") chips.push({ key: "admin", label: `관리자: ${admin === "anon" ? "미식별" : admins.find(([id]) => id === admin)?.[1] ?? admin}`, clear: () => setAdmin("all") });
   if (result !== "all") chips.push({ key: "result", label: `결과: ${result === "ok" ? "성공" : "실패"}`, clear: () => setResult("all") });
   if (riskOnly) chips.push({ key: "risk", label: "위험 액션만", clear: () => setRiskOnly(false) });
+  if (actionFilter !== "all") chips.push({ key: "action", label: `액션: ${actionMeta(actionFilter).label}`, clear: () => setActionFilter("all") });
   if (from || to) chips.push({ key: "date", label: `기간: ${from || "…"} ~ ${to || "…"}`, clear: () => { setFrom(""); setTo(""); } });
   if (query.trim()) chips.push({ key: "q", label: `검색: ${query.trim()}`, clear: () => setQuery("") });
-  const resetAll = () => { setAdmin("all"); setResult("all"); setRiskOnly(false); setQuery(""); setFrom(""); setTo(""); };
+  const resetAll = () => { setAdmin("all"); setResult("all"); setRiskOnly(false); setActionFilter("all"); setQuery(""); setFrom(""); setTo(""); };
 
   const exportCsv = () =>
     downloadCsv(
@@ -218,6 +247,10 @@ export function AuditExplorer({ rows, stats }: { rows: AuditRow[]; stats: AuditS
               <option value="ok">성공만</option>
               <option value="fail">실패만</option>
             </select>
+            <select value={actions.some(([a]) => a === actionFilter) ? actionFilter : "all"} onChange={(e) => setActionFilter(e.target.value)} className="max-w-[180px] rounded-[10px] bg-card px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong outline-none">
+              <option value="all">모든 액션</option>
+              {actions.map(([a, n]) => <option key={a} value={a}>{actionMeta(a).label} ({n})</option>)}
+            </select>
             <button onClick={() => setRiskOnly((v) => !v)} className={cn("inline-flex items-center gap-1.5 rounded-[10px] px-3 py-2 text-[13px] font-semibold ring-1 transition-colors", riskOnly ? "bg-warning-soft text-warning ring-warning" : "bg-card text-text-secondary ring-border-strong")}>
               <ShieldAlertIcon className="size-3.5" /> 위험 액션
             </button>
@@ -255,9 +288,12 @@ export function AuditExplorer({ rows, stats }: { rows: AuditRow[]; stats: AuditS
           ) : pageRows.map((r) => {
             const a = actionMeta(r.action);
             const anon = !r.admin_id;
+            const open = openId === r.id;
+            const rel = relatedHref(r);
             return (
-              <div key={r.id} className={cn("grid items-center gap-3 border-b py-3 last:border-0", COLS, r.risk && "bg-warning-soft/30")}>
-                <span className="text-[12px] tabular-nums text-text-tertiary">{toSeoulDateTime(r.at)}</span>
+              <div key={r.id} className={cn("border-b last:border-0", r.risk && "bg-warning-soft/30")}>
+              <button type="button" onClick={() => setOpenId(open ? null : r.id)} aria-expanded={open} className={cn("grid w-full items-center gap-3 py-3 text-left transition-colors hover:bg-surface-muted/60", COLS)}>
+                <span className="flex items-center gap-1 text-[12px] tabular-nums text-text-tertiary"><ChevronDownIcon className={cn("size-3.5 shrink-0 text-n-400 transition-transform", open && "rotate-180")} />{toSeoulDateTime(r.at)}</span>
                 <span className="flex min-w-0 items-center gap-2" title={r.admin_email ?? undefined}>
                   <span className={cn("grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-bold", anon ? "bg-n-100 text-n-500" : CATEGORY_AVATAR[r.category])}>
                     {anon ? <UserXIcon className="size-3" /> : (r.admin_name ?? "?").slice(0, 1)}
@@ -271,6 +307,23 @@ export function AuditExplorer({ rows, stats }: { rows: AuditRow[]; stats: AuditS
                 <span className="truncate text-[13px] text-text-secondary" title={r.target ?? undefined}>{r.target ?? "—"}</span>
                 <span className="truncate text-[12px] tabular-nums text-text-tertiary">{r.ip ?? "—"}</span>
                 <span className="flex justify-end"><Pill tone={r.ok ? "green" : "negative"} dot={r.ok}>{r.ok ? "성공" : "실패"}</Pill></span>
+              </button>
+              {open ? (
+                <div className="mx-2 mb-3 grid gap-3 rounded-lg bg-surface-muted p-4 text-[12px] ring-1 ring-border lg:grid-cols-[1fr_1fr]">
+                  <div className="space-y-1.5">
+                    <div><span className="text-text-tertiary">대상·상세 </span><span className="text-text-primary">{r.target ?? "—"}</span></div>
+                    <div><span className="text-text-tertiary">관리자 </span><span className="text-text-primary">{r.admin_name ?? "미식별"}{r.admin_email ? ` · ${r.admin_email}` : ""}</span></div>
+                    <div><span className="text-text-tertiary">분류 · 액션 코드 </span><span className="font-mono text-text-secondary">{r.category} · {r.action}</span></div>
+                    {r.target_id ? <div><span className="text-text-tertiary">대상 ID </span><span className="font-mono text-text-secondary">{r.target_id}</span></div> : null}
+                    {rel ? <Link href={rel.href} className="inline-flex items-center gap-1 font-semibold text-green-700 hover:underline">{rel.label} 열기 <ExternalLinkIcon className="size-3" /></Link> : null}
+                  </div>
+                  <div className="space-y-1.5">
+                    <div><span className="text-text-tertiary">IP </span><span className="font-mono text-text-secondary">{r.ip ?? "—"}</span></div>
+                    <div className="break-all"><span className="text-text-tertiary">기기 </span><span className="text-text-secondary">{r.user_agent ?? "—"}</span></div>
+                    {r.meta ? <pre className="max-h-40 overflow-auto rounded-md bg-card p-2 font-mono text-[11px] text-text-secondary ring-1 ring-border">{JSON.stringify(r.meta, null, 2)}</pre> : null}
+                  </div>
+                </div>
+              ) : null}
               </div>
             );
           })}

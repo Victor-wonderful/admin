@@ -3,9 +3,9 @@ import { KeyRoundIcon, ShieldCheckIcon, UserCogIcon, MonitorSmartphoneIcon } fro
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
-import { AdminPasswordForm, AdminTotpRestartForm } from "@/components/admin/account-forms";
+import { AdminPasswordForm, AdminTotpRestartForm, AdminNameForm } from "@/components/admin/account-forms";
 import { ADMIN_ROLE_LABEL, getCurrentAdmin, hashAdminToken } from "@/lib/admin-session";
-import { SessionRevokeButton } from "@/components/admin/session-revoke-button";
+import { SessionRevokeButton, RevokeOthersButton } from "@/components/admin/session-revoke-button";
 import { requireAdminPage } from "@/lib/admin-guard";
 import { getServerClient } from "@/lib/supabase/server";
 import { toSeoulDateTime } from "@/lib/dates";
@@ -24,7 +24,6 @@ export default async function AdminAccountPage() {
 
   const info: [string, React.ReactNode][] = [
     ["이메일", me.email],
-    ["이름", me.display_name],
     ["역할", <Pill key="r" tone="crypto">{ADMIN_ROLE_LABEL[me.role]}</Pill>],
     ["2단계 인증", me.totp_enabled ? <span className="inline-flex items-center gap-1 text-green-700"><ShieldCheckIcon className="size-3.5" /> 인증 앱 등록됨</span> : "미등록"],
     ["마지막 로그인", me.last_login_at ? toSeoulDateTime(me.last_login_at) : "—"],
@@ -36,7 +35,8 @@ export default async function AdminAccountPage() {
 
       <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
         <div className="grid gap-4 lg:grid-cols-2">
-          <Panel title="계정 정보" sub="이메일과 역할은 슈퍼관리자가 관리자·권한 화면에서 바꿉니다">
+          <Panel title="계정 정보" sub="역할은 슈퍼관리자가 관리자·권한 화면에서 바꿉니다 · 이메일(로그인 ID)은 변경 불가">
+            <div className="mb-3 border-b pb-3"><AdminNameForm current={me.display_name} /></div>
             <div>
               {info.map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between border-b py-2.5 text-[13px] last:border-0">
@@ -63,7 +63,7 @@ export default async function AdminAccountPage() {
             </div>
           </Panel>
 
-          <Panel title="로그인 중인 기기" sub={`활성 세션 ${rows.length}개 · 12시간 후 자동 만료`}>
+          <Panel title="로그인 중인 기기" sub={`활성 세션 ${rows.length}개 · 12시간 후 자동 만료`} action={<RevokeOthersButton count={rows.filter((s) => s.token_hash !== curHash).length} />}>
             <div>
               {rows.map((s) => (
                 <div key={s.id} className="flex items-center justify-between gap-3 border-b py-2.5 text-[13px] last:border-0">

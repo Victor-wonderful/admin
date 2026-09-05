@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { Loader2Icon, KeyRoundIcon, CheckCircle2Icon, ShieldCheckIcon } from "lucide-react";
+import { Loader2Icon, KeyRoundIcon, CheckCircle2Icon, ShieldCheckIcon, UserPenIcon } from "lucide-react";
 
-import { changeAdminPassword, restartMyTotp, type AdminAuthState } from "@/lib/actions/admin-auth";
+import { changeAdminPassword, restartMyTotp, updateMyName, type AdminAuthState } from "@/lib/actions/admin-auth";
 import { Field } from "@/components/auth/field";
 
 function Status({ state, okMsg }: { state: AdminAuthState; okMsg: string }) {
@@ -39,6 +39,20 @@ export function AdminTotpRestartForm() {
       <button type="submit" disabled={pending} className="inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-[13px] font-bold text-crypto ring-1 ring-crypto disabled:opacity-60">
         {pending ? <Loader2Icon className="size-4 animate-spin" /> : <ShieldCheckIcon className="size-4" />} 인증 앱 다시 등록
       </button>
+    </form>
+  );
+}
+
+// 내 표시 이름 변경 — 사이드바·감사 로그에 쓰이는 이름.
+export function AdminNameForm({ current }: { current: string }) {
+  const [state, action, pending] = useActionState(updateMyName, undefined);
+  return (
+    <form action={action} className="flex flex-wrap items-end gap-2">
+      <div className="min-w-[200px] flex-1"><Field label="표시 이름" name="name" defaultValue={current} minLength={2} maxLength={30} required /></div>
+      <button type="submit" disabled={pending} className="inline-flex items-center justify-center gap-2 rounded-md bg-card px-4 py-2.5 text-[13px] font-bold text-text-secondary ring-1 ring-border-strong disabled:opacity-60">
+        {pending ? <Loader2Icon className="size-4 animate-spin" /> : <UserPenIcon className="size-4" />} 이름 변경
+      </button>
+      <div className="basis-full"><Status state={state} okMsg="이름을 변경했습니다" /></div>
     </form>
   );
 }
