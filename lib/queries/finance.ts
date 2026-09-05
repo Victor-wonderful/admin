@@ -1,6 +1,6 @@
-import { currentCycle } from "@/lib/dates";
 import "server-only";
 import { getServerClient } from "@/lib/supabase/server";
+import { currentCycle } from "@/lib/dates";
 
 export interface SystemWallet {
   kind: string;
@@ -362,11 +362,26 @@ export async function getMemberSettlement(memberId: string, cycle: string) {
 
 // 회원 누적 수당(전 사이클 정산 합계).
 // 회원 정산 사이클별 리워드(최근 n개, 오래된 순) — 지갑 "리워드 적립 추이"
-export async function listMemberSettlementCycles(memberId: string, n = 6): Promise<Array<{ cycle: string; total: number }>> {
+export interface MemberCyclePoint { cycle: string; total: number; level: number; rank: number; share: number }
+
+// 최근 n개 사이클(당월 포함, 서울 기준)을 빈 달까지 채워 반환 — 차트가 항상 같은 폭의 막대 n개를 그리도록.
+// 정산이 없는 달은 0. 유형별(초대=level · 직급=rank · 팀=share) 금액 포함.
+export async function listMemberSettlementCycles(memberId: string, n = 6): Promise<MemberCyclePoint[]> {
   const sb = getServerClient();
-  const { data, error } = await sb.from("settlements").select("cycle, total_amount").eq("member_id", memberId).order("cycle", { ascending: false }).limit(n);
+  const [y, m] = currentCycle().split("-").map(Number);
+  const cycles: string[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(y, m - 1 - i, 1));
+    cycles.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  }
+  const { data, error } = await sb.from("settlements").select("cycle, total_amount, level_amount, rank_amount, share_amount").eq("member_id", memberId).in("cycle", cycles);
   if (error) throw error;
-  return ((data ?? []) as Array<{ cycle: string; total_amount: number }>).map((r) => ({ cycle: r.cycle, total: Number(r.total_amount) })).reverse();
+  const byCycle = new Map<string, MemberCyclePoint>();
+  for (const r of (data ?? []) as Array<{ cycle: string; total_amount: number; level_amount: number; rank_amount: number; share_amount: number }>) {
+    const prev = byCycle.get(r.cycle) ?? { cycle: r.cycle, total: 0, level: 0, rank: 0, share: 0 };
+    byCycle.set(r.cycle, { cycle: r.cycle, total: prev.total + Number(r.total_amount), level: prev.level + Number(r.level_amount), rank: prev.rank + Number(r.rank_amount), share: prev.share + Number(r.share_amount) });
+  }
+  return cycles.map((c) => byCycle.get(c) ?? { cycle: c, total: 0, level: 0, rank: 0, share: 0 });
 }
 
 export async function getMemberCumulativeCommission(memberId: string): Promise<number> {

@@ -16,8 +16,10 @@ import { Pill } from "@/components/ui/pill";
 import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-request-modal";
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { LedgerTable } from "@/components/wallet/ledger-table";
+import { RewardTrendChart } from "@/components/wallet/reward-trend-chart";
 import { getDepositNetworks } from "@/lib/deposit-config";
 import { getMemberWalletData, listMemberSettlementCycles } from "@/lib/queries/finance";
+import { currentCycle } from "@/lib/dates";
 import { getMember } from "@/lib/queries/members";
 import type { MemberRole } from "@/lib/supabase/types";
 import { toUid } from "@/lib/uid";
@@ -36,7 +38,6 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
     getMember(memberId),
     isMarketer ? listMemberSettlementCycles(memberId, 6) : Promise.resolve([]),
   ]);
-  const cycleMax = Math.max(1, ...cycles.map((c) => c.total));
   const networks = getDepositNetworks();
   const profileHref = isMarketer ? "/marketer/profile" : "/portal/profile";
 
@@ -117,20 +118,8 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
 
         <div className={cn("grid gap-4", isMarketer && "lg:grid-cols-[1fr_388px]")}>
           {isMarketer ? (
-            <Panel title="리워드 적립 추이" sub="정산 사이클(월)별 리워드 · 최근 6개월" action={<Pill tone="green" dot>당월 {signed(monthCommission)}</Pill>}>
-              {cycles.length === 0 ? (
-                <div className="grid h-44 place-items-center text-sm text-text-tertiary">정산된 리워드가 아직 없습니다.</div>
-              ) : (
-                <div className="flex h-44 items-end gap-3">
-                  {cycles.map((c, i) => (
-                    <div key={c.cycle} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${c.cycle} · ${usd(c.total)}`}>
-                      <span className="text-[11px] font-semibold tabular-nums text-text-secondary">{usd(c.total)}</span>
-                      <div className={cn("w-full rounded-t", i === cycles.length - 1 ? "bg-green-600" : "bg-green-300")} style={{ height: `${Math.max(4, Math.round((c.total / cycleMax) * 80))}%` }} />
-                      <span className="text-[10px] tabular-nums text-text-tertiary">{c.cycle.slice(2).replace("-", "/")}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <Panel title="리워드 적립 추이" sub="정산 사이클(월)별 리워드 · 최근 6개월 · 유형별 누적" action={<Pill tone="green" dot>당월 {signed(monthCommission)}</Pill>}>
+              <RewardTrendChart points={cycles} currentCycle={currentCycle()} />
             </Panel>
           ) : null}
 

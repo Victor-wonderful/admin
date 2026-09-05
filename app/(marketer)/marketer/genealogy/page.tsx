@@ -3,13 +3,11 @@ import {
   CircleCheckIcon,
   UserPlusIcon,
   LayersIcon,
-  UserRoundIcon,
   GitBranchIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
-import { Pill } from "@/components/ui/pill";
 import { MemberTree } from "@/components/trees/member-tree";
 import { GenealogyTrees } from "@/components/trees/genealogy-trees";
 import { getBothTrees } from "@/lib/queries/trees";
@@ -122,30 +120,7 @@ export default async function MarketerGenealogyPage() {
           소프트 압축 — 비활성(당월 미결제) 회원은 해당 월 레벨 리워드 집계에서 제외됩니다. 추천조직·후원배치 자리는 유지되며 재결제 시 자동 회복됩니다. (레벨 리워드는 1·2대만, 3대 이상 차단)
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_388px]">
-          <Panel>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="grid size-[46px] place-items-center rounded-[13px] bg-crypto-soft text-crypto">
-                  <UserRoundIcon className="size-[22px]" />
-                </span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-base font-bold text-text-primary">{unilevel?.children[0]?.name ?? "—"}</span>
-                    <Pill tone="green">1대 · 25%</Pill>
-                  </div>
-                  <div className="text-xs text-text-secondary">내 직접 초대 1호 · 아래 팀 트리에서 배치를 확인하세요</div>
-                </div>
-              </div>
-              <Pill tone="neutral">첫 초대</Pill>
-            </div>
-            <div className="mt-4 flex gap-2.5">
-              <a href="#team-trees" className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand py-2.5 text-[13px] font-bold text-white">
-                <GitBranchIcon className="size-4" /> 팀 트리 보기
-              </a>
-            </div>
-          </Panel>
-
+        <div>
           <Panel title="내 초대 라인 요약">
             <div>
               {SUMMARY.map((s, i) => (
