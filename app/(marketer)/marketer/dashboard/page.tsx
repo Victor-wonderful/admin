@@ -10,6 +10,8 @@ import {
   HashIcon,
   ShoppingCartIcon,
   WalletIcon,
+  ExternalLinkIcon,
+  CpuIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
@@ -17,7 +19,8 @@ import { Pill } from "@/components/ui/pill";
 import { WithdrawalRequestModal } from "@/components/withdrawals/withdrawal-request-modal";
 import { CopyButton } from "@/components/marketer/copy-button";
 import { getMemberRank } from "@/lib/queries/ranks";
-import { getReferralCode, listReferred, getMember } from "@/lib/queries/members";
+import { getReferralCode, listReferred, getMember, getMemberSubscriptions } from "@/lib/queries/members";
+import { FORTUNA_APP_URL } from "@/lib/constants";
 import { SubscriptionNotice } from "@/components/portal/subscription-notice";
 import { getMemberAnnualMembership } from "@/lib/queries/products";
 import { today, daysBetween } from "@/lib/dates";
@@ -36,7 +39,7 @@ const CARD = "rounded-[20px] bg-card p-[22px] ring-1 ring-border shadow-[0_2px_1
 
 export default async function MarketerDashboardPage() {
   const ME = await getMarketerViewerId();
-  const [rank, wd, settle, cumulative, code, referred, me, annual] = await Promise.all([
+  const [rank, wd, settle, cumulative, code, referred, me, annual, subs] = await Promise.all([
     getMemberRank(ME),
     getMemberWalletData(ME),
     getMemberSettlement(ME, CYCLE),
@@ -45,7 +48,11 @@ export default async function MarketerDashboardPage() {
     listReferred(ME),
     getMember(ME),
     getMemberAnnualMembership(ME),
+    getMemberSubscriptions(ME),
   ]);
+  // 파트너도 Basic 구독자 — 포르투나 앱(매매 판단 체크) 바로가기용 현재 구독 기간
+  const T = today();
+  const activeSub = subs.find((s) => s.status === "active" && s.period_start <= T && T <= s.period_end);
 
   const uid = toUid(ME);
   // 리워드 자격 = 멤버십 유효 + 구독 활성. 만료면 정산·실시간 지급에서 제외된다(is_qualified_marketer).
@@ -110,6 +117,38 @@ export default async function MarketerDashboardPage() {
       <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
         {/* 구독 만료 / 잔액 부족 안내 */}
         <SubscriptionNotice memberId={ME} role="marketer" />
+
+        {/* 포르투나 앱 바로가기 — 파트너도 앱 이용자. 구독 만료면 갱신으로 안내 */}
+        <div className="flex items-center justify-between gap-4 rounded-[20px] bg-feature p-5 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
+          <div className="flex items-center gap-4">
+            <span className="grid size-11 shrink-0 place-items-center rounded-[13px] bg-white/10"><CpuIcon className="size-6" /></span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold">포르투나 앱</span>
+                <Pill tone={activeSub ? "green" : "negative"} dot={!!activeSub}>{activeSub ? "매매 판단 체크 이용 중" : "구독 만료"}</Pill>
+              </div>
+              <div className="mt-0.5 text-xs text-white/60">
+                {activeSub
+                  ? `이용 기간 ${activeSub.period_start.slice(0, 10)} ~ ${activeSub.period_end.slice(0, 10)} · AI 리서치 · 후보 레이더 · 거래 일지`
+                  : "구독을 갱신하면 앱 이용과 리워드 지급이 다시 시작됩니다"}
+              </div>
+            </div>
+          </div>
+          {activeSub ? (
+            <a
+              href={FORTUNA_APP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-2 rounded-[10px] bg-white px-5 py-2.5 text-sm font-bold whitespace-nowrap text-green-700"
+            >
+              <ExternalLinkIcon className="size-4" /> 포르투나 앱 열기
+            </a>
+          ) : (
+            <Link href="/marketer/orders" className="inline-flex shrink-0 items-center gap-2 rounded-[10px] bg-white px-5 py-2.5 text-sm font-bold whitespace-nowrap text-green-700">
+              구독 갱신
+            </Link>
+          )}
+        </div>
 
         {/* RowA — 내 등급·자격 + 출금 잔액 */}
         <div className="grid gap-4 lg:grid-cols-[1fr_392px]">
