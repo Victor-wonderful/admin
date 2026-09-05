@@ -1,9 +1,13 @@
-import { CopyIcon, ExternalLinkIcon } from "lucide-react";
+import { ExternalLinkIcon, HashIcon, ShieldAlertIcon } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
-import { getSystemWallets, getRevenueSummary, getWithdrawalStats } from "@/lib/queries/finance";
+import { getSystemWallets } from "@/lib/queries/finance";
+import { getWalletOverview } from "@/lib/queries/admin-finance";
+import { getDepositNetworks } from "@/lib/deposit-config";
+import { addressExplorerUrl, NETWORK_LABEL } from "@/lib/chain/explorer";
+import { currentCycle } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -11,86 +15,66 @@ export const dynamic = "force-dynamic";
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const pctOf = (p: number, t: number) => (t > 0 ? Math.round((p / t) * 100) : 0);
 
-// 풀 표시 메타(라벨/색/설명) — 잔액은 system_wallets 라이브.
+// 풀 표시 메타(라벨/색/설명) — 잔액은 system_wallets 라이브(결제마다 60/20/10/10 배분 반영).
 const POOL_META: Record<string, { color: string; desc: string }> = {
-  pool_commission: { color: "bg-green-500", desc: "레벨·직급·공유 지급 재원" },
+  pool_commission: { color: "bg-green-500", desc: "초대·직급·팀 리워드 지급 재원" },
   pool_company: { color: "bg-info", desc: "운영·개발" },
-  pool_equity: { color: "bg-crypto", desc: "투자자 분배" },
+  pool_equity: { color: "bg-crypto", desc: "지분자 분배" },
   pool_reserve: { color: "bg-n-400", desc: "리스크 적립" },
 };
 const POOL_ORDER = ["pool_commission", "pool_company", "pool_equity", "pool_reserve"];
+const NET_COLOR: Record<string, string> = { TRC20: "bg-green-500", BEP20: "bg-warning" };
 
-// 네트워크 비중(합성) — 운영 잔액에 비례 배분.
-const NET_SPLIT = [
-  { name: "TRC20", sub: "Tron", pct: 52, color: "bg-green-500" },
-  { name: "ERC20", sub: "Ethereum", pct: 26, color: "bg-info" },
-  { name: "Polygon", sub: "Polygon", pct: 15, color: "bg-crypto" },
-  { name: "BSC", sub: "BNB Chain", pct: 7, color: "bg-warning" },
-];
-
-// 잔액 추이(합성 · 14일 시각화)
-const TREND = [138, 134, 143, 149, 145, 156, 152, 160, 165, 161, 174, 178, 188, 196];
-const TREND_MAX = Math.max(...TREND);
-
+// 지갑잔액 — 수탁 원장 기준. 회사 보유(누적 입금 − 누적 출금)와 회원 예치금(부채), 배분 풀, 체인별 입출금, 14일 흐름.
 export default async function AdminWalletPage() {
-  const [wallets, rev, wd] = await Promise.all([
-    getSystemWallets(),
-    getRevenueSummary(),
-    getWithdrawalStats(),
-  ]);
-
-  const operating = wallets.find((w) => w.kind === "operating")?.balance_usd ?? 0;
-  const pools = POOL_ORDER
-    .map((kind) => wallets.find((w) => w.kind === kind))
-    .filter((w): w is NonNullable<typeof w> => Boolean(w));
+  const [wallets, ov] = await Promise.all([getSystemWallets(), getWalletOverview()]);
+  const cycle = currentCycle();
+  const pools = POOL_ORDER.map((kind) => wallets.find((w) => w.kind === kind)).filter((w): w is NonNullable<typeof w> => Boolean(w));
   const poolTotal = pools.reduce((s, p) => s + p.balance_usd, 0);
-
-  const inflow = rev.monthTotal;
-  const outflow = wd.monthSum;
-  const net = inflow - outflow;
+  const networks = getDepositNetworks();
+  const net = ov.monthDeposit - ov.monthWithdrawal;
+  const dailyMax = Math.max(1, ...ov.daily.map((d) => Math.max(d.deposit, d.withdrawal)));
+  const netTotal = ov.byNetwork.reduce((s, n) => s + n.deposit, 0);
 
   const FLOW = [
-    { k: "당월 유입 (매출)", v: `+${usd(inflow)}`, c: "text-positive" },
-    { k: "당월 유출 (출금)", v: `−${usd(outflow)}`, c: "text-text-primary" },
+    { k: "당월 유입 (회원 입금)", v: `+${usd(ov.monthDeposit)}`, c: "text-positive" },
+    { k: "당월 유출 (출금 송금)", v: `−${usd(ov.monthWithdrawal)}`, c: "text-text-primary" },
     { k: "당월 순증", v: `${net >= 0 ? "+" : "−"}${usd(Math.abs(net))}`, c: net >= 0 ? "text-positive" : "text-negative" },
   ];
 
-  const nets = NET_SPLIT.map((n) => ({ ...n, value: (operating * n.pct) / 100 }));
-
-  const totalStr = usd(operating);
-
   return (
     <>
-      <Topbar title="지갑잔액" sub="운영 지갑 · 배분 풀 · 네트워크별 보유 · USDT" uid="운영자" />
+      <Topbar title="지갑잔액" sub="회사 보유(원장) · 회원 예치금 · 배분 풀 · 체인별 입출금 · USDT" uid="운영자" />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
-        {/* ── 총 잔액 + 당월 자금 흐름 ── */}
         <div className="grid gap-[18px] lg:grid-cols-[1fr_360px]">
-          <div
-            className="relative flex flex-col justify-between overflow-hidden rounded-xl p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]"
-            style={{ background: "linear-gradient(135deg,#3fbf6f 0%,#1f9d55 55%,#147a40 100%)" }}
-          >
-            <div className="flex items-start justify-between">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]" style={{ background: "linear-gradient(135deg,#3fbf6f 0%,#1f9d55 55%,#147a40 100%)" }}>
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-[13px] font-semibold text-white/80">총 잔액 (운영 지갑)</div>
-                <div className="mt-1.5 text-[42px] leading-none font-bold tabular-nums">
-                  {totalStr} <span className="text-base font-semibold text-white/75">USDT</span>
-                </div>
+                <div className="text-[13px] font-semibold text-white/80">회사 보유 추정 (원장 기준 · 누적 입금 − 누적 출금)</div>
+                <div className="mt-1.5 text-[42px] leading-none font-bold tabular-nums">{usd(ov.custody)} <span className="text-base font-semibold text-white/75">USDT</span></div>
               </div>
-              <button className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium text-white">
-                <ExternalLinkIcon className="size-3.5" /> 온체인 보기
-              </button>
+              <div className="text-right text-xs text-white/80">
+                <div>회원 예치금(부채) <b className="text-white">{usd(ov.memberLiability)}</b> · {ov.memberCount}지갑</div>
+                <div className="mt-1">출금 홀드 <b className="text-white">{usd(ov.pendingWithdrawal)}</b></div>
+              </div>
             </div>
             <div className="mt-5 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium">
-                TXkQ9m…8fA2 <CopyIcon className="size-3" />
-              </span>
-              <span className="rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium">Polygon · USDT</span>
+              {networks.map((n) => {
+                const url = addressExplorerUrl(n.code, n.address);
+                return n.address ? (
+                  <a key={n.code} href={url ?? "#"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-3 py-1.5 font-mono text-xs font-medium hover:bg-white/25">
+                    <HashIcon className="size-3" /> {n.code} {n.address.slice(0, 8)}…{n.address.slice(-6)} <ExternalLinkIcon className="size-3" />
+                  </a>
+                ) : (
+                  <span key={n.code} className="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white/70"><ShieldAlertIcon className="size-3" /> {n.code} 입금 주소 미설정</span>
+                );
+              })}
               <span className="rounded-md bg-white/15 px-3 py-1.5 text-xs font-semibold">당월 순증 {net >= 0 ? "+" : "−"}{usd(Math.abs(net))}</span>
             </div>
           </div>
 
-          <Panel title="당월 자금 흐름" sub="2026년 6월">
+          <Panel title="당월 자금 흐름" sub={`${cycle.slice(0, 4)}년 ${Number(cycle.slice(5, 7))}월 · 완료 건 기준`}>
             <div>
               {FLOW.map((f, i) => (
                 <div key={f.k} className={cn("flex items-center justify-between py-3.5", i < FLOW.length - 1 && "border-b")}>
@@ -102,12 +86,7 @@ export default async function AdminWalletPage() {
           </Panel>
         </div>
 
-        {/* ── 배분 풀 잔액 (라이브) ── */}
-        <Panel
-          title="배분 풀 잔액"
-          sub="매출 1차 배분 후 풀별 보유 · 수당 지급분 차감 반영"
-          action={<Pill tone="green">합계 {usd(poolTotal)}</Pill>}
-        >
+        <Panel title="배분 풀 잔액" sub="결제마다 매출을 60/20/10/10 으로 배분 · 수당 풀은 리워드 지급분 차감" action={<Pill tone="green">합계 {usd(poolTotal)}</Pill>}>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {pools.map((p) => {
               const meta = POOL_META[p.kind] ?? { color: "bg-n-400", desc: "" };
@@ -115,15 +94,11 @@ export default async function AdminWalletPage() {
               return (
                 <div key={p.kind} className="rounded-lg bg-surface-muted p-4 ring-1 ring-border">
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-[13px] font-semibold text-text-primary">
-                      <span className={cn("size-2.5 rounded-full", meta.color)} /> {p.label}
-                    </span>
+                    <span className="flex items-center gap-2 text-[13px] font-semibold text-text-primary"><span className={cn("size-2.5 rounded-full", meta.color)} /> {p.label}</span>
                     <span className="text-xs font-bold text-text-tertiary">{pct}%</span>
                   </div>
-                  <div className="mt-2 text-xl font-bold tabular-nums text-text-primary">{usd(p.balance_usd)}</div>
-                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-n-100">
-                    <div className={cn("h-full rounded-full", meta.color)} style={{ width: `${pct}%` }} />
-                  </div>
+                  <div className={cn("mt-2 text-xl font-bold tabular-nums", p.balance_usd < 0 ? "text-negative" : "text-text-primary")}>{usd(p.balance_usd)}</div>
+                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-n-100"><div className={cn("h-full rounded-full", meta.color)} style={{ width: `${Math.max(0, pct)}%` }} /></div>
                   <div className="mt-2 text-[11px] text-text-tertiary">{meta.desc}</div>
                 </div>
               );
@@ -131,42 +106,46 @@ export default async function AdminWalletPage() {
           </div>
         </Panel>
 
-        {/* ── 네트워크별 보유 (운영 잔액 비례) ── */}
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {nets.map((n) => (
-            <Panel key={n.name}>
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-[13px] font-semibold text-text-primary">
-                  <span className={cn("size-2.5 rounded-full", n.color)} /> {n.name}
-                </span>
-                <span className="rounded bg-surface-muted px-2 py-0.5 text-[11px] font-semibold text-text-secondary ring-1 ring-border">{n.pct}%</span>
+        <div className="grid gap-[18px] lg:grid-cols-[1fr_1fr]">
+          <Panel title="체인별 입출금 (누적)" sub="완료된 입금·출금 · 회사 지원 체인 Tron TRC20 / BSC BEP20">
+            {ov.byNetwork.length === 0 ? (
+              <div className="py-8 text-center text-sm text-text-tertiary">아직 온체인 입출금이 없습니다.</div>
+            ) : (
+              <div className="space-y-3.5">
+                {ov.byNetwork.map((n) => (
+                  <div key={n.network} className="flex items-center gap-3">
+                    <div className="w-28 shrink-0">
+                      <div className="flex items-center gap-2 text-[13px] font-semibold text-text-primary"><span className={cn("size-2.5 rounded-full", NET_COLOR[n.network] ?? "bg-n-300")} /> {n.network}</div>
+                      <div className="text-[11px] text-text-tertiary">{NETWORK_LABEL[n.network as "TRC20" | "BEP20"] ?? n.network}</div>
+                    </div>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-n-100"><div className={cn("h-full rounded-full", NET_COLOR[n.network] ?? "bg-n-300")} style={{ width: `${pctOf(n.deposit, netTotal)}%` }} /></div>
+                    <span className="w-24 text-right text-[13px] font-bold tabular-nums text-text-primary">+{usd(n.deposit)}</span>
+                    <span className="w-24 text-right text-[12px] tabular-nums text-text-secondary">−{usd(n.withdrawal)}</span>
+                  </div>
+                ))}
+                <div className="text-[11px] text-text-tertiary">입금(+) · 출금(−, 수수료 포함) · 개발용 테스트 입금은 TRC20 으로 기록됩니다</div>
               </div>
-              <div className="mt-2 text-[22px] font-bold tabular-nums text-text-primary">{usd(n.value)}</div>
-              <div className="mt-1 text-[11px] text-text-tertiary">{n.sub}</div>
-              <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-n-100">
-                <div className={cn("h-full rounded-full", n.color)} style={{ width: `${n.pct}%` }} />
-              </div>
-            </Panel>
-          ))}
-        </div>
+            )}
+          </Panel>
 
-        {/* ── 잔액 추이 (합성) ── */}
-        <Panel
-          title="잔액 추이"
-          sub="운영 지갑 총 잔액 · 최근 14일 (USDT)"
-          action={<Pill tone="green" dot>현재 {totalStr}</Pill>}
-        >
-          <div className="flex h-40 items-end gap-2">
-            {TREND.map((h, i) => {
-              const last = i === TREND.length - 1;
-              return (
-                <div key={i} className="flex h-full flex-1 flex-col justify-end">
-                  <div className={cn("rounded-t", last ? "bg-green-600" : "bg-green-300")} style={{ height: `${(h / TREND_MAX) * 100}%` }} />
-                </div>
-              );
-            })}
-          </div>
-        </Panel>
+          <Panel title="최근 14일 자금 흐름" sub="일별 입금(녹색)·출금(회색) · USDT" action={<Pill tone="green" dot>보유 {usd(ov.custody)}</Pill>}>
+            {ov.daily.every((d) => d.deposit === 0 && d.withdrawal === 0) ? (
+              <div className="grid h-40 place-items-center text-sm text-text-tertiary">최근 14일 입출금이 없습니다.</div>
+            ) : (
+              <div className="flex h-40 items-end gap-1.5">
+                {ov.daily.map((d, i) => (
+                  <div key={d.date} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${d.date} · 입금 ${usd(d.deposit)} · 출금 ${usd(d.withdrawal)}`}>
+                    <div className="flex w-full flex-1 items-end justify-center gap-0.5">
+                      <div className={cn("w-1/2 rounded-t", i === ov.daily.length - 1 ? "bg-green-600" : "bg-green-400")} style={{ height: `${Math.round((d.deposit / dailyMax) * 100)}%` }} />
+                      <div className="w-1/2 rounded-t bg-n-300" style={{ height: `${Math.round((d.withdrawal / dailyMax) * 100)}%` }} />
+                    </div>
+                    <span className="text-[9px] tabular-nums text-text-tertiary">{d.date.slice(5)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
+        </div>
       </div>
     </>
   );
