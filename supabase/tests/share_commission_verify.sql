@@ -1,5 +1,7 @@
 -- share_commission_verify.sql — 공유수당(override) "휴면 아닌 정상" 증명 (실데이터·실임계치)
--- 실행: npm run test:share
+-- 실행: npm run test:share:legacy
+-- ⚠️ 2026-09-05: 원본 1,200명 시드(M0 산하 600+)에 의존하는 레거시 검증. db:fresh 이후 로컬 DB 에서는 성립하지 않아
+--    test:engine 체인에서 제외. 공유수당 로직은 test:sharegate · test:settlement(share_total 38.40)이 합성 픽스처로 검증한다.
 --
 -- 배경: 현재 시드에서 share_total=$0. 원인은 버그가 아니라 '자격 미달':
 --   유일한 R3(override 보유) 마케터 = 루트 M0 인데, M0 가 본인 월구독을 안 내

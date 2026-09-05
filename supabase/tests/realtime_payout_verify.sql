@@ -75,6 +75,9 @@ begin
   perform pg_temp.chk('B 자격', case when is_qualified_marketer(B,'2026-06-20') then 1 else 0 end, 1);
   perform pg_temp.chk('A 자격', case when is_qualified_marketer(A,'2026-06-20') then 1 else 0 end, 1);
 
+  -- 0039 이후 결제 트리거가 배분(allocate_revenue)도 함께 돌린다. 픽스처 매출을 먼저 배분해 두고,
+  -- D 결제 1건의 순효과(= +120×수당풀비율 배분 − 67.2 지급)만 Δ 로 측정한다.
+  perform allocate_revenue('2026-06');
   select balance_usd into pool0 from system_wallets where kind = 'pool_commission';
 
   -- (3) 트리거 ON (구독 결제만 발화시키면 충분)
@@ -104,10 +107,10 @@ begin
   perform pg_temp.chk('B 원장', pb, 19.2);
   perform pg_temp.chk('C 원장', pc, 36);
 
-  -- 풀 Δ = −67.2 (sync_pool_commission 파생)
+  -- 풀 Δ: D 결제 $120 → 배분 +120×60% = +72, 실시간 지급 −67.2 → 풀은 +4.8 (pool0 − pool1 = −4.8)
   select balance_usd into pool1 from system_wallets where kind = 'pool_commission';
   raise notice '──── 풀 정합 Δ ────';
-  perform pg_temp.chk('풀 차감액(Δ)', pool0 - pool1, 67.2);
+  perform pg_temp.chk('풀 Δ(배분 72 − 지급 67.2)', pool0 - pool1, -4.8);
 end;
 $$;
 
