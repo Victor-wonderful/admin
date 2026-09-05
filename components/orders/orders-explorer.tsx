@@ -75,7 +75,7 @@ export function OrdersExplorer({ rows, stats, cycle }: { rows: OrderRow[]; stats
       if (to && o.date > to) return false;
       if (lo != null && o.amount < lo) return false;
       if (hi != null && o.amount > hi) return false;
-      if (q && !o.uid.toLowerCase().includes(q) && !o.email.toLowerCase().includes(q) && !o.item.toLowerCase().includes(q)) return false;
+      if (q && !o.search.includes(q) && !o.item.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [rows, tab, status, query, from, to, minAmt, maxAmt]);
@@ -95,7 +95,7 @@ export function OrdersExplorer({ rows, stats, cycle }: { rows: OrderRow[]; stats
   const resetAll = () => { setStatus("all"); setQuery(""); setFrom(""); setTo(""); setMinAmt(""); setMaxAmt(""); };
 
   const exportCsv = () =>
-    downloadCsv(`orders-${cycle}.csv`, ["결제일", "회원 UID", "이메일", "항목", "금액(USDT)", "상태", "이용 기간"], filtered.map((o) => [o.date, o.uid, o.email, o.item, o.amount, STATUS_LABEL[o.status], o.period ?? ""]));
+    downloadCsv(`orders-${cycle}.csv`, ["결제일", "회원 UID", "닉네임", "이메일", "항목", "금액(USDT)", "상태", "이용 기간"], filtered.map((o) => [o.date, o.uid, o.name, o.email, o.item, o.amount, STATUS_LABEL[o.status], o.period ?? ""]));
 
   const mDelta = deltaPct(stats.monthAmount, stats.prevMonthAmount);
   const KPIS = [
@@ -168,7 +168,7 @@ export function OrdersExplorer({ rows, stats, cycle }: { rows: OrderRow[]; stats
             <Field label="회원 · 항목 검색">
               <div className="flex items-center gap-2 rounded-lg bg-card px-3 py-2 ring-1 ring-border-strong">
                 <SearchIcon className="size-3.5 text-text-tertiary" />
-                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="UID · 이메일 · 상품명" className="w-full bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-tertiary" />
+                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="UID · 닉네임 · 이메일 · 상품명" className="w-full bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-tertiary" />
               </div>
             </Field>
             <Field label="결제일">
@@ -215,7 +215,7 @@ export function OrdersExplorer({ rows, stats, cycle }: { rows: OrderRow[]; stats
               <Link href={`/admin/members/${o.member_id}`} className="flex items-center gap-2.5 hover:underline">
                 <span className="grid size-[34px] shrink-0 place-items-center rounded-[10px] bg-n-100 text-[11px] font-bold text-n-600">{initials(o.uid)}</span>
                 <span className="min-w-0">
-                  <span className="block truncate text-[13px] font-semibold text-n-900">{o.uid}</span>
+                  <span className="block truncate text-[13px] font-semibold text-n-900">{o.uid}{o.name ? <span className="font-medium text-n-500"> · {o.name}</span> : null}</span>
                   <span className="block truncate text-[11px] text-n-400">{o.email}</span>
                 </span>
               </Link>

@@ -52,7 +52,7 @@ export function TransactionsExplorer({ rows, stats, cycle }: { rows: AdminTx[]; 
       if (tab === "problem") { if (!(r.status === "failed" || r.status === "pending" || r.status === "sending")) return false; }
       else if (tab !== "all" && r.tx_type !== tab) return false;
       if (month !== "all" && toSeoulDateTimeCycle(r.created_at) !== month) return false;
-      if (q && !r.uid.toLowerCase().includes(q) && !(r.tx_hash ?? "").toLowerCase().includes(q) && !(r.network ?? "").toLowerCase().includes(q)) return false;
+      if (q && !`${r.uid} ${r.name ?? ""} ${r.email ?? ""} ${r.tx_hash ?? ""} ${r.network ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [rows, tab, month, query]);
@@ -70,7 +70,7 @@ export function TransactionsExplorer({ rows, stats, cycle }: { rows: AdminTx[]; 
     { key: "problem", label: "대기·실패", count: stats.counts.problem },
   ];
   const exportCsv = () =>
-    downloadCsv(`transactions-${cycle}.csv`, ["일시", "유형", "회원 UID", "금액(USDT)", "수수료", "네트워크/내역", "TxHash", "상태"], filtered.map((r) => [toSeoulDateTime(r.created_at), TYPE[r.tx_type].label, r.uid, (TYPE[r.tx_type].sign === "+" ? "" : "-") + r.amount_usd, r.fee_usd, r.network ?? "", r.tx_hash ?? "", STATUS[r.status]?.label ?? r.status]));
+    downloadCsv(`transactions-${cycle}.csv`, ["일시", "유형", "회원 UID", "닉네임", "이메일", "금액(USDT)", "수수료", "네트워크/내역", "TxHash", "상태"], filtered.map((r) => [toSeoulDateTime(r.created_at), TYPE[r.tx_type].label, r.uid, r.name ?? "", r.email ?? "", (TYPE[r.tx_type].sign === "+" ? "" : "-") + r.amount_usd, r.fee_usd, r.network ?? "", r.tx_hash ?? "", STATUS[r.status]?.label ?? r.status]));
 
   const COLS = "grid-cols-[104px_72px_1.2fr_1.2fr_1.3fr_1.2fr_96px]";
   return (
@@ -86,7 +86,7 @@ export function TransactionsExplorer({ rows, stats, cycle }: { rows: AdminTx[]; 
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 rounded-[10px] bg-card px-3 py-2 ring-1 ring-border-strong">
             <SearchIcon className="size-3.5 text-text-tertiary" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="UID · 해시 · 네트워크" className="w-40 bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-tertiary" />
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="UID · 닉네임 · 이메일 · 해시" className="w-40 bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-tertiary" />
           </div>
           <select value={month} onChange={(e) => setMonth(e.target.value)} className="rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border outline-none">
             <option value="all">전체 기간</option>
@@ -109,7 +109,12 @@ export function TransactionsExplorer({ rows, stats, cycle }: { rows: AdminTx[]; 
             <div key={r.id} className={cn("grid items-center gap-3 border-b py-3 text-sm last:border-0", COLS)}>
               <span className="text-[12px] tabular-nums text-text-tertiary">{toSeoulDateTime(r.created_at)}</span>
               <span><span className={cn("inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold", ty.cls)}>{ty.label}</span></span>
-              {r.member_id ? <Link href={`/admin/members/${r.member_id}`} className="truncate text-[13px] font-semibold text-text-primary hover:underline">{r.uid}</Link> : <span className="text-[13px] text-text-tertiary">시스템</span>}
+              {r.member_id ? (
+                <span className="min-w-0">
+                  <Link href={`/admin/members/${r.member_id}`} className="block truncate text-[13px] font-semibold text-text-primary hover:underline">{r.uid}</Link>
+                  {r.name ? <span className="block truncate text-[10px] text-text-tertiary">{r.name}{r.email ? ` · ${r.email}` : ""}</span> : null}
+                </span>
+              ) : <span className="text-[13px] text-text-tertiary">시스템</span>}
               <span className={cn("text-[13px] font-bold tabular-nums", ty.sign === "+" ? "text-positive" : "text-text-primary")}>{ty.sign}{usd(r.amount_usd)}{r.fee_usd > 0 ? <span className="ml-1 text-[11px] font-medium text-text-tertiary">+수수료 {usd(r.fee_usd)}</span> : null}</span>
               <span className="flex items-center gap-1.5 text-[12px] text-text-secondary"><span className={cn("size-1.5 shrink-0 rounded-full", NET_DOT[(r.network ?? "").toUpperCase()] ?? "bg-n-300")} />{r.network ?? "—"}</span>
               {r.tx_hash ? (url ? <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-text-tertiary hover:underline">{shortHash(r.tx_hash)} <ExternalLinkIcon className="size-3" /></a> : <span className="font-mono text-[12px] text-text-tertiary">{shortHash(r.tx_hash)}</span>) : <span className="text-[12px] text-text-tertiary">—</span>}

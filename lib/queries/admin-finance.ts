@@ -24,7 +24,9 @@ export interface OrderRow {
   id: string;
   member_id: string;
   uid: string;
-  email: string; // 마스킹
+  name: string; // 닉네임
+  email: string; // 마스킹(표시용)
+  search: string; // 검색용: uid + 닉네임 + 원문 이메일(소문자)
   item: string;
   itemType: OrderItemType;
   amount: number;
@@ -50,21 +52,23 @@ export async function listOrders(limit = 500): Promise<{ rows: OrderRow[]; stats
     sb.from("subscriptions").select("id, member_id, amount_usd, period_start, period_end, paid_at, status").order("paid_at", { ascending: false }),
     sb.from("annual_memberships").select("id, member_id, amount_usd, period_start, period_end, paid_at").order("paid_at", { ascending: false }),
     sb.from("product_purchases").select("id, member_id, amount_usd, product_name, period_start, period_end, paid_at, status").order("paid_at", { ascending: false }),
-    sb.from("members").select("id, email"),
+    sb.from("members").select("id, email, display_name"),
   ]);
   const email = new Map(((members.data ?? []) as Array<{ id: string; email: string | null }>).map((m) => [m.id, m.email]));
+  const nameOf = new Map(((members.data ?? []) as Array<{ id: string; display_name: string }>).map((m) => [m.id, m.display_name]));
+  const who = (id: string) => ({ uid: toUid(id), name: nameOf.get(id) ?? "", email: maskEmail(email.get(id) ?? null), search: `${toUid(id)} ${nameOf.get(id) ?? ""} ${email.get(id) ?? ""}`.toLowerCase() });
   const rows: OrderRow[] = [];
   for (const s of (subs.data ?? []) as Array<{ id: string; member_id: string; amount_usd: number; period_start: string; period_end: string; paid_at: string; status: string }>) {
     const active = s.status === "active" && s.period_start <= t && t <= s.period_end;
-    rows.push({ id: s.id, member_id: s.member_id, uid: toUid(s.member_id), email: maskEmail(email.get(s.member_id) ?? null), item: "포르투나 구독", itemType: "subscription", amount: Number(s.amount_usd), status: active ? "active" : "expired", paid_at: s.paid_at, date: toSeoulDate(s.paid_at), period: `${s.period_start} ~ ${s.period_end}` });
+    rows.push({ id: s.id, member_id: s.member_id, ...who(s.member_id), item: "포르투나 구독", itemType: "subscription", amount: Number(s.amount_usd), status: active ? "active" : "expired", paid_at: s.paid_at, date: toSeoulDate(s.paid_at), period: `${s.period_start} ~ ${s.period_end}` });
   }
   for (const a of (anns.data ?? []) as Array<{ id: string; member_id: string; amount_usd: number; period_start: string; period_end: string; paid_at: string }>) {
     const active = a.period_start <= t && t <= a.period_end;
-    rows.push({ id: a.id, member_id: a.member_id, uid: toUid(a.member_id), email: maskEmail(email.get(a.member_id) ?? null), item: "파트너 멤버십", itemType: "membership", amount: Number(a.amount_usd), status: active ? "active" : "expired", paid_at: a.paid_at, date: toSeoulDate(a.paid_at), period: `${a.period_start} ~ ${a.period_end}` });
+    rows.push({ id: a.id, member_id: a.member_id, ...who(a.member_id), item: "파트너 멤버십", itemType: "membership", amount: Number(a.amount_usd), status: active ? "active" : "expired", paid_at: a.paid_at, date: toSeoulDate(a.paid_at), period: `${a.period_start} ~ ${a.period_end}` });
   }
   for (const p of (purs.data ?? []) as Array<{ id: string; member_id: string; amount_usd: number; product_name: string; period_start: string | null; period_end: string | null; paid_at: string; status: string }>) {
     const st = p.status === "completed" ? "completed" : p.status === "refunded" ? "refunded" : p.status === "failed" ? "failed" : "pending";
-    rows.push({ id: p.id, member_id: p.member_id, uid: toUid(p.member_id), email: maskEmail(email.get(p.member_id) ?? null), item: p.product_name, itemType: "product", amount: Number(p.amount_usd), status: st, paid_at: p.paid_at, date: toSeoulDate(p.paid_at), period: p.period_start && p.period_end ? `${p.period_start} ~ ${p.period_end}` : null });
+    rows.push({ id: p.id, member_id: p.member_id, ...who(p.member_id), item: p.product_name, itemType: "product", amount: Number(p.amount_usd), status: st, paid_at: p.paid_at, date: toSeoulDate(p.paid_at), period: p.period_start && p.period_end ? `${p.period_start} ~ ${p.period_end}` : null });
   }
   rows.sort((a, b) => (a.paid_at < b.paid_at ? 1 : -1));
 
@@ -95,6 +99,8 @@ export interface AdminTx {
   id: string;
   member_id: string | null;
   uid: string;
+  name: string | null; // 닉네임
+  email: string | null;
   tx_type: "deposit" | "payment" | "withdrawal" | "commission";
   amount_usd: number; // 부호 없음
   fee_usd: number;
@@ -113,10 +119,14 @@ export interface TxStats {
 }
 export async function listAdminTransactions(limit = 500): Promise<{ rows: AdminTx[]; stats: TxStats }> {
   const sb = getServerClient();
-  const { data, error } = await sb.from("wallet_transactions").select("id, member_id, tx_type, amount_usd, fee_usd, network, tx_hash, status, created_at").order("created_at", { ascending: false });
+  const [{ data, error }, mem] = await Promise.all([
+    sb.from("wallet_transactions").select("id, member_id, tx_type, amount_usd, fee_usd, network, tx_hash, status, created_at").order("created_at", { ascending: false }),
+    sb.from("members").select("id, display_name, email"),
+  ]);
   if (error) throw error;
+  const memberOf = new Map(((mem.data ?? []) as Array<{ id: string; display_name: string; email: string | null }>).map((m) => [m.id, m]));
   const rows = ((data ?? []) as Array<{ id: string; member_id: string | null; tx_type: AdminTx["tx_type"]; amount_usd: number; fee_usd: number | null; network: string | null; tx_hash: string | null; status: string; created_at: string }>).map((r) => ({
-    id: r.id, member_id: r.member_id, uid: toUid(r.member_id), tx_type: r.tx_type, amount_usd: Number(r.amount_usd), fee_usd: Number(r.fee_usd ?? 0), network: r.network, tx_hash: r.tx_hash, status: r.status, created_at: r.created_at,
+    id: r.id, member_id: r.member_id, uid: toUid(r.member_id), name: r.member_id ? memberOf.get(r.member_id)?.display_name ?? null : null, email: r.member_id ? memberOf.get(r.member_id)?.email ?? null : null, tx_type: r.tx_type, amount_usd: Number(r.amount_usd), fee_usd: Number(r.fee_usd ?? 0), network: r.network, tx_hash: r.tx_hash, status: r.status, created_at: r.created_at,
   }));
   const t = today(); const cyc = currentCycle();
   const stats: TxStats = { todayCount: 0, todayDeposit: 0, todayWithdrawal: 0, monthVolume: 0, monthCount: 0, totalVolume: 0, totalCount: rows.length, avgFee: 0, problem: 0, counts: { all: rows.length, deposit: 0, payment: 0, withdrawal: 0, commission: 0, problem: 0 } };
