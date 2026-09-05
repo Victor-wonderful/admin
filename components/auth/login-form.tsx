@@ -14,7 +14,7 @@ export function LoginForm({ notice }: { notice?: string }) {
     <div className="space-y-5">
       <div>
         <h1 className="text-[22px] font-bold text-text-primary">로그인</h1>
-        <p className="mt-1 text-sm text-text-secondary">포르투나 회원 포털 · 등급에 맞는 화면으로 이동합니다</p>
+        <p className="mt-1 text-sm text-text-secondary">포르투나 회원 포털 · 회원 구분에 맞는 화면으로 이동합니다</p>
       </div>
 
       {notice ? (

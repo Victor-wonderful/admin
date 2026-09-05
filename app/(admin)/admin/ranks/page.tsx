@@ -55,7 +55,7 @@ export default async function AdminRanksPage() {
 
   return (
     <>
-      <Topbar title="수당체계·직급" sub="직급 9등급 · 직급요율 5~53% · 자격 기준 · 수당 3종" uid="운영자" />
+      <Topbar title="수당체계·직급" sub="직급 9단계 · 직급요율 5~53% · 자격 기준 · 수당 3종" uid="운영자" />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 매출 배분 구조 ── */}
