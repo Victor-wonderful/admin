@@ -80,6 +80,7 @@ const ACTION_META: Record<string, { label: string; tone: Tone }> = {
   product_update: { label: "상품 수정", tone: "info" },
   product_activate: { label: "상품 판매 활성", tone: "green" },
   product_deactivate: { label: "상품 판매 중지", tone: "neutral" },
+  product_delete: { label: "상품 삭제", tone: "negative" },
   ranks_update: { label: "직급 요율 변경", tone: "crypto" },
   profile_name_change: { label: "이름 변경", tone: "info" },
   session_revoke_all: { label: "다른 기기 모두 종료", tone: "neutral" },

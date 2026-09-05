@@ -14,6 +14,8 @@ import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { ProductFormModal } from "@/components/products/product-form-modal";
 import { ActiveToggle } from "@/components/products/active-toggle";
+import { DeleteProductButton } from "@/components/products/delete-product-button";
+import { getServerClient } from "@/lib/supabase/server";
 import { listAllProducts } from "@/lib/queries/products";
 import type { ProductRow } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
@@ -42,12 +44,17 @@ export default async function AdminProductsPage() {
   const admin = await requireAdminPage("products");
   const readOnly = !can(admin.role, "catalog.write");
   const products = await listAllProducts();
+  // 상품별 구매 이력 건수 — 이력이 있으면 삭제 대신 판매 중지 안내
+  const sb = getServerClient();
+  const { data: pc } = await sb.from("product_purchases").select("product_id");
+  const purchaseCount = new Map<string, number>();
+  for (const r of (pc ?? []) as Array<{ product_id: string | null }>) if (r.product_id) purchaseCount.set(r.product_id, (purchaseCount.get(r.product_id) ?? 0) + 1);
 
   return (
     <>
       <Topbar
         title="상품·구독플랜"
-        sub="상품 카탈로그 · 주문·정산 항목 기준 · 가격은 회원 화면에 즉시 반영"
+        sub="상품 카탈로그 · 주문·정산 항목 기준 · 가격은 회원 화면에 즉시 반영 · 구매 이력이 있는 상품은 삭제 대신 판매 중지"
         uid={admin.display_name}
         actions={readOnly ? null : <ProductFormModal />}
       />
@@ -80,6 +87,7 @@ export default async function AdminProductsPage() {
                 <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-3">
                   {p.pool_eligible ? <Pill tone="green">매출 배분</Pill> : <Pill tone="neutral">배분 제외 · 회사 100%</Pill>}
                   {readOnly ? null : <ProductFormModal product={p} />}
+                  {readOnly || plan ? null : <DeleteProductButton id={p.id} name={p.name} purchaseCount={purchaseCount.get(p.id) ?? 0} readOnly={readOnly} />}
                 </div>
               </Panel>
             );

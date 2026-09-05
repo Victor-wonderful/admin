@@ -95,3 +95,22 @@ export async function setProductActive(id: string, active: boolean): Promise<{ o
   revalidateAll();
   return { ok: true };
 }
+
+// 상품 삭제 — 구매 이력이 없는 상품만. bot_sub/annual_fee(회원 화면 연동 플랜)는 삭제 불가. 이력이 있으면 '판매 중지'로 숨긴다.
+const PLAN_CODES_LOCKED = new Set(["bot_sub", "annual_fee"]);
+export async function deleteProduct(id: string): Promise<{ ok: boolean; error?: string }> {
+  const g = await checkCapability("catalog.write", "상품 삭제");
+  if (!g.ok) return { ok: false, error: g.error };
+  const sb = getServerClient();
+  const { data: pr } = await sb.from("products").select("code, name").eq("id", id).maybeSingle();
+  const p = pr as { code: string; name: string } | null;
+  if (!p) return { ok: false, error: "상품을 찾을 수 없습니다" };
+  if (PLAN_CODES_LOCKED.has(p.code)) return { ok: false, error: "회원 구독·파트너 멤버십 플랜은 삭제할 수 없습니다(가격 수정만 가능)" };
+  const { count } = await sb.from("product_purchases").select("id", { count: "exact", head: true }).eq("product_id", id);
+  if ((count ?? 0) > 0) return { ok: false, error: `구매 이력 ${count}건이 있어 삭제할 수 없습니다. 판매 중지로 회원 화면에서 숨기세요` };
+  const { error } = await sb.from("products").delete().eq("id", id);
+  if (error) return { ok: false, error: "삭제 처리 중 오류가 발생했습니다" };
+  await audit({ category: "catalog", action: "product_delete", target: `상품 삭제 · ${p.name} (${p.code})`, targetId: id, risk: true });
+  revalidateAll();
+  return { ok: true };
+}
