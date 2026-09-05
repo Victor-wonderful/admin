@@ -42,6 +42,7 @@ export async function loginByEmail(_prev: AuthState, formData: FormData): Promis
   const { data, error } = await sb.rpc("member_login", { p_email: email, p_password: password });
   if (error) {
     if (error.message.includes("SUSPENDED")) return { error: "정지된 계정입니다. 고객센터에 문의하세요", values: { email } };
+    console.error("[login] rpc member_login 실패:", error.message, error.code ?? "", error.details ?? "");
     return { error: "로그인 처리 중 오류가 발생했습니다", values: { email } };
   }
   const row = Array.isArray(data) ? data[0] : null;

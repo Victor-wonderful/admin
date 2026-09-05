@@ -30,6 +30,8 @@ export async function adminLogin(_prev: AdminAuthState, formData: FormData): Pro
   const { data, error } = await sb.rpc("admin_login", { p_email: email, p_password: password });
   if (error) {
     const code = Object.keys(LOGIN_ERRORS).find((k) => error.message.includes(k));
+    // 알려진 코드가 아니면 운영 진단용으로 원인을 서버 로그에 남긴다(비밀번호는 기록하지 않음).
+    if (!code) console.error("[admin-login] rpc admin_login 실패:", error.message, error.code ?? "", error.details ?? "");
     await audit({ category: "auth", action: code === "LOCKED" ? "login_locked" : "login_failed", target: `${email} · ${code === "LOCKED" ? "5회 오류 · 15분 잠금" : code === "DISABLED" ? "비활성 계정" : "이메일 또는 비밀번호 불일치"}`, ok: false, risk: code === "LOCKED", actor: { email } });
     return { error: code ? LOGIN_ERRORS[code] : "로그인 처리 중 오류가 발생했습니다", values: { email } };
   }
