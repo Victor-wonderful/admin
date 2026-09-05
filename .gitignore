@@ -44,3 +44,5 @@ next-env.d.ts
 dev.log
 .playwright-mcp/
 supabase/.temp/
+
+.vercel
