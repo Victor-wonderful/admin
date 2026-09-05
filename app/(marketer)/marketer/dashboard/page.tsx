@@ -21,6 +21,7 @@ import { CopyButton } from "@/components/marketer/copy-button";
 import { getMemberRank } from "@/lib/queries/ranks";
 import { getReferralCode, listReferred, getMember, getMemberSubscriptions } from "@/lib/queries/members";
 import { FORTUNA_APP_URL } from "@/lib/constants";
+import { listPendingPlacements } from "@/lib/queries/placement";
 import { SubscriptionNotice } from "@/components/portal/subscription-notice";
 import { getMemberAnnualMembership } from "@/lib/queries/products";
 import { today, daysBetween } from "@/lib/dates";
@@ -39,7 +40,7 @@ const CARD = "rounded-[20px] bg-card p-[22px] ring-1 ring-border shadow-[0_2px_1
 
 export default async function MarketerDashboardPage() {
   const ME = await getMarketerViewerId();
-  const [rank, wd, settle, cumulative, code, referred, me, annual, subs] = await Promise.all([
+  const [rank, wd, settle, cumulative, code, referred, me, annual, subs, pendingPlacements] = await Promise.all([
     getMemberRank(ME),
     getMemberWalletData(ME),
     getMemberSettlement(ME, CYCLE),
@@ -49,6 +50,7 @@ export default async function MarketerDashboardPage() {
     getMember(ME),
     getMemberAnnualMembership(ME),
     getMemberSubscriptions(ME),
+    listPendingPlacements(ME),
   ]);
   // 파트너도 Basic 구독자 — 포르투나 앱(매매 판단 체크) 바로가기용 현재 구독 기간
   const T = today();
@@ -117,6 +119,17 @@ export default async function MarketerDashboardPage() {
       <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
         {/* 구독 만료 / 잔액 부족 안내 */}
         <SubscriptionNotice memberId={ME} role="marketer" />
+
+        {/* 후원배치 대기 — 구독을 시작한 직추가 아직 자리가 없으면 안내 */}
+        {pendingPlacements.length > 0 ? (
+          <Link href="/marketer/genealogy" className="flex items-center justify-between gap-4 rounded-xl bg-warning-soft px-5 py-3.5 ring-1 ring-warning/30 transition-colors hover:ring-warning">
+            <span className="flex items-center gap-2.5 text-sm text-text-primary">
+              <NetworkIcon className="size-4 text-warning" />
+              <span><b className="font-bold">후원배치 대기 {pendingPlacements.length}명</b> · 내가 초대한 회원의 자리를 정해 주세요 (7일 지나면 1번 라인 최하단 자동 배치)</span>
+            </span>
+            <span className="shrink-0 text-xs font-semibold text-warning">내 팀에서 배치 →</span>
+          </Link>
+        ) : null}
 
         {/* 포르투나 앱 바로가기 — 파트너도 앱 이용자. 구독 만료면 갱신으로 안내 */}
         <div className="flex items-center justify-between gap-4 rounded-[20px] bg-feature p-5 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">

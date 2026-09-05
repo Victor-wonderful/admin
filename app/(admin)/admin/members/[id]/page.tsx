@@ -22,6 +22,7 @@ import { Topbar } from "@/components/shell/topbar";
 import { getMember, getMemberSubscriptions, listReferred } from "@/lib/queries/members";
 import { listMemberSessions, describeDevice } from "@/lib/queries/sessions";
 import { ForceLogoutButton } from "@/components/members/force-logout-button";
+import { AdminPlaceForm } from "@/components/members/admin-place-form";
 
 // 세션 종료 사유 표기
 const SESSION_END: Record<string, string> = { logout: "로그아웃", other_device: "다른 기기 로그인", expired: "만료", admin: "관리자 종료" };
@@ -261,8 +262,29 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
                   <span className="text-text-tertiary">— (루트)</span>
                 )}
               </InfoRow>
+              <InfoRow label="후원 자리">
+                {parent ? (
+                  <span>
+                    {me.placement_slot ?? "—"}번{me.placement_slot === 1 ? " · 주력 라인 머리" : ""}
+                    <span className="ml-1.5 text-[11px] text-text-tertiary">
+                      ({me.placed_by === "system" ? "시스템" : me.placed_by === "partner" ? "파트너" : me.placed_by === "admin" ? "관리자" : "시드"}{me.placed_at ? ` · ${me.placed_at.slice(0, 10)}` : ""}{me.placement_locked ? " · 확정" : ""})
+                    </span>
+                  </span>
+                ) : me.role === "registered" ? (
+                  <span className="text-text-tertiary">— (등록회원은 조직 밖)</span>
+                ) : (
+                  <span className="font-semibold text-warning">배치 대기 (추천인이 배치 · 7일 후 자동)</span>
+                )}
+              </InfoRow>
+              {me.placement_note ? <InfoRow label="배치 메모"><span className="text-[12px] text-text-secondary">{me.placement_note}</span></InfoRow> : null}
               <InfoRow label="가입일">{me.created_at.slice(0, 10)}</InfoRow>
             </div>
+            {me.role !== "registered" ? (
+              <div className="mt-3 rounded-md bg-surface-muted p-3 ring-1 ring-border">
+                <div className="mb-2 text-[11px] font-semibold text-text-secondary">관리자 후원배치 이동 · 확정된 자리도 사유를 남기고 이동할 수 있습니다 (파트너 본인은 한 번만)</div>
+                <AdminPlaceForm memberId={me.id} />
+              </div>
+            ) : null}
             {recommender && parent && recommender.id !== parent.id ? (
               <p className="mt-3 rounded-md bg-warning-soft px-3 py-2 text-[11px] leading-relaxed text-warning">
                 추천인 ≠ 후원 부모 — 추천인의 주력 라인 아래로 후원배치된 회원입니다.

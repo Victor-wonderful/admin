@@ -13,9 +13,11 @@ export async function placeUnderMajorLeg(marketerId: string, targetMemberId: str
   if (!newParent) throw new Error("대실적 라인을 찾을 수 없습니다.");
   if (newParent === targetMemberId) throw new Error("대상이 이미 최하단 노드입니다.");
 
-  const { error: e2 } = await sb.rpc("move_placement_subtree", {
-    p_node: targetMemberId,
+  const { error: e2 } = await sb.rpc("place_member", {
+    p_member: targetMemberId,
     p_new_parent: newParent,
+    p_by: "admin",
+    p_note: "관리자 · 주력 라인 최하단 이동",
   });
   if (e2) throw e2;
 

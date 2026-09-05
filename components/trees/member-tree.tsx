@@ -103,11 +103,14 @@ function Node({
   const isSpillover =
     !!showSpillover && depth > 0 && !majorHead && !!n.meta?.recommenderId && n.meta.recommenderId !== n.meta.parentId;
 
-  // spine 모드: 활성 → 활성하위 많은 순으로 정렬 → 좌측(i=0)이 주력 라인.
+  // spine 모드: 1번 자리(고정 주력 라인)가 있으면 그것이 좌측. 없으면 활성 → 활성하위 많은 순.
   let kids = n.children;
   if (spine && kids.length > 1) {
     kids = [...kids].sort(
-      (a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0) || (b.meta?.activeCount ?? 0) - (a.meta?.activeCount ?? 0),
+      (a, b) =>
+        ((a.meta?.slot === 1 ? 0 : 1) - (b.meta?.slot === 1 ? 0 : 1)) ||
+        (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0) ||
+        (b.meta?.activeCount ?? 0) - (a.meta?.activeCount ?? 0),
     );
   }
   const showKids = depth < maxDepth ? kids.slice(0, maxChildren) : [];

@@ -23,6 +23,10 @@ export async function GET(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const counts = Array.isArray(batch) ? batch[0] : batch;
 
+  // 3) 후원배치 7일 방치 → 1번 라인 최하단 자동 배치·확정
+  const { data: placed, error: pErr } = await sb.rpc("auto_place_pending", { p_days: 7 });
+  if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
+
   const { data: reminders, error: rErr } = await sb.rpc("list_renewal_reminders", { p_today: t, p_days: 3 });
   if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
 
@@ -38,5 +42,5 @@ export async function GET(req: Request) {
     sent[res] += 1;
   }
 
-  return NextResponse.json({ ok: true, today: t, renewals: counts, reminders: { candidates: reminders?.length ?? 0, ...sent } });
+  return NextResponse.json({ ok: true, today: t, renewals: counts, autoPlaced: Number(placed ?? 0), reminders: { candidates: reminders?.length ?? 0, ...sent } });
 }

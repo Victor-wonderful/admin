@@ -17,6 +17,11 @@ export interface MemberRow {
   payout_address_trc20?: string | null; // 회원 본인 지갑(Tron) — 출금 목적지·입금 식별
   payout_address_bep20?: string | null; // 회원 본인 지갑(BSC)
   auto_renew?: boolean; // 구독 자동 갱신(false = 해지 예약)
+  placement_slot?: number | null; // 후원 부모 아래 자리 번호(1 = 주력 라인 머리, 파트너 전용)
+  placed_at?: string | null;
+  placed_by?: string | null; // system | partner | admin | seed
+  placement_locked?: boolean; // 한 번 확정되면 true(파트너 변경 불가)
+  placement_note?: string | null;
 }
 
 export interface ReferralCodeRow {
@@ -123,5 +128,5 @@ export interface TreeNode {
   role: MemberRole;
   isActive: boolean;
   children: TreeNode[];
-  meta?: { activeCount?: number; recommenderId?: string | null; parentId?: string | null };
+  meta?: { activeCount?: number; recommenderId?: string | null; parentId?: string | null; slot?: number | null };
 }

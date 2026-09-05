@@ -8,7 +8,7 @@ export async function getAllMembers(): Promise<MemberRow[]> {
   const sb = getServerClient();
   const { data, error } = await sb
     .from("members")
-    .select("id, display_name, email, role, recommender_id, parent_id, joined_at, is_active_subscriber, created_at")
+    .select("id, display_name, email, role, recommender_id, parent_id, joined_at, is_active_subscriber, created_at, placement_slot")
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data ?? []) as MemberRow[];
@@ -21,7 +21,7 @@ function toNode(m: MemberRow): TreeNode {
     role: m.role,
     isActive: m.is_active_subscriber,
     children: [],
-    meta: { recommenderId: m.recommender_id, parentId: m.parent_id },
+    meta: { recommenderId: m.recommender_id, parentId: m.parent_id, slot: m.placement_slot ?? null },
   };
 }
 
@@ -32,6 +32,10 @@ function buildTree(members: MemberRow[], rootId: string, parentKey: "recommender
   for (const m of members) {
     const pid = m[parentKey];
     if (pid && nodes.has(pid)) nodes.get(pid)!.children.push(nodes.get(m.id)!);
+  }
+  // 후원 트리는 자리 번호 순(1번 = 좌측 주력 라인). 자리 없는 노드는 뒤로.
+  if (parentKey === "parent_id") {
+    for (const n of nodes.values()) n.children.sort((a, b) => (a.meta?.slot ?? 999) - (b.meta?.slot ?? 999));
   }
   // 활성 산하 수를 각 노드 meta 에 집계(서브트리 내 활성 구독자 수)
   const countActive = (n: TreeNode): number => {

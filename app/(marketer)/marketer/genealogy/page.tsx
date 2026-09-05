@@ -14,6 +14,8 @@ import { MemberTree } from "@/components/trees/member-tree";
 import { GenealogyTrees } from "@/components/trees/genealogy-trees";
 import { getBothTrees } from "@/lib/queries/trees";
 import { getMajorMinor } from "@/lib/queries/legs";
+import { listPendingPlacements, listPlacementTargets, getRecommendedPlacementTarget } from "@/lib/queries/placement";
+import { PlacementPanel } from "@/components/marketer/placement-panel";
 import { getMarketerViewerId } from "@/lib/session";
 import { toUid } from "@/lib/uid";
 import type { TreeNode } from "@/lib/supabase/types";
@@ -28,10 +30,13 @@ function countAll(n: TreeNode | null): number {
 
 export default async function MarketerGenealogyPage() {
   const viewerId = await getMarketerViewerId();
-  const [{ unilevel, placement }, mm] = await Promise.all([
+  const [{ unilevel, placement }, mm, pending] = await Promise.all([
     getBothTrees(viewerId),
     getMajorMinor(viewerId),
+    listPendingPlacements(viewerId),
   ]);
+  // 배치 대기가 있을 때만 배치 위치 후보를 불러온다(조직이 크면 무거움)
+  const [targets, recommended] = pending.length > 0 ? await Promise.all([listPlacementTargets(viewerId), getRecommendedPlacementTarget(viewerId)]) : [[], null];
   const balancePct = mm.total_active > 0 ? Math.round((mm.other_minor / mm.total_active) * 100) : 0;
 
   const oneL = unilevel?.children.length ?? 0;
@@ -51,6 +56,7 @@ export default async function MarketerGenealogyPage() {
     { c: "bg-green-600", t: "구독회원 (예비 파트너)" },
     { c: "bg-green-500", t: "점 = 활성 구독 중" },
     { c: "bg-card ring-1 ring-n-400", t: "비활성 (당월 미결제)" },
+    { c: "bg-green-600 ring-2 ring-green-600", t: "좌측 = 1번 라인(첫 파트너 · 주력) · 자리는 한 번만 확정" },
   ];
 
   const SUMMARY = [
@@ -87,6 +93,10 @@ export default async function MarketerGenealogyPage() {
             </span>
           ))}
         </div>
+
+        {pending.length > 0 ? (
+          <PlacementPanel ownerUid={toUid(viewerId)} pending={pending} targets={targets} recommended={recommended} autoDays={7} />
+        ) : null}
 
         <div id="team-trees" className="scroll-mt-4">
         <GenealogyTrees
