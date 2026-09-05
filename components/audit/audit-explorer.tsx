@@ -75,6 +75,7 @@ const ACTION_META: Record<string, { label: string; tone: Tone }> = {
   product_activate: { label: "상품 판매 활성", tone: "green" },
   product_deactivate: { label: "상품 판매 중지", tone: "neutral" },
   ranks_update: { label: "직급 요율 변경", tone: "crypto" },
+  comp_settings_update: { label: "수당체계 설정 변경", tone: "crypto" },
 };
 const actionMeta = (code: string) => ACTION_META[code] ?? { label: code, tone: "neutral" as Tone };
 
