@@ -3,6 +3,7 @@ import Link from "next/link";
 import { UserRoundIcon } from "lucide-react";
 
 import type { TreeNode, MemberRole } from "@/lib/supabase/types";
+import { PlaceHereButton } from "@/components/marketer/placement-context";
 import { cn } from "@/lib/utils";
 
 const ROLE_RING: Record<MemberRole, string> = {
@@ -23,7 +24,7 @@ const PARTNER_ROLE_LABEL: Record<MemberRole, string> = {
 };
 export type TreeVariant = "admin" | "partner";
 
-function Card({ n, highlight, label, spillover, variant }: { n: TreeNode; highlight?: boolean; label?: string; spillover?: boolean; variant: TreeVariant }) {
+function Card({ n, highlight, label, spillover, variant, placeable }: { n: TreeNode; highlight?: boolean; label?: string; spillover?: boolean; variant: TreeVariant; placeable?: boolean }) {
   const partner = variant === "partner";
   const roleLabel = partner ? PARTNER_ROLE_LABEL[n.role] : ROLE_LABEL[n.role];
   const Wrapper: React.ElementType = partner ? "div" : Link;
@@ -61,6 +62,7 @@ function Card({ n, highlight, label, spillover, variant }: { n: TreeNode; highli
           </div>
         </div>
       </div>
+      {placeable ? <PlaceHereButton nodeId={n.id} /> : null}
     </Wrapper>
   );
 }
@@ -86,6 +88,7 @@ function Node({
   majorHead,
   highlightLabel,
   variant,
+  placeable,
 }: {
   n: TreeNode;
   depth: number;
@@ -93,6 +96,7 @@ function Node({
   maxChildren: number;
   showSpillover?: boolean;
   variant: TreeVariant;
+  placeable?: boolean; // 파트너 후원배치도: 카드에 "＋배치" 버튼
   // spine 모드(후원 배치): 좌측 주력(대실적) 한 줄만 깊게, 나머지(소실적)는 얕게.
   spine?: boolean;
   spineLine?: boolean; // 이 노드가 주력 라인 위에 있음(녹색 강조)
@@ -134,6 +138,7 @@ function Node({
         majorHead={childMajorHead}
         highlightLabel={highlightLabel}
         variant={variant}
+        placeable={placeable}
       />
     );
   });
@@ -141,7 +146,7 @@ function Node({
 
   return (
     <div className="flex flex-col items-center">
-      <Card n={n} highlight={!!spineLine} label={majorHead ? highlightLabel : undefined} spillover={isSpillover} variant={variant} />
+      <Card n={n} highlight={!!spineLine} label={majorHead ? highlightLabel : undefined} spillover={isSpillover} variant={variant} placeable={placeable} />
       {cols.length > 0 ? (
         <>
           {/* 부모 → 가로 연결바 → 각 자식 세로선 */}
@@ -179,6 +184,7 @@ export function MemberTree({
   maxDepth = 2,
   maxChildren = 4,
   showSpillover,
+  placeable,
   spine,
   highlightLabel,
   variant = "admin",
@@ -187,6 +193,7 @@ export function MemberTree({
   maxDepth?: number;
   maxChildren?: number;
   showSpillover?: boolean;
+  placeable?: boolean;
   spine?: boolean;
   highlightLabel?: string;
   variant?: TreeVariant; // "partner": 파트너 라벨 + 관리자 상세 링크 없음
@@ -196,7 +203,7 @@ export function MemberTree({
   }
   return (
     <div className="flex min-w-max justify-center py-2">
-      <Node n={root} depth={0} maxDepth={maxDepth} maxChildren={maxChildren} showSpillover={showSpillover} spine={spine} highlightLabel={highlightLabel} variant={variant} />
+      <Node n={root} depth={0} maxDepth={maxDepth} maxChildren={maxChildren} showSpillover={showSpillover} spine={spine} highlightLabel={highlightLabel} variant={variant} placeable={placeable} />
     </div>
   );
 }

@@ -16,6 +16,8 @@ import { getBothTrees } from "@/lib/queries/trees";
 import { getMajorMinor } from "@/lib/queries/legs";
 import { listPendingPlacements, listPlacementTargets, getRecommendedPlacementTarget } from "@/lib/queries/placement";
 import { PlacementPanel } from "@/components/marketer/placement-panel";
+import { PlacementProvider } from "@/components/marketer/placement-context";
+import { ZoomPanCanvas } from "@/components/trees/zoom-pan";
 import { getMarketerViewerId } from "@/lib/session";
 import { toUid } from "@/lib/uid";
 import type { TreeNode } from "@/lib/supabase/types";
@@ -71,6 +73,7 @@ export default async function MarketerGenealogyPage() {
     <>
       <Topbar title="내 팀" sub="추천조직 · 후원배치" uid={toUid(viewerId)} />
 
+      <PlacementProvider ownerUid={toUid(viewerId)} pending={pending} targets={targets} recommended={recommended}>
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((s) => (
@@ -95,20 +98,20 @@ export default async function MarketerGenealogyPage() {
         </div>
 
         {pending.length > 0 ? (
-          <PlacementPanel ownerUid={toUid(viewerId)} pending={pending} targets={targets} recommended={recommended} autoDays={7} />
+          <PlacementPanel pending={pending} autoDays={7} />
         ) : null}
 
         <div id="team-trees" className="scroll-mt-4">
         <GenealogyTrees
           labels={{ uni: "추천조직", place: "후원배치" }}
           unilevel={
-            <Panel bodyClassName="overflow-x-auto" sub="추천조직 — 내가 초대한 회원과 그 아래 (초대 리워드 1·2대)">
-              <MemberTree root={unilevel} maxDepth={2} maxChildren={6} variant="partner" />
+            <Panel sub="추천조직 — 내가 초대한 회원과 그 아래 (초대 리워드 1·2대) · 휠: 확대/축소 · 드래그: 이동">
+              <ZoomPanCanvas><MemberTree root={unilevel} maxDepth={2} maxChildren={6} variant="partner" /></ZoomPanCanvas>
             </Panel>
           }
           placement={
-            <Panel bodyClassName="overflow-x-auto" sub="후원배치 — 직급·팀 리워드 산정 기준 조직 (자동 배치)">
-              <MemberTree root={placement} maxDepth={3} maxChildren={6} variant="partner" />
+            <Panel sub={`후원배치 — 직급·팀 리워드 산정 기준 조직 · 휠: 확대/축소 · 드래그: 이동${pending.length > 0 ? " · 회원 카드의 ＋배치 = 그 아래에 배치" : ""}`}>
+              <ZoomPanCanvas><MemberTree root={placement} maxDepth={3} maxChildren={6} variant="partner" placeable={pending.length > 0} /></ZoomPanCanvas>
             </Panel>
           }
         />
@@ -160,6 +163,7 @@ export default async function MarketerGenealogyPage() {
           </Panel>
         </div>
       </div>
+      </PlacementProvider>
     </>
   );
 }
