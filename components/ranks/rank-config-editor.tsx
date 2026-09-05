@@ -118,9 +118,10 @@ export function RankConfigEditor({ initial, readOnly = false }: { initial: RankR
           </button>
           <button
             type="button"
-            onClick={save}
-            disabled={!dirty || pending}
-            className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3.5 py-2 text-[13px] font-semibold text-white disabled:opacity-50"
+            onClick={() => (dirty ? save() : setErr("변경된 값이 없습니다. 값을 바꾼 뒤 저장하세요."))}
+            disabled={pending}
+            title={!dirty ? "값을 바꾸면 저장할 수 있습니다" : undefined}
+            className={cn("inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-[13px] font-semibold text-white disabled:opacity-50", dirty ? "bg-brand" : "bg-n-400 hover:bg-n-500")}
           >
             {pending ? <Loader2Icon className="size-3.5 animate-spin" /> : <SaveIcon className="size-3.5" />}
             변경사항 저장

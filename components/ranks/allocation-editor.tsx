@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 // 저장 즉시 allocate_revenue 가 이 비율을 읽고, 당월 배분이 다시 계산된다.
 
 type AllocKey = "alloc_commission_pct" | "alloc_company_pct" | "alloc_equity_pct" | "alloc_reserve_pct";
+const NO_CHANGE_MSG = "변경된 값이 없습니다. 숫자를 바꾼 뒤 저장하세요.";
 const ITEMS: { key: AllocKey; label: string; color: string; dot: string; desc: string }[] = [
   { key: "alloc_commission_pct", label: "수당 풀", color: "bg-green-500", dot: "bg-green-500", desc: "네트워크 수당 재원 · 레벨·직급·공유" },
   { key: "alloc_company_pct", label: "회사 수익", color: "bg-info", dot: "bg-info", desc: "회사 운영 이익" },
@@ -22,22 +23,27 @@ const ITEMS: { key: AllocKey; label: string; color: string; dot: string; desc: s
 export function AllocationEditor({ initial, readOnly = false }: { initial: CompSettings; readOnly?: boolean }) {
   const router = useRouter();
   const base = React.useMemo(() => ITEMS.map((i) => initial[i.key]), [initial]);
-  const [vals, setVals] = React.useState<number[]>(base);
+  // 입력은 문자열로 보관(소수점·빈칸 입력 중 상태 허용), 숫자는 파생.
+  const [raw, setRaw] = React.useState<string[]>(() => base.map(String));
+  const vals = raw.map((r) => Math.min(100, Math.max(0, Number(r) || 0)));
   const [pending, start] = React.useTransition();
   const [saved, setSaved] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
 
-  const sum = Math.round(vals.reduce((s, v) => s + (Number.isFinite(v) ? v : 0), 0) * 100) / 100;
+  const sum = Math.round(vals.reduce((s, v) => s + v, 0) * 100) / 100;
   const sumOk = Math.abs(sum - 100) < 0.001;
   const dirty = vals.some((v, i) => v !== base[i]);
 
-  const set = (i: number, raw: string) => {
-    const t = raw.replace(/[^0-9.]/g, "");
-    setVals((vs) => vs.map((v, j) => (j === i ? (t === "" ? 0 : Math.min(100, Number(t))) : v)));
+  const set = (i: number, text: string) => {
+    const t = text.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1").slice(0, 6);
+    setRaw((rs) => rs.map((v, j) => (j === i ? t : v)));
     setSaved(false);
+    setErr(null);
   };
-  const reset = () => { setVals(base); setErr(null); setSaved(false); };
-  const save = () =>
+  const reset = () => { setRaw(base.map(String)); setErr(null); setSaved(false); };
+  const save = () => {
+    if (!dirty) return setErr(NO_CHANGE_MSG);
+    if (!sumOk) return setErr(`배분 비율 합계가 ${sum}% 입니다. 4개 합이 100% 가 되어야 저장됩니다.`);
     start(async () => {
       setErr(null);
       const payload = Object.fromEntries(ITEMS.map((it, i) => [it.key, vals[i]])) as Partial<CompSettings>;
@@ -46,6 +52,7 @@ export function AllocationEditor({ initial, readOnly = false }: { initial: CompS
       setSaved(true);
       router.refresh();
     });
+  };
 
   return (
     <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
@@ -66,7 +73,7 @@ export function AllocationEditor({ initial, readOnly = false }: { initial: CompS
           <div key={a.key} className="rounded-lg p-4 ring-1 ring-border">
             <div className="flex items-center gap-2 text-[13px] font-semibold text-text-primary"><span className={cn("size-2.5 rounded-full", a.dot)} /> {a.label}</div>
             <label className="mt-2.5 inline-flex items-center gap-1 rounded-md bg-card px-2.5 py-1.5 ring-1 ring-border-strong focus-within:ring-2 focus-within:ring-green-500">
-              <input value={vals[i]} inputMode="decimal" onChange={(e) => set(i, e.target.value)} className="w-14 bg-transparent text-right text-[22px] leading-none font-bold tabular-nums text-text-primary outline-none disabled:text-text-secondary" />
+              <input value={raw[i]} inputMode="decimal" onChange={(e) => set(i, e.target.value)} onFocus={(e) => e.currentTarget.select()} className="w-14 bg-transparent text-right text-[22px] leading-none font-bold tabular-nums text-text-primary outline-none disabled:text-text-secondary" />
               <span className="text-sm font-medium text-text-tertiary">%</span>
             </label>
             <div className="mt-2.5 text-[11px] text-text-tertiary">{a.desc}</div>
@@ -83,7 +90,7 @@ export function AllocationEditor({ initial, readOnly = false }: { initial: CompS
         <div className={cn("flex items-center gap-2", readOnly && "hidden")}>
           {saved ? <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-positive"><CheckIcon className="size-3.5" /> 저장 완료</span> : null}
           <button type="button" onClick={reset} disabled={!dirty || pending} className="inline-flex items-center gap-1.5 rounded-md bg-card px-3.5 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong disabled:opacity-50"><RotateCcwIcon className="size-3.5" /> 되돌리기</button>
-          <button type="button" onClick={save} disabled={!dirty || !sumOk || pending} className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3.5 py-2 text-[13px] font-semibold text-white disabled:opacity-50">
+          <button type="button" onClick={save} disabled={pending} className={cn("inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-[13px] font-semibold text-white disabled:opacity-50", dirty && sumOk ? "bg-brand" : "bg-n-400 hover:bg-n-500")} title={!dirty ? "숫자를 바꾸면 저장할 수 있습니다" : !sumOk ? "합계가 100% 여야 합니다" : undefined}>
             {pending ? <Loader2Icon className="size-3.5 animate-spin" /> : <SaveIcon className="size-3.5" />} 배분 비율 저장
           </button>
         </div>

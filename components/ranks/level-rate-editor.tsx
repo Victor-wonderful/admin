@@ -19,19 +19,22 @@ const ROWS = [
 export function LevelRateEditor({ initial, readOnly = false }: { initial: CompSettings; readOnly?: boolean }) {
   const router = useRouter();
   const base = React.useMemo(() => ROWS.map((r) => initial[r.key]), [initial]);
-  const [vals, setVals] = React.useState<number[]>(base);
+  const [raw, setRaw] = React.useState<string[]>(() => base.map(String));
+  const vals = raw.map((r) => Math.min(100, Math.max(0, Number(r) || 0)));
   const [pending, start] = React.useTransition();
   const [saved, setSaved] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
   const dirty = vals.some((v, i) => v !== base[i]);
 
-  const set = (i: number, raw: string) => {
-    const t = raw.replace(/[^0-9.]/g, "");
-    setVals((vs) => vs.map((v, j) => (j === i ? (t === "" ? 0 : Math.min(100, Number(t))) : v)));
+  const set = (i: number, text: string) => {
+    const t = text.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1").slice(0, 6);
+    setRaw((rs) => rs.map((v, j) => (j === i ? t : v)));
     setSaved(false);
+    setErr(null);
   };
-  const reset = () => { setVals(base); setErr(null); setSaved(false); };
-  const save = () =>
+  const reset = () => { setRaw(base.map(String)); setErr(null); setSaved(false); };
+  const save = () => {
+    if (!dirty) return setErr("변경된 값이 없습니다. 숫자를 바꾼 뒤 저장하세요.");
     start(async () => {
       setErr(null);
       const r = await updateCompSettings({ level_gen1_pct: vals[0], level_gen2_pct: vals[1] });
@@ -39,6 +42,7 @@ export function LevelRateEditor({ initial, readOnly = false }: { initial: CompSe
       setSaved(true);
       router.refresh();
     });
+  };
 
   return (
     <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
@@ -50,7 +54,7 @@ export function LevelRateEditor({ initial, readOnly = false }: { initial: CompSe
           <span className="grid size-7 place-items-center rounded-md bg-green-50 text-xs font-bold text-green-700">{r.n}</span>
           <span className="text-sm font-semibold text-text-primary">{r.name}</span>
           <label className="inline-flex items-center gap-1 rounded-md bg-card px-2.5 py-1.5 ring-1 ring-border-strong focus-within:ring-2 focus-within:ring-green-500">
-            <input value={vals[i]} inputMode="decimal" onChange={(e) => set(i, e.target.value)} className="w-10 bg-transparent text-right text-sm font-bold tabular-nums text-text-primary outline-none" />
+            <input value={raw[i]} inputMode="decimal" onChange={(e) => set(i, e.target.value)} onFocus={(e) => e.currentTarget.select()} className="w-10 bg-transparent text-right text-sm font-bold tabular-nums text-text-primary outline-none" />
             <span className="text-[11px] text-text-tertiary">%</span>
           </label>
           <span className="flex justify-end">
@@ -74,7 +78,7 @@ export function LevelRateEditor({ initial, readOnly = false }: { initial: CompSe
         <div className={cn("flex items-center gap-2", readOnly && "hidden")}>
           {saved ? <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-positive"><CheckIcon className="size-3.5" /> 저장 완료</span> : null}
           <button type="button" onClick={reset} disabled={!dirty || pending} className="inline-flex items-center gap-1.5 rounded-md bg-card px-3.5 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong disabled:opacity-50"><RotateCcwIcon className="size-3.5" /> 되돌리기</button>
-          <button type="button" onClick={save} disabled={!dirty || pending} className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3.5 py-2 text-[13px] font-semibold text-white disabled:opacity-50">
+          <button type="button" onClick={save} disabled={pending} className={cn("inline-flex items-center gap-1.5 rounded-md px-3.5 py-2 text-[13px] font-semibold text-white disabled:opacity-50", dirty ? "bg-brand" : "bg-n-400 hover:bg-n-500")} title={!dirty ? "숫자를 바꾸면 저장할 수 있습니다" : undefined}>
             {pending ? <Loader2Icon className="size-3.5 animate-spin" /> : <SaveIcon className="size-3.5" />} 요율 저장
           </button>
         </div>
