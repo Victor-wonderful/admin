@@ -52,3 +52,22 @@ export function describeDevice(ua: string | null): string {
             : "브라우저";
   return `${os} · ${browser}`;
 }
+
+// 회원별 마지막 접속 시각(활성·종료 세션 모두 포함) — 회원 목록의 "마지막 접속" 열·필터용.
+export async function getLastSeenMap(): Promise<Map<string, string>> {
+  const sb = getServerClient();
+  const out = new Map<string, string>();
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await sb
+      .from("member_sessions")
+      .select("member_id, last_seen_at")
+      .order("last_seen_at", { ascending: false })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as Array<{ member_id: string; last_seen_at: string }>;
+    for (const r of rows) if (!out.has(r.member_id)) out.set(r.member_id, r.last_seen_at);
+    if (rows.length < PAGE) break;
+  }
+  return out;
+}
