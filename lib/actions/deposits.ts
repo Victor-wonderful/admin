@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getServerClient } from "@/lib/supabase/server";
 import { scanDeposits, type NetworkScanResult } from "@/lib/deposit-scan";
 import { toUid } from "@/lib/uid";
+import { audit } from "@/lib/audit";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -20,9 +21,13 @@ function refresh() {
 export async function runDepositScan(): Promise<{ ok: true; results: NetworkScanResult[] } | { ok: false; error: string }> {
   try {
     const results = await scanDeposits();
+    const inserted = results.reduce((s, r) => s + r.inserted, 0);
+    const credited = results.reduce((s, r) => s + r.credited, 0);
+    await audit({ category: "finance", action: "deposit_scan", target: `입금 스캔 실행 · 네트워크 ${results.length}개 · 신규 ${inserted}건 · 자동 반영 ${credited}건` });
     refresh();
     return { ok: true, results };
   } catch (e) {
+    await audit({ category: "finance", action: "deposit_scan", target: `입금 스캔 실패 · ${e instanceof Error ? e.message : String(e)}`, ok: false });
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
@@ -47,6 +52,7 @@ export async function creditDepositToMember(depositId: string, memberRef: string
 
   const { error } = await sb.rpc("credit_onchain_deposit", { p_id: depositId, p_member: memberId });
   if (error) return { ok: false, error: error.message };
+  await audit({ category: "finance", action: "deposit_credit", target: `미확인 입금 → ${toUid(memberId)} 수동 매칭 · 잔액 반영`, targetId: depositId, risk: true });
   refresh();
   return { ok: true };
 }
@@ -56,6 +62,7 @@ export async function ignoreDeposit(depositId: string, note?: string): Promise<R
   const sb = getServerClient();
   const { error } = await sb.rpc("ignore_onchain_deposit", { p_id: depositId, p_note: note ?? null });
   if (error) return { ok: false, error: error.message };
+  await audit({ category: "finance", action: "deposit_ignore", target: `미확인 입금 무시 처리${note ? ` · ${note}` : ""}`, targetId: depositId });
   refresh();
   return { ok: true };
 }

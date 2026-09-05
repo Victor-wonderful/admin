@@ -2,6 +2,8 @@
 
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { audit } from "@/lib/audit";
+import { toUid } from "@/lib/uid";
 
 // 스필오버 배치: 대상 회원을 마케터 M 의 대실적 라인 최하단으로 이동.
 export async function placeUnderMajorLeg(marketerId: string, targetMemberId: string) {
@@ -20,6 +22,7 @@ export async function placeUnderMajorLeg(marketerId: string, targetMemberId: str
     p_note: "관리자 · 주력 라인 최하단 이동",
   });
   if (e2) throw e2;
+  await audit({ category: "member", action: "member_place_major", target: `회원 ${toUid(targetMemberId)} → ${toUid(marketerId)} 주력 라인 최하단(${toUid(newParent)}) 이동`, targetId: targetMemberId, risk: true });
 
   revalidatePath("/admin");
   revalidatePath("/marketer");

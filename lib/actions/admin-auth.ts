@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { getServerClient } from "@/lib/supabase/server";
-import { ADMIN_COOKIE, ADMIN_SESSION_MAX_AGE, hashAdminToken, getCurrentAdmin, isMfaRequired } from "@/lib/admin-session";
+import { ADMIN_COOKIE, ADMIN_SESSION_MAX_AGE, ADMIN_ROLE_LABEL, hashAdminToken, getCurrentAdmin, isMfaRequired, type AdminRole } from "@/lib/admin-session";
+import { audit } from "@/lib/audit";
 import { generateTotpSecret, verifyTotp } from "@/lib/totp";
 import { sendEmail } from "@/lib/notify";
 
@@ -28,6 +29,7 @@ export async function adminLogin(_prev: AdminAuthState, formData: FormData): Pro
   const { data, error } = await sb.rpc("admin_login", { p_email: email, p_password: password });
   if (error) {
     const code = Object.keys(LOGIN_ERRORS).find((k) => error.message.includes(k));
+    await audit({ category: "auth", action: code === "LOCKED" ? "login_locked" : "login_failed", target: `${email} · ${code === "LOCKED" ? "5회 오류 · 15분 잠금" : code === "DISABLED" ? "비활성 계정" : "이메일 또는 비밀번호 불일치"}`, ok: false, risk: code === "LOCKED", actor: { email } });
     return { error: code ? LOGIN_ERRORS[code] : "로그인 처리 중 오류가 발생했습니다", values: { email } };
   }
   const row = Array.isArray(data) ? data[0] : null;
@@ -47,8 +49,10 @@ export async function adminLogin(_prev: AdminAuthState, formData: FormData): Pro
   // 개발 모드(ADMIN_MFA=off): 2단계 없이 바로 입장. 등록된 관리자라도 코드를 묻지 않는다.
   if (!isMfaRequired()) {
     await sb.rpc("mark_admin_session_mfa", { p_token_hash: hashAdminToken(token) });
+    await audit({ category: "auth", action: "login", target: "관리자 콘솔 로그인 · 개발 모드(2단계 인증 꺼짐)", actor: { id: row.id, email } });
     redirect("/admin/dashboard");
   }
+  await audit({ category: "auth", action: "login", target: "1단계(비밀번호) 통과 · 2단계 인증 대기", actor: { id: row.id, email } });
   redirect("/admin-2fa");
 }
 
@@ -59,13 +63,17 @@ export async function adminVerifyTotp(_prev: AdminAuthState, formData: FormData)
   if (!cur) redirect("/admin-login");
   const secret = cur.admin.totp_secret;
   if (!secret) return { error: "인증 키가 없습니다. 페이지를 새로고침하세요" };
-  if (!verifyTotp(secret, code)) return { error: "인증 코드가 맞지 않습니다. 앱의 새 코드를 입력하세요" };
+  if (!verifyTotp(secret, code)) {
+    await audit({ category: "auth", action: "mfa_failed", target: "인증 앱 코드 불일치", ok: false });
+    return { error: "인증 코드가 맞지 않습니다. 앱의 새 코드를 입력하세요" };
+  }
 
   const sb = getServerClient();
   if (!cur.admin.totp_enabled) {
     await sb.from("admins").update({ totp_enabled: true }).eq("id", cur.admin.id);
   }
   await sb.rpc("mark_admin_session_mfa", { p_token_hash: hashAdminToken(cur.token) });
+  await audit({ category: "auth", action: "mfa_verified", target: cur.admin.totp_enabled ? "관리자 콘솔 로그인 · 2단계 인증 통과" : "인증 앱 최초 등록 · 2단계 인증 통과" });
   redirect("/admin/dashboard");
 }
 
@@ -79,6 +87,7 @@ export async function ensureTotpSecret(adminId: string, existing: string | null 
 }
 
 export async function adminLogout() {
+  await audit({ category: "auth", action: "logout", target: "관리자 콘솔 로그아웃" });
   const store = await cookies();
   const token = store.get(ADMIN_COOKIE)?.value;
   if (token) {
@@ -93,7 +102,10 @@ export async function adminLogout() {
 const CREATE_ERRORS: Record<string, string> = { EMAIL_INVALID: "이메일 형식이 아닙니다", PASSWORD_TOO_SHORT: "임시 비밀번호는 8자 이상", EMAIL_TAKEN: "이미 등록된 이메일입니다" };
 export async function createAdmin(_prev: AdminAuthState, formData: FormData): Promise<AdminAuthState> {
   const cur = await getCurrentAdmin();
-  if (!cur || !cur.mfaOk || cur.admin.role !== "super") return { error: "슈퍼관리자만 관리자를 추가할 수 있습니다" };
+  if (!cur || !cur.mfaOk || cur.admin.role !== "super") {
+    await audit({ category: "permission", action: "permission_denied", target: "관리자 추가 시도(권한 없음)", ok: false, risk: true });
+    return { error: "슈퍼관리자만 관리자를 추가할 수 있습니다" };
+  }
   const email = String(formData.get("email") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const role = String(formData.get("role") ?? "viewer");
@@ -105,6 +117,7 @@ export async function createAdmin(_prev: AdminAuthState, formData: FormData): Pr
     const code = Object.keys(CREATE_ERRORS).find((k) => error.message.includes(k));
     return { error: code ? CREATE_ERRORS[code] : error.message };
   }
+  await audit({ category: "permission", action: "admin_create", target: `${email.toLowerCase()} · ${name} · ${ADMIN_ROLE_LABEL[role as AdminRole] ?? role}`, risk: true });
   revalidatePath("/admin/admins");
   return { ok: true };
 }
@@ -117,6 +130,7 @@ export async function setAdminActive(adminId: string, active: boolean): Promise<
   const { error } = await sb.from("admins").update({ is_active: active }).eq("id", adminId);
   if (error) return { ok: false, error: error.message };
   if (!active) await sb.from("admin_sessions").update({ revoked_at: new Date().toISOString(), revoke_reason: "admin" }).eq("admin_id", adminId).is("revoked_at", null);
+  await audit({ category: "permission", action: active ? "admin_activate" : "admin_deactivate", target: `${await adminLabel(adminId)} ${active ? "활성화" : "비활성화 · 세션 전부 종료"}`, targetId: adminId, risk: !active });
   revalidatePath("/admin/admins");
   return { ok: true };
 }
@@ -128,8 +142,17 @@ export async function resetAdminTotp(adminId: string): Promise<{ ok: boolean; er
   const sb = getServerClient();
   const { error } = await sb.from("admins").update({ totp_secret: null, totp_enabled: false }).eq("id", adminId);
   if (error) return { ok: false, error: error.message };
+  await audit({ category: "permission", action: "admin_totp_reset", target: `${await adminLabel(adminId)} 인증 앱 재설정(다음 로그인에서 재등록)`, targetId: adminId, risk: true });
   revalidatePath("/admin/admins");
   return { ok: true };
+}
+
+// 감사 로그 대상 표기용 — "이름 (이메일)".
+async function adminLabel(adminId: string): Promise<string> {
+  const sb = getServerClient();
+  const { data } = await sb.from("admins").select("display_name, email").eq("id", adminId).maybeSingle();
+  const a = data as { display_name: string; email: string } | null;
+  return a ? `${a.display_name} (${a.email})` : adminId;
 }
 
 // 내 비밀번호 변경 — 현재 비밀번호 확인(DB 함수) 후 변경. 다른 기기의 세션은 모두 끊는다(현재 세션 유지).
@@ -151,6 +174,7 @@ export async function changeAdminPassword(_prev: AdminAuthState, formData: FormD
   }
   await sb.from("admin_sessions").update({ revoked_at: new Date().toISOString(), revoke_reason: "password_changed" })
     .eq("admin_id", cur.admin.id).is("revoked_at", null).neq("token_hash", hashAdminToken(cur.token));
+  await audit({ category: "auth", action: "password_change", target: "내 비밀번호 변경 · 다른 기기 세션 종료" });
   revalidatePath("/admin/account");
   return { ok: true };
 }
@@ -167,6 +191,7 @@ export async function restartMyTotp(_prev: AdminAuthState, formData: FormData): 
   if (lErr) return { error: "현재 비밀번호가 맞지 않습니다" };
   await sb.from("admins").update({ totp_secret: null, totp_enabled: false }).eq("id", cur.admin.id);
   await sb.from("admin_sessions").update({ mfa_ok: false }).eq("token_hash", hashAdminToken(cur.token));
+  await audit({ category: "auth", action: "totp_reenroll", target: "내 인증 앱 재등록 시작" });
   redirect("/admin-2fa");
 }
 
@@ -199,7 +224,10 @@ const RESET_ERRORS: Record<string, string> = {
 };
 export async function resetAdminPassword(adminId: string): Promise<{ ok: boolean; tempPassword?: string; error?: string }> {
   const cur = await getCurrentAdmin();
-  if (!cur || !cur.mfaOk || cur.admin.role !== "super") return { ok: false, error: RESET_ERRORS.NOT_SUPER };
+  if (!cur || !cur.mfaOk || cur.admin.role !== "super") {
+    await audit({ category: "permission", action: "permission_denied", target: "관리자 비밀번호 초기화 시도(권한 없음)", targetId: adminId, ok: false, risk: true });
+    return { ok: false, error: RESET_ERRORS.NOT_SUPER };
+  }
   if (cur.admin.id === adminId) return { ok: false, error: RESET_ERRORS.SELF_RESET };
   const temp = generateTempPassword();
   const sb = getServerClient();
@@ -208,6 +236,7 @@ export async function resetAdminPassword(adminId: string): Promise<{ ok: boolean
     const code = Object.keys(RESET_ERRORS).find((k) => error.message.includes(k));
     return { ok: false, error: code ? RESET_ERRORS[code] : "초기화 처리 중 오류가 발생했습니다" };
   }
+  await audit({ category: "permission", action: "admin_password_reset", target: `${await adminLabel(adminId)} 임시 비밀번호 발급 · 세션 전부 종료`, targetId: adminId, risk: true });
   revalidatePath("/admin/admins");
   return { ok: true, tempPassword: temp };
 }
@@ -228,6 +257,7 @@ export async function requestAdminPasswordReset(_prev: AdminAuthState, formData:
     return { error: "요청 처리 중 오류가 발생했습니다", values: { email } };
   }
   const row = Array.isArray(data) ? data[0] : null;
+  await audit({ category: "auth", action: "password_reset_request", target: row ? `${email} · 재설정 링크 발급(30분)` : `${email} · 미등록 이메일(발송 없음)`, actor: row ? { id: row.admin_id, email } : { email } });
   if (!row) return { ok: true, values: { email } }; // 미등록 이메일 — 노출 방지
 
   const link = `${await getBaseUrl()}/admin-reset?token=${token}`;
@@ -257,11 +287,14 @@ export async function completeAdminPasswordReset(_prev: AdminAuthState, formData
   if (next.length < 8) return { error: COMPLETE_ERRORS.PASSWORD_TOO_SHORT };
   if (next !== confirm) return { error: "새 비밀번호 확인이 일치하지 않습니다" };
   const sb = getServerClient();
-  const { error } = await sb.rpc("complete_admin_password_reset", { p_token_hash: hashAdminToken(token), p_new: next });
+  const { data, error } = await sb.rpc("complete_admin_password_reset", { p_token_hash: hashAdminToken(token), p_new: next });
   if (error) {
     const code = Object.keys(COMPLETE_ERRORS).find((k) => error.message.includes(k));
+    await audit({ category: "auth", action: "password_reset_failed", target: `재설정 링크 사용 실패 · ${code ?? "오류"}`, ok: false, actor: null });
     return { error: code ? COMPLETE_ERRORS[code] : "재설정 처리 중 오류가 발생했습니다" };
   }
+  const done = Array.isArray(data) ? data[0] : null;
+  await audit({ category: "auth", action: "password_reset_complete", target: "이메일 링크로 비밀번호 재설정 · 세션 전부 종료", actor: done ? { id: done.admin_id, email: done.email } : null });
   // 이 브라우저에 남은 관리자 쿠키가 있어도 세션은 이미 끊겼으니 지운다.
   const store = await cookies();
   store.delete(ADMIN_COOKIE);

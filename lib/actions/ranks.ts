@@ -2,6 +2,7 @@
 
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { audit } from "@/lib/audit";
 
 export interface RankConfigInput {
   rank: number;
@@ -31,6 +32,7 @@ export async function updateRanks(rows: RankConfigInput[]): Promise<number> {
     if (error) throw error;
     updated++;
   }
+  await audit({ category: "catalog", action: "ranks_update", target: `직급 요율·기준 저장 · ${updated}개 직급 · 요율 ${rows.map((r) => `${r.rank}:${r.rate_pct}%`).join(" ")}`, risk: true });
   revalidatePath("/admin/ranks");
   revalidatePath("/admin/settlements");
   return updated;

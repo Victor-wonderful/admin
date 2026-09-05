@@ -3,6 +3,7 @@
 import { today, currentCycle } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { audit } from "@/lib/audit";
 
 export interface SettlementRunResult {
   members_paid: number;
@@ -20,6 +21,7 @@ export async function runSettlement(cycle = currentCycle(), asOf = today()): Pro
   if (error) throw error;
 
   const row = (Array.isArray(data) ? data[0] : data) as SettlementRunResult | undefined;
+  await audit({ category: "settlement", action: "settlement_run", target: `${cycle} 정산 재산정 · ${row?.members_paid ?? 0}명 · $${Math.round(row?.grand_total ?? 0).toLocaleString()}`, targetId: cycle });
 
   revalidatePath("/admin/settlements");
   revalidatePath("/admin/dashboard");

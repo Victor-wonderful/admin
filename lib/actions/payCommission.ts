@@ -3,6 +3,7 @@
 import { today, currentCycle } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { audit } from "@/lib/audit";
 
 export interface PayResult {
   members_paid: number;
@@ -25,6 +26,7 @@ export async function payCommission(
   if (error) throw error;
 
   const row = (Array.isArray(data) ? data[0] : data) as PayResult | undefined;
+  await audit({ category: "settlement", action: "commission_pay", target: `${cycle} 수당 지급 실행(${scope === "share" ? "공유" : "초대·직급"}) · ${row?.members_paid ?? 0}명 · $${Math.round(row?.total_paid ?? 0).toLocaleString()}`, targetId: cycle, risk: true });
 
   revalidatePath("/admin/settlements");
   revalidatePath("/admin/wallet");

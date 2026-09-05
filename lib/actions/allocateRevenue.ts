@@ -3,6 +3,7 @@
 import { currentCycle } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { audit } from "@/lib/audit";
 
 export interface RevenueAllocationResult {
   revenue_total: number;
@@ -20,6 +21,7 @@ export async function allocateRevenue(cycle = currentCycle()): Promise<RevenueAl
   if (error) throw error;
 
   const row = (Array.isArray(data) ? data[0] : data) as RevenueAllocationResult | undefined;
+  await audit({ category: "finance", action: "revenue_allocate", target: `${cycle} 매출 배분 실행 · 매출 $${Math.round(row?.revenue_total ?? 0).toLocaleString()} → 수당풀 $${Math.round(row?.pool_commission ?? 0).toLocaleString()}`, targetId: cycle });
 
   revalidatePath("/admin/wallet");
   revalidatePath("/admin/revenue");

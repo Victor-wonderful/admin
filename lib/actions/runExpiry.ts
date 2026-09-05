@@ -3,6 +3,7 @@
 import { today } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { audit } from "@/lib/audit";
 
 // 데모용 "월 만료 실행": 일부 활성 구독을 만료 처리 후 활성 플래그 재계산.
 // 실제로는 월별 Cron 이 수행할 작업.
@@ -27,6 +28,7 @@ export async function runMonthlyExpiry(asOf = today()) {
   const { error: e3 } = await sb.rpc("refresh_active_subscribers", { as_of: asOf });
   if (e3) throw e3;
 
+  await audit({ category: "member", action: "expiry_run", target: `월 만료 실행(데모) · 구독 ${toExpire.length}건 만료 처리`, risk: true });
   revalidatePath("/admin");
   revalidatePath("/marketer");
   return { expired: toExpire.length };

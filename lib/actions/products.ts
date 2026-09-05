@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getServerClient } from "@/lib/supabase/server";
+import { audit } from "@/lib/audit";
 
 export type ProductFormState = { ok?: boolean; error?: string } | undefined;
 
@@ -54,6 +55,7 @@ export async function createProduct(_prev: ProductFormState, formData: FormData)
   const sb = getServerClient();
   const { error } = await sb.from("products").insert(p.row);
   if (error) return { error: error.message.includes("duplicate") ? "이미 있는 상품 코드입니다" : "저장 실패: " + error.message };
+  await audit({ category: "catalog", action: "product_create", target: `상품 추가 · ${p.row.name} (${p.row.code}) · $${p.row.price_usd}` });
   revalidateAll();
   return { ok: true };
 }
@@ -67,6 +69,7 @@ export async function updateProduct(_prev: ProductFormState, formData: FormData)
   const sb = getServerClient();
   const { error } = await sb.from("products").update(p.row).eq("id", id);
   if (error) return { error: error.message.includes("duplicate") ? "이미 있는 상품 코드입니다" : "저장 실패: " + error.message };
+  await audit({ category: "catalog", action: "product_update", target: `상품 수정 · ${p.row.name} (${p.row.code}) · $${p.row.price_usd}`, targetId: id });
   revalidateAll();
   return { ok: true };
 }
@@ -76,6 +79,9 @@ export async function setProductActive(id: string, active: boolean): Promise<{ o
   const sb = getServerClient();
   const { error } = await sb.from("products").update({ is_active: active, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) return { ok: false, error: error.message };
+  const { data: pr } = await sb.from("products").select("name, code").eq("id", id).maybeSingle();
+  const pi = pr as { name: string; code: string } | null;
+  await audit({ category: "catalog", action: active ? "product_activate" : "product_deactivate", target: `상품 ${pi ? `${pi.name} (${pi.code})` : id.slice(0, 8)} 판매 ${active ? "활성화" : "중지"}`, targetId: id });
   revalidateAll();
   return { ok: true };
 }
