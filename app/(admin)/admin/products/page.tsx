@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
+import { can } from "@/lib/admin-permissions";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { ProductFormModal } from "@/components/products/product-form-modal";
@@ -37,6 +39,8 @@ const DEFAULT_ICON = { icon: PackageIcon, tone: "bg-n-100 text-n-600" };
 const PLAN_LABEL: Record<string, string> = { bot_sub: "회원 구독 플랜(Basic)", annual_fee: "파트너 멤버십(Pro)" };
 
 export default async function AdminProductsPage() {
+  const admin = await requireAdminPage("products");
+  const readOnly = !can(admin.role, "catalog.write");
   const products = await listAllProducts();
 
   return (
@@ -44,8 +48,8 @@ export default async function AdminProductsPage() {
       <Topbar
         title="상품·구독플랜"
         sub="상품 카탈로그 · 주문·정산 항목 기준 · 가격은 회원 화면에 즉시 반영"
-        uid="운영자"
-        actions={<ProductFormModal />}
+        uid={admin.display_name}
+        actions={readOnly ? null : <ProductFormModal />}
       />
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -58,7 +62,7 @@ export default async function AdminProductsPage() {
                   <span className={cn("grid size-11 place-items-center rounded-[12px]", tone)}>
                     <Icon className="size-[22px]" />
                   </span>
-                  <ActiveToggle id={p.id} active={p.is_active} />
+                  <ActiveToggle id={p.id} active={p.is_active} readOnly={readOnly} />
                 </div>
                 <div className="mt-3 flex items-center gap-2">
                   <span className="text-[15px] font-bold text-text-primary">{p.name}</span>
@@ -76,7 +80,7 @@ export default async function AdminProductsPage() {
                 <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t pt-3">
                   {p.pool_eligible ? <Pill tone="green">수당 풀</Pill> : <Pill tone="neutral">풀 제외</Pill>}
                   {p.counts_active ? <Pill tone="info">카운팅</Pill> : null}
-                  <ProductFormModal product={p} />
+                  {readOnly ? null : <ProductFormModal product={p} />}
                 </div>
               </Panel>
             );

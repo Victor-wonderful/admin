@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
+import { can } from "@/lib/admin-permissions";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { DepositScanButton, UnmatchedDepositActions } from "@/components/deposits/deposit-actions";
@@ -51,6 +53,8 @@ const COLS = "grid-cols-[104px_1.2fr_1.4fr_1.5fr_1.3fr_120px]";
 const UNMATCHED_COLS = "grid-cols-[104px_92px_1.6fr_1.3fr_auto]";
 
 export default async function AdminDepositsPage() {
+  const admin = await requireAdminPage("deposits");
+  const readOnly = !can(admin.role, "finance.write");
   const [sum, states, unmatched, onchain, ledger] = await Promise.all([
     getDepositSummary(),
     getScanStates(),
@@ -72,7 +76,7 @@ export default async function AdminDepositsPage() {
 
   return (
     <>
-      <Topbar title="입금내역" sub="회사 입금 주소로 들어온 USDT · 보낸 주소로 회원 식별 · 잔액 반영" uid="운영자" actions={<DepositScanButton />} />
+      <Topbar title="입금내역" sub="회사 입금 주소로 들어온 USDT · 보낸 주소로 회원 식별 · 잔액 반영" uid={admin.display_name} actions={<DepositScanButton readOnly={readOnly} />} />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 상단 KPI 6종 ── */}
@@ -164,7 +168,7 @@ export default async function AdminDepositsPage() {
                     </a>
                   </span>
                   <span className="text-[13px] font-bold tabular-nums text-green-700">{usd(d.amount_usd)} USDT</span>
-                  <UnmatchedDepositActions depositId={d.id} />
+                  <UnmatchedDepositActions depositId={d.id} readOnly={readOnly} />
                 </div>
               ))}
             </div>

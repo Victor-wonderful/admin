@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
 // 지급 실행 — 직추+직급(instant, 상시). 공유(share)는 월 1회 별도.
-export function PayCommissionButton({ cycle = currentCycle() }: { cycle?: string }) {
+export function PayCommissionButton({ cycle = currentCycle(), readOnly = false }: { cycle?: string; readOnly?: boolean }) {
   const [pending, start] = React.useTransition();
   const [result, setResult] = React.useState<PayResult | null>(null);
 
@@ -32,7 +32,8 @@ export function PayCommissionButton({ cycle = currentCycle() }: { cycle?: string
       ) : null}
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || readOnly}
+        title={readOnly ? "현재 역할은 실행 권한이 없습니다(조회 전용)" : undefined}
         onClick={() => start(async () => setResult(await payCommission(cycle, "instant")))}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-md bg-brand px-3 py-2 text-[13px] font-semibold text-white disabled:opacity-60",

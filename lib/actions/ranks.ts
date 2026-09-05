@@ -3,6 +3,7 @@
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
+import { assertCapability } from "@/lib/admin-guard";
 
 export interface RankConfigInput {
   rank: number;
@@ -16,6 +17,7 @@ export interface RankConfigInput {
 // 직급 기준 일괄 저장. ranks 테이블을 rank 키로 업데이트(WHERE 절 → safeupdate 가드 통과).
 // 엔진(evaluate_rank/run_settlement)이 이 값으로 산정하므로 저장 즉시 정산 기준이 바뀐다.
 export async function updateRanks(rows: RankConfigInput[]): Promise<number> {
+  await assertCapability("catalog.write", "직급 요율·기준 변경");
   const sb = getServerClient();
   let updated = 0;
   for (const r of rows) {

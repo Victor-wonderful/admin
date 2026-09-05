@@ -60,7 +60,7 @@ function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
   );
 }
 
-export function RankConfigEditor({ initial }: { initial: RankRow[] }) {
+export function RankConfigEditor({ initial, readOnly = false }: { initial: RankRow[]; readOnly?: boolean }) {
   const base = React.useMemo(() => initial.map((r) => ({ ...r })), [initial]);
   const [rows, setRows] = React.useState<RankRow[]>(base);
   const [pending, start] = React.useTransition();
@@ -99,14 +99,14 @@ export function RankConfigEditor({ initial }: { initial: RankRow[] }) {
     });
 
   return (
-    <div className="space-y-3">
+    <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-3 border-0 p-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-[13px]">
-          <span className={cn("size-2 rounded-full", dirty ? "bg-warning" : "bg-green-500")} />
-          <span className="font-semibold text-text-primary">{dirty ? "미저장 변경 있음" : "저장됨"}</span>
-          <span className="text-text-tertiary">직급 기준을 바꾸면 다음 정산부터 이 값으로 산정됩니다</span>
+          <span className={cn("size-2 rounded-full", readOnly ? "bg-n-400" : dirty ? "bg-warning" : "bg-green-500")} />
+          <span className="font-semibold text-text-primary">{readOnly ? "조회 전용" : dirty ? "미저장 변경 있음" : "저장됨"}</span>
+          <span className="text-text-tertiary">{readOnly ? "현재 역할은 직급 기준을 변경할 수 없습니다" : "직급 기준을 바꾸면 다음 정산부터 이 값으로 산정됩니다"}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className={cn("flex items-center gap-2", readOnly && "hidden")}>
           {saved ? <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-positive"><CheckIcon className="size-3.5" /> 저장 완료</span> : null}
           <button
             type="button"
@@ -158,6 +158,6 @@ export function RankConfigEditor({ initial }: { initial: RankRow[] }) {
         공유요율 = 그 직급의 공유수당(override) %. <b>30% 게이트 ON</b> 직급(5직급↑)은 소실적이 전체의 30% 이상일 때만 공유수당 수령(직급·직급수당은 무관).
         빈칸(—)은 미적용.
       </p>
-    </div>
+    </fieldset>
   );
 }

@@ -4,10 +4,12 @@ import { currentCycle } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
+import { assertCapability } from "@/lib/admin-guard";
 import { toUid } from "@/lib/uid";
 
 // 일괄 확정: 해당 사이클의 calculated → confirmed. 반영 건수 반환.
 export async function confirmSettlements(cycle = currentCycle()): Promise<number> {
+  await assertCapability("settlement.write", "정산 일괄 확정");
   const sb = getServerClient();
   const { data, error } = await sb.rpc("confirm_settlements", { p_cycle: cycle });
   if (error) throw error;
@@ -24,6 +26,7 @@ export async function setSettlementHold(
   memberId: string,
   hold: boolean,
 ): Promise<string> {
+  await assertCapability("settlement.write", "정산 보류/해제");
   const sb = getServerClient();
   const { data, error } = await sb.rpc("set_settlement_hold", {
     p_cycle: cycle,

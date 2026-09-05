@@ -3,6 +3,7 @@
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
+import { assertCapability } from "@/lib/admin-guard";
 import { toUid } from "@/lib/uid";
 
 export type WithdrawalStatus = "pending" | "approved" | "sending" | "completed" | "rejected";
@@ -40,6 +41,7 @@ export async function transitionWithdrawal(
   to: WithdrawalStatus,
   txHash?: string,
 ): Promise<WithdrawalStatus> {
+  await assertCapability("finance.write", "출금 상태 변경");
   const sb = getServerClient();
   const { data: w } = await sb.from("withdrawals").select("member_id, amount, network").eq("id", id).maybeSingle();
   const info = w as { member_id: string; amount: number; network: string } | null;

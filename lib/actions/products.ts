@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getServerClient } from "@/lib/supabase/server";
 import { audit } from "@/lib/audit";
+import { checkCapability } from "@/lib/admin-guard";
 
 export type ProductFormState = { ok?: boolean; error?: string } | undefined;
 
@@ -50,6 +51,8 @@ function parse(formData: FormData) {
 
 // 상품 추가
 export async function createProduct(_prev: ProductFormState, formData: FormData): Promise<ProductFormState> {
+  const g = await checkCapability("catalog.write", "상품 추가");
+  if (!g.ok) return { error: g.error };
   const p = parse(formData);
   if ("error" in p) return { error: p.error };
   const sb = getServerClient();
@@ -64,6 +67,8 @@ export async function createProduct(_prev: ProductFormState, formData: FormData)
 export async function updateProduct(_prev: ProductFormState, formData: FormData): Promise<ProductFormState> {
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "상품 id 가 없습니다" };
+  const g = await checkCapability("catalog.write", "상품 수정");
+  if (!g.ok) return { error: g.error };
   const p = parse(formData);
   if ("error" in p) return { error: p.error };
   const sb = getServerClient();
@@ -76,6 +81,8 @@ export async function updateProduct(_prev: ProductFormState, formData: FormData)
 
 // 판매 활성/비활성 토글
 export async function setProductActive(id: string, active: boolean): Promise<{ ok: boolean; error?: string }> {
+  const g = await checkCapability("catalog.write", "상품 판매 상태 변경");
+  if (!g.ok) return { ok: false, error: g.error };
   const sb = getServerClient();
   const { error } = await sb.from("products").update({ is_active: active, updated_at: new Date().toISOString() }).eq("id", id);
   if (error) return { ok: false, error: error.message };

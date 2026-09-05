@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 
-export function RunSettlementButton({ cycle = currentCycle() }: { cycle?: string }) {
+export function RunSettlementButton({ cycle = currentCycle(), readOnly = false }: { cycle?: string; readOnly?: boolean }) {
   const [pending, start] = React.useTransition();
   const [result, setResult] = React.useState<SettlementRunResult | null>(null);
 
@@ -22,7 +22,8 @@ export function RunSettlementButton({ cycle = currentCycle() }: { cycle?: string
       ) : null}
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || readOnly}
+        title={readOnly ? "현재 역할은 실행 권한이 없습니다(조회 전용)" : undefined}
         onClick={() => start(async () => setResult(await runSettlement(cycle)))}
         className="inline-flex items-center gap-1.5 rounded-md bg-card px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong disabled:opacity-60"
       >

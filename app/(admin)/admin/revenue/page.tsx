@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
+import { can } from "@/lib/admin-permissions";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { AllocateRevenueButton } from "@/components/revenue/allocate-revenue-button";
@@ -50,6 +52,8 @@ function Delta({ value, label }: { value: number | null; label: string }) {
 }
 
 export default async function AdminRevenuePage() {
+  const admin = await requireAdminPage("revenue");
+  const readOnly = !can(admin.role, "finance.write");
   const [rev, x] = await Promise.all([getRevenueSummary(), getRevenueExtras()]);
   const cycle = currentCycle();
   const cycleLabel = `${cycle.slice(0, 4)}년 ${Number(cycle.slice(5, 7))}월`;
@@ -94,7 +98,7 @@ export default async function AdminRevenuePage() {
 
   return (
     <>
-      <Topbar title="매출현황" sub="포르투나 · 수익 분석 · USDT" uid="운영자" />
+      <Topbar title="매출현황" sub="포르투나 · 수익 분석 · USDT" uid={admin.display_name} />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 상단 KPI 5종 ── */}
@@ -114,7 +118,7 @@ export default async function AdminRevenuePage() {
         </section>
 
         {/* ── 당월 매출 배분 (라이브) ── */}
-        <Panel title="당월 매출 배분" sub="순매출 1차 배분 · USDT" action={<div className="flex items-center gap-2.5"><Pill tone="green">합계 100%</Pill><AllocateRevenueButton cycle={cycle} /></div>}>
+        <Panel title="당월 매출 배분" sub="순매출 1차 배분 · USDT" action={<div className="flex items-center gap-2.5"><Pill tone="green">합계 100%</Pill><AllocateRevenueButton cycle={cycle} readOnly={readOnly} /></div>}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
             <div className="flex flex-col justify-center rounded-lg bg-feature px-6 py-5 text-white lg:w-60">
               <div className="text-xs font-medium text-white/60">당월 매출 (총액)</div>

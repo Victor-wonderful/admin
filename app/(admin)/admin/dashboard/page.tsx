@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
+import { PAGE_LABEL, type AdminPage } from "@/lib/admin-permissions";
+import { ADMIN_ROLE_LABEL } from "@/lib/admin-session";
 import { Pill } from "@/components/ui/pill";
 import { getMemberStats } from "@/lib/queries/members";
 import {
@@ -92,7 +95,10 @@ const STATUS_META: Record<string, { label: string; tone: "green" | "warning" | "
   rejected: { label: "반려", tone: "negative" },
 };
 
-export default async function AdminDashboardPage() {
+export default async function AdminDashboardPage({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
+  const admin = await requireAdminPage("dashboard");
+  const { denied } = await searchParams;
+  const deniedLabel = denied && denied in PAGE_LABEL ? PAGE_LABEL[denied as AdminPage] : null;
   const [stats, wallets, settle, topSettle, wdStats, withdrawals, txns, revenue] = await Promise.all([
     getMemberStats(),
     getSystemWallets(),
@@ -135,9 +141,14 @@ export default async function AdminDashboardPage() {
 
   return (
     <>
-      <Topbar title="대시보드" sub="운영 현황 요약 · 포르투나" uid="운영자" />
+      <Topbar title="대시보드" sub="운영 현황 요약 · 포르투나" uid={admin.display_name} />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+        {deniedLabel ? (
+          <div className="rounded-md bg-warning-soft px-4 py-3 text-[13px] leading-relaxed text-warning ring-1 ring-warning/30">
+            <b>{deniedLabel}</b> 화면은 현재 역할({ADMIN_ROLE_LABEL[admin.role]})로 볼 수 없습니다. 권한이 필요하면 슈퍼관리자에게 요청하세요. 이 시도는 감사 로그에 기록됩니다.
+          </div>
+        ) : null}
         {/* ── 지갑 잔액 + 자금 흐름 ── */}
         <section className={cn(CARD, "space-y-4")}>
           <div className="flex items-start justify-between gap-4">

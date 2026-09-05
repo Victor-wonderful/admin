@@ -1,6 +1,7 @@
 import { CalendarCheckIcon, ArrowLeftRightIcon, SigmaIcon, FuelIcon, TriangleAlertIcon } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
 import { TransactionsExplorer } from "@/components/transactions/transactions-explorer";
 import { listAdminTransactions } from "@/lib/queries/admin-finance";
 import { currentCycle } from "@/lib/dates";
@@ -17,6 +18,7 @@ const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const compact = (n: number) => (n >= 1_000_000 ? `$${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : usd(n));
 
 export default async function AdminTransactionsPage() {
+  const admin = await requireAdminPage("transactions");
   const { rows, stats } = await listAdminTransactions(2000);
   const cycle = currentCycle();
   const KPIS = [
@@ -28,7 +30,7 @@ export default async function AdminTransactionsPage() {
   ];
   return (
     <>
-      <Topbar title="트랜잭션" sub="회원 지갑 통합 원장 · 입금 · 결제 · 출금 · 리워드 (USDT)" uid="운영자" />
+      <Topbar title="트랜잭션" sub="회원 지갑 통합 원장 · 입금 · 결제 · 출금 · 리워드 (USDT)" uid={admin.display_name} />
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {KPIS.map((k) => (

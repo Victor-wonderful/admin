@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
+import { can } from "@/lib/admin-permissions";
 import { getMember, getMemberSubscriptions, listReferred } from "@/lib/queries/members";
 import { listMemberSessions, describeDevice } from "@/lib/queries/sessions";
 import { ForceLogoutButton } from "@/components/members/force-logout-button";
@@ -106,6 +108,8 @@ function Kpi({ icon: Icon, badge, label, value }: { icon: React.ComponentType<{ 
 }
 
 export default async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdminPage("members");
+  const canManage = can(admin.role, "members.write");
   const { id } = await params;
   const me = await getMember(id);
   if (!me) notFound();
@@ -169,7 +173,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <Topbar title="회원 상세" sub={`${ROLE_LABEL[me.role]} · ${uid}`} uid="운영자" />
+      <Topbar title="회원 상세" sub={`${ROLE_LABEL[me.role]} · ${uid}`} uid={admin.display_name} />
 
       <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
         <Link href="/admin/members" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-text-secondary hover:text-text-primary">
@@ -279,7 +283,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
               {me.placement_note ? <InfoRow label="배치 메모"><span className="text-[12px] text-text-secondary">{me.placement_note}</span></InfoRow> : null}
               <InfoRow label="가입일">{me.created_at.slice(0, 10)}</InfoRow>
             </div>
-            {me.role !== "registered" ? (
+            {me.role !== "registered" && canManage ? (
               <div className="mt-3 rounded-md bg-surface-muted p-3 ring-1 ring-border">
                 <div className="mb-2 text-[11px] font-semibold text-text-secondary">관리자 후원배치 이동 · 확정된 자리도 사유를 남기고 이동할 수 있습니다 (파트너 본인은 한 번만)</div>
                 <AdminPlaceForm memberId={me.id} />
@@ -313,7 +317,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
               <button className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-card py-2 text-[12px] font-medium text-text-secondary ring-1 ring-border-strong">
                 <LockIcon className="size-3.5" /> 잠금 해제
               </button>
-              <ForceLogoutButton memberId={id} activeCount={activeSession ? 1 : 0} />
+              <ForceLogoutButton memberId={id} activeCount={activeSession ? 1 : 0} readOnly={!canManage} />
             </div>
             {sessions.length > 0 ? (
               <div className="mt-3 border-t pt-3">

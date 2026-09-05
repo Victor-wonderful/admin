@@ -6,6 +6,7 @@ import { getServerClient } from "@/lib/supabase/server";
 import { scanDeposits, type NetworkScanResult } from "@/lib/deposit-scan";
 import { toUid } from "@/lib/uid";
 import { audit } from "@/lib/audit";
+import { checkCapability } from "@/lib/admin-guard";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -19,6 +20,8 @@ function refresh() {
 
 // 관리자 "지금 스캔" — 크론과 같은 스캔을 즉시 실행.
 export async function runDepositScan(): Promise<{ ok: true; results: NetworkScanResult[] } | { ok: false; error: string }> {
+  const g = await checkCapability("finance.write", "입금 스캔");
+  if (!g.ok) return { ok: false, error: g.error };
   try {
     const results = await scanDeposits();
     const inserted = results.reduce((s, r) => s + r.inserted, 0);
@@ -34,6 +37,8 @@ export async function runDepositScan(): Promise<{ ok: true; results: NetworkScan
 
 // 미확인 입금을 회원에게 수동 매칭해 잔액 반영. 회원은 이메일(ID) 또는 UID(FT·XXXXXX)로 지정.
 export async function creditDepositToMember(depositId: string, memberRef: string): Promise<Result> {
+  const g = await checkCapability("finance.write", "입금 수동 매칭");
+  if (!g.ok) return { ok: false, error: g.error };
   const ref = memberRef.trim();
   if (!ref) return { ok: false, error: "회원 ID(이메일) 또는 UID 를 입력하세요" };
   const sb = getServerClient();
@@ -59,6 +64,8 @@ export async function creditDepositToMember(depositId: string, memberRef: string
 
 // 회원 입금이 아닌 건(회사 자금 이동 등) 무시.
 export async function ignoreDeposit(depositId: string, note?: string): Promise<Result> {
+  const g = await checkCapability("finance.write", "입금 무시 처리");
+  if (!g.ok) return { ok: false, error: g.error };
   const sb = getServerClient();
   const { error } = await sb.rpc("ignore_onchain_deposit", { p_id: depositId, p_note: note ?? null });
   if (error) return { ok: false, error: error.message };

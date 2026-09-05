@@ -14,11 +14,13 @@ export function WithdrawalActions({
   status,
   network,
   txHash,
+  readOnly = false,
 }: {
   id: string;
   status: WithdrawalStatus;
   network: string;
   txHash: string | null;
+  readOnly?: boolean;
 }) {
   const [pending, start] = React.useTransition();
   const [err, setErr] = React.useState<string | null>(null);
@@ -52,6 +54,7 @@ export function WithdrawalActions({
     );
   }
   if (status === "rejected") return <span className="flex justify-end text-[12px] text-text-tertiary">반려됨</span>;
+  if (readOnly) return <span className="flex justify-end text-[11px] text-text-tertiary" title="현재 역할은 실행 권한이 없습니다(조회 전용)">조회 전용</span>;
 
   const spinner = pending ? <Loader2Icon className="size-3.5 animate-spin" /> : null;
   const hashOk = isValidTxHash(network, hash);

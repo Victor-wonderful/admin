@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/lib/session";
 import { audit } from "@/lib/audit";
+import { checkCapability } from "@/lib/admin-guard";
 import { toUid } from "@/lib/uid";
 
 type Result = { ok: true; slot: number } | { ok: false; error: string };
@@ -34,6 +35,8 @@ export async function placeMemberByPartner(targetId: string, parentId: string): 
 
 // 관리자 이동 — 확정 후에도 가능하되 사유 필수.
 export async function placeMemberByAdmin(targetId: string, parentId: string, note: string): Promise<Result> {
+  const g = await checkCapability("members.write", "회원 후원배치 이동");
+  if (!g.ok) return { ok: false, error: g.error };
   if (!note.trim()) return { ok: false, error: "이동 사유를 입력하세요" };
   const sb = getServerClient();
   const { data, error } = await sb.rpc("place_member", { p_member: targetId, p_new_parent: parentId, p_by: "admin", p_note: `관리자 이동 · ${note.trim()}` });

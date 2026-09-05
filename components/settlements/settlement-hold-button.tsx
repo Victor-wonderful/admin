@@ -11,10 +11,12 @@ export function SettlementHoldButton({
   cycle,
   memberId,
   status,
+  readOnly = false,
 }: {
   cycle: string;
   memberId: string;
   status: string;
+  readOnly?: boolean;
 }) {
   const [pending, start] = React.useTransition();
   if (status === "paid") return null;
@@ -25,9 +27,9 @@ export function SettlementHoldButton({
   return (
     <button
       type="button"
-      disabled={pending}
+      disabled={pending || readOnly}
       onClick={toggle}
-      title={held ? "보류 해제" : "지급 보류"}
+      title={readOnly ? "현재 역할은 실행 권한이 없습니다(조회 전용)" : held ? "보류 해제" : "지급 보류"}
       className={cn(
         "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold ring-1 disabled:opacity-50",
         held

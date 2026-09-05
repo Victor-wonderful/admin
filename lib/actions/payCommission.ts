@@ -4,6 +4,7 @@ import { today, currentCycle } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
+import { assertCapability } from "@/lib/admin-guard";
 
 export interface PayResult {
   members_paid: number;
@@ -17,6 +18,7 @@ export async function payCommission(
   scope: "instant" | "share" = "instant",
   asOf = today(),
 ): Promise<PayResult> {
+  await assertCapability("settlement.write", "수당 지급 실행");
   const sb = getServerClient();
   const { data, error } = await sb.rpc("pay_commission", {
     p_cycle: cycle,

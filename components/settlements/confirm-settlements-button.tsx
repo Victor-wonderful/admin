@@ -7,7 +7,7 @@ import { CheckCheckIcon, Loader2Icon } from "lucide-react";
 import { confirmSettlements } from "@/lib/actions/settlementWorkflow";
 
 // 일괄 확정 — calculated 산정 건을 confirmed 로 전환.
-export function ConfirmSettlementsButton({ cycle = currentCycle() }: { cycle?: string }) {
+export function ConfirmSettlementsButton({ cycle = currentCycle(), readOnly = false }: { cycle?: string; readOnly?: boolean }) {
   const [pending, start] = React.useTransition();
   const [done, setDone] = React.useState<number | null>(null);
 
@@ -20,7 +20,8 @@ export function ConfirmSettlementsButton({ cycle = currentCycle() }: { cycle?: s
       ) : null}
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || readOnly}
+        title={readOnly ? "현재 역할은 실행 권한이 없습니다(조회 전용)" : undefined}
         onClick={() => start(async () => setDone(await confirmSettlements(cycle)))}
         className="inline-flex items-center gap-1.5 rounded-md bg-card px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong disabled:opacity-60"
       >

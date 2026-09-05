@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
+import { can } from "@/lib/admin-permissions";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { RankToggle } from "@/components/ranks/rank-toggle";
@@ -51,11 +53,13 @@ function NumBox({ value, unit = "%", w = "w-8" }: { value: string; unit?: string
 }
 
 export default async function AdminRanksPage() {
+  const admin = await requireAdminPage("ranks");
+  const readOnly = !can(admin.role, "catalog.write");
   const ranks = await listRanks();
 
   return (
     <>
-      <Topbar title="수당체계·직급" sub="직급 9단계 · 직급요율 5~53% · 자격 기준 · 수당 3종" uid="운영자" />
+      <Topbar title="수당체계·직급" sub="직급 9단계 · 직급요율 5~53% · 자격 기준 · 수당 3종" uid={admin.display_name} />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 매출 배분 구조 ── */}
@@ -190,7 +194,7 @@ export default async function AdminRanksPage() {
           sub="직급=순수 카운트(30% 무관) · 30% 게이트는 공유수당에만 · 저장 즉시 정산 기준 반영"
           action={<Pill tone="crypto">단일 소스</Pill>}
         >
-          <RankConfigEditor initial={ranks} />
+          <RankConfigEditor initial={ranks} readOnly={readOnly} />
         </Panel>
       </div>
     </>

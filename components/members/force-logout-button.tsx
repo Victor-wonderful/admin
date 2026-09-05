@@ -6,7 +6,7 @@ import { LogOutIcon, Loader2Icon, CheckIcon } from "lucide-react";
 import { revokeMemberSessions } from "@/lib/actions/sessions";
 
 // 관리자 회원 상세 — 강제 로그아웃(활성 세션 전부 폐기).
-export function ForceLogoutButton({ memberId, activeCount }: { memberId: string; activeCount: number }) {
+export function ForceLogoutButton({ memberId, activeCount, readOnly = false }: { memberId: string; activeCount: number; readOnly?: boolean }) {
   const [pending, start] = React.useTransition();
   const [done, setDone] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
@@ -22,13 +22,14 @@ export function ForceLogoutButton({ memberId, activeCount }: { memberId: string;
       setDone(true);
     });
 
-  const disabled = pending || done || activeCount === 0;
+  const disabled = pending || done || activeCount === 0 || readOnly;
   return (
     <div className="flex flex-1 flex-col gap-1">
       <button
         type="button"
         onClick={run}
         disabled={disabled}
+        title={readOnly ? "현재 역할은 실행 권한이 없습니다(조회 전용)" : undefined}
         className="inline-flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-card py-2 text-[12px] font-medium text-text-secondary ring-1 ring-border-strong disabled:opacity-60"
       >
         {pending ? <Loader2Icon className="size-3.5 animate-spin" /> : done ? <CheckIcon className="size-3.5 text-green-600" /> : <LogOutIcon className="size-3.5" />}

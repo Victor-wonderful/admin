@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
+import { can } from "@/lib/admin-permissions";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { WithdrawalActions } from "@/components/withdrawals/withdrawal-actions";
@@ -58,6 +60,8 @@ function shortAddr(a: string): string {
 }
 
 export default async function AdminWithdrawalsPage() {
+  const admin = await requireAdminPage("withdrawals");
+  const readOnly = !can(admin.role, "finance.write");
   const [rows, sum] = await Promise.all([listWithdrawals(20), getWithdrawalSummary()]);
   const cycle = currentCycle();
 
@@ -72,7 +76,7 @@ export default async function AdminWithdrawalsPage() {
 
   return (
     <>
-      <Topbar title="출금내역" sub="회원 출금 신청 · 승인 · 지갑 앱에서 송금 후 tx_hash 입력 (USDT)" uid="운영자" />
+      <Topbar title="출금내역" sub="회원 출금 신청 · 승인 · 지갑 앱에서 송금 후 tx_hash 입력 (USDT)" uid={admin.display_name} />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 상단 KPI 6종 (실데이터) ── */}
@@ -132,7 +136,7 @@ export default async function AdminWithdrawalsPage() {
                       {r.network}
                     </span>
                     <span><Pill tone={st.tone} dot={status === "completed"}>{st.label}</Pill></span>
-                    <WithdrawalActions id={r.id} status={status} network={r.network} txHash={r.tx_hash} />
+                    <WithdrawalActions id={r.id} status={status} network={r.network} txHash={r.tx_hash} readOnly={readOnly} />
                   </div>
                 );
               })

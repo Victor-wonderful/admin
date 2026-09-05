@@ -4,7 +4,8 @@ import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { AdminPasswordForm, AdminTotpRestartForm } from "@/components/admin/account-forms";
-import { requireAdmin, ADMIN_ROLE_LABEL } from "@/lib/admin-session";
+import { ADMIN_ROLE_LABEL } from "@/lib/admin-session";
+import { requireAdminPage } from "@/lib/admin-guard";
 import { getServerClient } from "@/lib/supabase/server";
 import { toSeoulDateTime } from "@/lib/dates";
 import { describeDevice } from "@/lib/queries/sessions";
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 // 내 계정 — 로그인한 관리자 본인의 정보, 비밀번호 변경, 인증 앱 재등록, 활성 세션(기기) 목록.
 export default async function AdminAccountPage() {
-  const me = await requireAdmin();
+  const me = await requireAdminPage("account");
   const sb = getServerClient();
   const { data: sessions } = await sb.from("admin_sessions").select("id, user_agent, ip, created_at, last_seen_at").eq("admin_id", me.id).is("revoked_at", null).order("last_seen_at", { ascending: false });
   const rows = (sessions ?? []) as Array<{ id: string; user_agent: string | null; ip: string | null; created_at: string; last_seen_at: string }>;

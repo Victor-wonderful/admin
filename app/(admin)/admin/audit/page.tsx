@@ -1,13 +1,13 @@
 import { Topbar } from "@/components/shell/topbar";
 import { AuditExplorer } from "@/components/audit/audit-explorer";
-import { requireAdmin } from "@/lib/admin-session";
+import { requireAdminPage } from "@/lib/admin-guard";
 import { listAuditLogs, getAuditStats } from "@/lib/queries/audit";
 
 export const dynamic = "force-dynamic";
 
 // 감사 로그 — 관리자 행위 기록(실데이터). 기록은 각 서버 액션의 audit() 호출로 쌓인다(lib/audit.ts).
 export default async function AdminAuditPage() {
-  const me = await requireAdmin();
+  const me = await requireAdminPage("audit");
   const [rows, stats] = await Promise.all([listAuditLogs(2000), getAuditStats()]);
   return (
     <>

@@ -4,10 +4,12 @@ import { today } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
+import { assertCapability } from "@/lib/admin-guard";
 
 // 데모용 "월 만료 실행": 일부 활성 구독을 만료 처리 후 활성 플래그 재계산.
 // 실제로는 월별 Cron 이 수행할 작업.
 export async function runMonthlyExpiry(asOf = today()) {
+  await assertCapability("settlement.write", "월 만료 실행");
   const sb = getServerClient();
 
   // 데모: 현재 활성 구독 중 일부(약 25%)를 만료 처리해 카운팅 변화를 시각화.

@@ -12,7 +12,7 @@ const inputCls =
   "rounded-md bg-card px-2.5 py-1.5 text-xs text-text-primary ring-1 ring-border-strong outline-none placeholder:text-text-tertiary focus:ring-2 focus:ring-green-500";
 
 // "지금 스캔" — 크론과 같은 스캔을 즉시 실행하고 네트워크별 결과를 한 줄로 보여준다.
-export function DepositScanButton() {
+export function DepositScanButton({ readOnly = false }: { readOnly?: boolean }) {
   const router = useRouter();
   const [pending, start] = React.useTransition();
   const [msg, setMsg] = React.useState<string | null>(null);
@@ -25,7 +25,8 @@ export function DepositScanButton() {
     <div className="flex flex-col items-end gap-1">
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || readOnly}
+        title={readOnly ? "현재 역할은 실행 권한이 없습니다(조회 전용)" : undefined}
         onClick={() =>
           start(async () => {
             setMsg(null);
@@ -50,7 +51,7 @@ export function DepositScanButton() {
 }
 
 // 미확인 입금 행 액션 — 회원 지정(이메일/UID) 후 잔액 반영, 또는 무시.
-export function UnmatchedDepositActions({ depositId }: { depositId: string }) {
+export function UnmatchedDepositActions({ depositId, readOnly = false }: { depositId: string; readOnly?: boolean }) {
   const router = useRouter();
   const [ref, setRef] = React.useState("");
   const [pending, start] = React.useTransition();
@@ -74,6 +75,7 @@ export function UnmatchedDepositActions({ depositId }: { depositId: string }) {
       router.refresh();
     });
 
+  if (readOnly) return <span className="flex justify-end text-[11px] text-text-tertiary" title="현재 역할은 실행 권한이 없습니다(조회 전용)">조회 전용</span>;
   if (done)
     return (
       <span className={cn("inline-flex items-center justify-end gap-1 text-[12px] font-semibold", done === "credited" ? "text-green-700" : "text-text-tertiary")}>

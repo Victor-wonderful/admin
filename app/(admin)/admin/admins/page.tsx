@@ -5,7 +5,8 @@ import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { AddAdminButton, AdminRowActions } from "@/components/admin/admins-manage";
 import { getServerClient } from "@/lib/supabase/server";
-import { requireAdmin, ADMIN_ROLE_LABEL, type AdminRole } from "@/lib/admin-session";
+import { ADMIN_ROLE_LABEL, type AdminRole } from "@/lib/admin-session";
+import { requireAdminPage } from "@/lib/admin-guard";
 import { toSeoulDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ const COLS = "grid-cols-[1.9fr_132px_84px_150px_140px_84px_330px]";
 type AdminListRow = { id: string; email: string; display_name: string; role: AdminRole; is_active: boolean; totp_enabled: boolean; last_login_at: string | null; created_at: string };
 
 export default async function AdminAdminsPage() {
-  const me = await requireAdmin();
+  const me = await requireAdminPage("admins");
   const sb = getServerClient();
   const [{ data: admins }, { data: sessions }] = await Promise.all([
     sb.from("admins").select("id, email, display_name, role, is_active, totp_enabled, last_login_at, created_at").order("created_at"),

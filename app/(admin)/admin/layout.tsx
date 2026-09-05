@@ -9,7 +9,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireAdmin();
   return (
     <div className="flex min-h-screen bg-canvas">
-      <AdminSidebar name={admin.display_name} roleLabel={ADMIN_ROLE_LABEL[admin.role]} mfa={admin.totp_enabled} mfaOff={!isMfaRequired()} />
+      <AdminSidebar name={admin.display_name} role={admin.role} roleLabel={ADMIN_ROLE_LABEL[admin.role]} mfa={admin.totp_enabled} mfaOff={!isMfaRequired()} />
       <main className="flex min-w-0 flex-1 flex-col">{children}</main>
     </div>
   );

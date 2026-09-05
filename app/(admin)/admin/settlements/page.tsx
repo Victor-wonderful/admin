@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
+import { can } from "@/lib/admin-permissions";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { RunSettlementButton } from "@/components/settlements/run-settlement-button";
@@ -60,6 +62,8 @@ function rankPill(rank: number | undefined) {
 }
 
 export default async function AdminSettlementsPage() {
+  const admin = await requireAdminPage("settlements");
+  const readOnly = !can(admin.role, "settlement.write");
   const [sum, rows, recon, ranks] = await Promise.all([
     getSettlementSummary(CYCLE),
     listSettlements(CYCLE, 8),
@@ -105,7 +109,7 @@ export default async function AdminSettlementsPage() {
 
   return (
     <>
-      <Topbar title="수당 정산" sub="산정 → 직접추천 · 직급 · 공유 수당 · USDT" uid="운영자" />
+      <Topbar title="수당 정산" sub="산정 → 직접추천 · 직급 · 공유 수당 · USDT" uid={admin.display_name} />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 상단 KPI 5종 ── */}
@@ -144,9 +148,9 @@ export default async function AdminSettlementsPage() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <RunSettlementButton cycle={CYCLE} />
-              <ConfirmSettlementsButton cycle={CYCLE} />
-              <PayCommissionButton cycle={CYCLE} />
+              <RunSettlementButton cycle={CYCLE} readOnly={readOnly} />
+              <ConfirmSettlementsButton cycle={CYCLE} readOnly={readOnly} />
+              <PayCommissionButton cycle={CYCLE} readOnly={readOnly} />
             </div>
           </div>
         </Panel>
@@ -234,7 +238,7 @@ export default async function AdminSettlementsPage() {
                 <span className="text-right text-[13px] font-bold tabular-nums text-text-primary">{usd(r.total_amount)}</span>
                 <span className="flex items-center justify-end gap-2">
                   {statusPill(r.status)}
-                  <SettlementHoldButton cycle={CYCLE} memberId={r.member_id} status={r.status} />
+                  <SettlementHoldButton cycle={CYCLE} memberId={r.member_id} status={r.status} readOnly={readOnly} />
                 </span>
               </div>
             ))}

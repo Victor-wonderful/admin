@@ -1,6 +1,7 @@
 import { ExternalLinkIcon, HashIcon, ShieldAlertIcon } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import { getSystemWallets } from "@/lib/queries/finance";
@@ -27,6 +28,7 @@ const NET_COLOR: Record<string, string> = { TRC20: "bg-green-500", BEP20: "bg-wa
 
 // 지갑잔액 — 수탁 원장 기준. 회사 보유(누적 입금 − 누적 출금)와 회원 예치금(부채), 배분 풀, 체인별 입출금, 14일 흐름.
 export default async function AdminWalletPage() {
+  const admin = await requireAdminPage("wallet");
   const [wallets, ov] = await Promise.all([getSystemWallets(), getWalletOverview()]);
   const cycle = currentCycle();
   const pools = POOL_ORDER.map((kind) => wallets.find((w) => w.kind === kind)).filter((w): w is NonNullable<typeof w> => Boolean(w));
@@ -44,7 +46,7 @@ export default async function AdminWalletPage() {
 
   return (
     <>
-      <Topbar title="지갑잔액" sub="회사 보유(원장) · 회원 예치금 · 배분 풀 · 체인별 입출금 · USDT" uid="운영자" />
+      <Topbar title="지갑잔액" sub="회사 보유(원장) · 회원 예치금 · 배분 풀 · 체인별 입출금 · USDT" uid={admin.display_name} />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         <div className="grid gap-[18px] lg:grid-cols-[1fr_360px]">

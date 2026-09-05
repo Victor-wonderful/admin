@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+
 import {
   LayoutDashboardIcon,
   UsersIcon,
@@ -20,6 +22,8 @@ import {
 } from "lucide-react";
 
 import { adminLogout } from "@/lib/actions/admin-auth";
+import { canView, pageOfPath } from "@/lib/admin-permissions";
+import type { AdminRole } from "@/lib/admin-session";
 
 import {
   Sidebar,
@@ -33,7 +37,19 @@ import {
 } from "@/components/shell/sidebar";
 import { FortunaMark } from "@/components/brand/fortuna-logo";
 
-export function AdminSidebar({ name = "관리자", roleLabel = "관리자", mfa = false, mfaOff = false }: { name?: string; roleLabel?: string; mfa?: boolean; mfaOff?: boolean }) {
+function showFor(role: AdminRole, href: string): boolean {
+  const p = pageOfPath(href);
+  return p ? canView(role, p) : true;
+}
+
+// 역할이 볼 수 있는 화면만 렌더되는 메뉴 항목.
+function Item({ role, ...props }: { role: AdminRole } & React.ComponentProps<typeof SidebarNavItem>) {
+  return showFor(role, props.href) ? <SidebarNavItem {...props} /> : null;
+}
+
+export function AdminSidebar({ name = "관리자", role = "viewer", roleLabel = "관리자", mfa = false, mfaOff = false }: { name?: string; role?: AdminRole; roleLabel?: string; mfa?: boolean; mfaOff?: boolean }) {
+  // 역할이 볼 수 없는 화면은 메뉴에서 감춘다(진입도 requireAdminPage 가 막는다).
+  const finance = ["/admin/settlements", "/admin/deposits", "/admin/withdrawals", "/admin/wallet", "/admin/transactions"].some((h) => showFor(role, h));
   return (
     <Sidebar>
       <SidebarBrand icon={FortunaMark} title="포르투나" subtitle="운영 콘솔" />
@@ -53,28 +69,30 @@ export function AdminSidebar({ name = "관리자", roleLabel = "관리자", mfa 
           <SidebarSubItem href="/admin/members/subscriber" label="구독회원" />
           <SidebarSubItem href="/admin/members/marketer" label="마케터" />
         </SidebarNavGroup>
-        <SidebarNavItem href="/admin/org" icon={NetworkIcon} label="조직도" sublabel="Genealogy" />
+        <Item role={role} href="/admin/org" icon={NetworkIcon} label="조직도" sublabel="Genealogy" />
       </SidebarSection>
 
       <SidebarSection label="실적·매출">
-        <SidebarNavItem href="/admin/orders" icon={ShoppingCartIcon} label="구독·주문" sublabel="Orders" />
-        <SidebarNavItem href="/admin/revenue" icon={TrendingUpIcon} label="매출현황" sublabel="Revenue" />
+        <Item role={role} href="/admin/orders" icon={ShoppingCartIcon} label="구독·주문" sublabel="Orders" />
+        <Item role={role} href="/admin/revenue" icon={TrendingUpIcon} label="매출현황" sublabel="Revenue" />
       </SidebarSection>
 
-      <SidebarSection label="정산·자금">
-        <SidebarNavItem href="/admin/settlements" icon={CoinsIcon} label="수당 정산" sublabel="Settlements" />
-        <SidebarNavItem href="/admin/deposits" icon={ArrowDownToLineIcon} label="입금내역" sublabel="Deposits" />
-        <SidebarNavItem href="/admin/withdrawals" icon={ArrowUpFromLineIcon} label="출금내역" sublabel="Withdrawals" />
-        <SidebarNavItem href="/admin/wallet" icon={WalletIcon} label="지갑잔액" sublabel="Wallet" />
-        <SidebarNavItem href="/admin/transactions" icon={ArrowLeftRightIcon} label="트랜잭션" sublabel="Transactions" />
-      </SidebarSection>
+      {finance ? (
+        <SidebarSection label="정산·자금">
+          <Item role={role} href="/admin/settlements" icon={CoinsIcon} label="수당 정산" sublabel="Settlements" />
+          <Item role={role} href="/admin/deposits" icon={ArrowDownToLineIcon} label="입금내역" sublabel="Deposits" />
+          <Item role={role} href="/admin/withdrawals" icon={ArrowUpFromLineIcon} label="출금내역" sublabel="Withdrawals" />
+          <Item role={role} href="/admin/wallet" icon={WalletIcon} label="지갑잔액" sublabel="Wallet" />
+          <Item role={role} href="/admin/transactions" icon={ArrowLeftRightIcon} label="트랜잭션" sublabel="Transactions" />
+        </SidebarSection>
+      ) : null}
 
       <SidebarSection label="설정">
-        <SidebarNavItem href="/admin/ranks" icon={LayersIcon} label="수당체계·직급" sublabel="Compensation" />
-        <SidebarNavItem href="/admin/products" icon={PackageIcon} label="상품·구독플랜" sublabel="Products" />
-        <SidebarNavItem href="/admin/admins" icon={ShieldCheckIcon} label="관리자·권한" sublabel="Admins" />
-        <SidebarNavItem href="/admin/audit" icon={ScrollTextIcon} label="감사 로그" sublabel="Audit Log" />
-        <SidebarNavItem href="/admin/account" icon={UserCogIcon} label="내 계정" sublabel="My Account" />
+        <Item role={role} href="/admin/ranks" icon={LayersIcon} label="수당체계·직급" sublabel="Compensation" />
+        <Item role={role} href="/admin/products" icon={PackageIcon} label="상품·구독플랜" sublabel="Products" />
+        <Item role={role} href="/admin/admins" icon={ShieldCheckIcon} label="관리자·권한" sublabel="Admins" />
+        <Item role={role} href="/admin/audit" icon={ScrollTextIcon} label="감사 로그" sublabel="Audit Log" />
+        <Item role={role} href="/admin/account" icon={UserCogIcon} label="내 계정" sublabel="My Account" />
       </SidebarSection>
 
       <SidebarSpacer />

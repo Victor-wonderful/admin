@@ -1,4 +1,5 @@
 import { Topbar } from "@/components/shell/topbar";
+import { requireAdminPage } from "@/lib/admin-guard";
 import { MemberTree } from "@/components/trees/member-tree";
 import { OrgView } from "@/components/trees/org-view";
 import { getBothTrees, getActiveRootId } from "@/lib/queries/trees";
@@ -27,6 +28,7 @@ function calcUnilevel(root: TreeNode | null) {
 }
 
 export default async function AdminOrgPage() {
+  const admin = await requireAdminPage("org");
   // 기준 회원 = 하위가 가장 많은 활성 마케터(비활성 루트 회피).
   const rootId = (await getActiveRootId()) ?? ROOT_MARKETER_ID;
   const [{ unilevel, placement }, mm] = await Promise.all([
@@ -43,7 +45,7 @@ export default async function AdminOrgPage() {
 
   return (
     <>
-      <Topbar title="조직도" sub="추천조직 · 후원배치" uid="운영자" />
+      <Topbar title="조직도" sub="추천조직 · 후원배치" uid={admin.display_name} />
       <OrgView
         rootName={rootName}
         rootRole={rootRole}

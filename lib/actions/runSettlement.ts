@@ -4,6 +4,7 @@ import { today, currentCycle } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
+import { assertCapability } from "@/lib/admin-guard";
 
 export interface SettlementRunResult {
   members_paid: number;
@@ -16,6 +17,7 @@ export interface SettlementRunResult {
 // 정산 엔진 실행(재산정). DB 함수 run_settlement 가 레벨·직급·공유 수당을 계산해
 // settlements 테이블에 멱등 기록. asOf 는 활성 구독자 산정 기준일.
 export async function runSettlement(cycle = currentCycle(), asOf = today()): Promise<SettlementRunResult> {
+  await assertCapability("settlement.write", "정산 재산정");
   const sb = getServerClient();
   const { data, error } = await sb.rpc("run_settlement", { p_cycle: cycle, p_as_of: asOf });
   if (error) throw error;
