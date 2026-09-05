@@ -131,7 +131,7 @@ export default async function MarketerReferralPage() {
             <div className="mt-1.5 flex justify-between text-[10px] text-text-tertiary"><span>{days[0].slice(5)}</span><span>{days[days.length - 1].slice(5)}</span></div>
           </Panel>
 
-          <Panel title="초대 회원 등급 구성" sub="내가 초대한 회원의 현재 등급">
+          <Panel title="초대 회원 구분" sub="내가 초대한 회원의 현재 회원 구분">
             <div className="space-y-4">
               {byRole.map((c) => (
                 <div key={c.name} className="space-y-1.5">
@@ -156,7 +156,7 @@ export default async function MarketerReferralPage() {
         <Panel title="초대한 회원" sub={`내 초대 코드로 가입한 직접 초대 ${total.toLocaleString()}명`}>
           <div>
             <div className="grid grid-cols-[1.4fr_1fr_1fr_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
-              <span>회원</span><span>등급</span><span>가입일</span><span className="text-right">구독</span>
+              <span>회원</span><span>회원 구분</span><span>가입일</span><span className="text-right">구독</span>
             </div>
             {referred.slice(0, 20).map((m) => (
               <div key={m.id} className="grid grid-cols-[1.4fr_1fr_1fr_auto] items-center gap-3 border-b py-3 text-sm last:border-0">

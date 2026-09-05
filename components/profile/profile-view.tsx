@@ -17,7 +17,7 @@ export function ProfileView({ member }: { member: MemberRow }) {
   const rows: [string, string][] = [
     ["ID", member.email ?? "—"],
     ["회원 UID", uid],
-    ["등급", ROLE_LABEL[member.role]],
+    ["회원 구분", ROLE_LABEL[member.role]],
     ["초대한 파트너", member.recommender_id ? toUid(member.recommender_id) : "—"],
     ["가입일", toSeoulDate(member.joined_at)],
   ];
