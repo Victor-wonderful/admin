@@ -15,7 +15,10 @@ import {
   PackageIcon,
   ShieldCheckIcon,
   ScrollTextIcon,
+  LogOutIcon,
 } from "lucide-react";
+
+import { adminLogout } from "@/lib/actions/admin-auth";
 
 import {
   Sidebar,
@@ -29,7 +32,7 @@ import {
 } from "@/components/shell/sidebar";
 import { FortunaMark } from "@/components/brand/fortuna-logo";
 
-export function AdminSidebar() {
+export function AdminSidebar({ name = "관리자", roleLabel = "관리자", mfa = false }: { name?: string; roleLabel?: string; mfa?: boolean }) {
   return (
     <Sidebar>
       <SidebarBrand icon={FortunaMark} title="포르투나" subtitle="운영 콘솔" />
@@ -76,10 +79,15 @@ export function AdminSidebar() {
 
       <SidebarBottomCard>
         <div className="text-[11px] font-medium text-white/70">운영 콘솔</div>
-        <div className="mt-1 text-sm font-bold">포르투나 관리자</div>
+        <div className="mt-1 text-sm font-bold">{name}</div>
         <div className="mt-1 text-[11px] leading-relaxed text-white/60">
-          슈퍼관리자 · 2FA 활성
+          {roleLabel} · {mfa ? "2FA 활성" : "2FA 미등록"}
         </div>
+        <form action={adminLogout} className="mt-2.5">
+          <button type="submit" className="flex w-full items-center justify-center gap-1.5 rounded-md bg-white/10 py-2 text-[12px] font-semibold text-white/80 transition-colors hover:bg-white/15">
+            <LogOutIcon className="size-3.5" /> 로그아웃
+          </button>
+        </form>
       </SidebarBottomCard>
     </Sidebar>
   );
