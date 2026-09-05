@@ -144,7 +144,7 @@ export default async function AdminDashboardPage() {
             <div className="space-y-2">
               <div className="text-[13px] font-medium text-text-secondary">어드민 지갑 잔액 · Wallet Balance</div>
               <div className="text-[40px] leading-none font-bold tabular-nums text-text-primary">{usd(operating)}</div>
-              <div className="text-xs text-text-tertiary">포르투나 지갑 · Polygon · USDT</div>
+              <div className="text-xs text-text-tertiary">포르투나 운영 지갑 · {NET_LABEL[wallets.find((w) => w.kind === "operating")?.network ?? ""] ?? "네트워크 미설정"} · USDT</div>
             </div>
             <div className="flex gap-2">
               <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-green-50 px-3 py-2 text-[13px] font-semibold text-green-700">

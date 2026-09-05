@@ -29,6 +29,9 @@ update members set recommender_id = null, parent_id = null where id <> :root;
 delete from members where id <> :root;
 delete from wallets where member_id <> :root;
 
+-- 2-b) 운영 지갑·배분 풀 잔액도 0 (시드 금액 제거)
+update system_wallets set balance_usd = 0;
+
 -- 3) 본사 파트너 계정 초기화
 update members
 set display_name = '포르투나 본사', role = 'marketer', recommender_id = null, parent_id = null,
