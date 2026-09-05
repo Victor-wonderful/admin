@@ -1,7 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 
-import { getCurrentAdmin, requireAdmin, ADMIN_ROLE_LABEL, type AdminRow } from "@/lib/admin-session";
+import { getCurrentAdmin, requireAdmin, isMfaRequired, ADMIN_ROLE_LABEL, type AdminRow } from "@/lib/admin-session";
 import { audit } from "@/lib/audit";
 import { can, canView, CAPABILITY_LABEL, PAGE_LABEL, type AdminPage, type Capability } from "@/lib/admin-permissions";
 
@@ -25,7 +25,8 @@ export async function requireAdminPage(page: AdminPage): Promise<AdminRow> {
 // 서버 액션 가드(반환형) — { ok:false, error } 를 그대로 UI 에 돌려줄 수 있다.
 export async function checkCapability(cap: Capability, what: string): Promise<{ ok: true; admin: AdminRow } | { ok: false; error: string }> {
   const cur = await getCurrentAdmin();
-  if (!cur || !cur.mfaOk) {
+  // requireAdmin 과 같은 기준: ADMIN_MFA=off 면 2단계 통과 여부를 묻지 않는다(끄기 전 세션도 그대로 쓸 수 있게).
+  if (!cur || (isMfaRequired() && !cur.mfaOk)) {
     await audit({ category: "permission", action: "permission_denied", target: `${what} 시도 · 관리자 로그인 없음`, ok: false, risk: true, actor: null });
     return { ok: false, error: "관리자 로그인이 필요합니다" };
   }
