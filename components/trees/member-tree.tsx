@@ -1,6 +1,8 @@
+"use client";
+
 import * as React from "react";
 import Link from "next/link";
-import { UserRoundIcon } from "lucide-react";
+import { UserRoundIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 
 import type { TreeNode, MemberRole } from "@/lib/supabase/types";
 import { PlaceHereButton } from "@/components/marketer/placement-context";
@@ -67,13 +69,27 @@ function Card({ n, highlight, label, spillover, variant, placeable }: { n: TreeN
   );
 }
 
-function Chip({ count }: { count: number }) {
+// 숨은 하위 칩 — 누르면 그 자리에서 펼쳐진다(한 단계씩). 펼친 노드에는 "접기" 칩.
+function Chip({ count, expanded, onToggle }: { count: number; expanded?: boolean; onToggle: () => void }) {
   return (
-    <div className="inline-flex items-center rounded-full bg-surface-muted px-3 py-1.5 text-[11px] font-semibold text-text-secondary ring-1 ring-border">
-      +{count.toLocaleString()} 하위
-    </div>
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggle();
+      }}
+      title={expanded ? "접기" : "하위 펼치기"}
+      className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-3 py-1.5 text-[11px] font-semibold text-text-secondary ring-1 ring-border transition-colors hover:bg-green-50 hover:text-green-700 hover:ring-green-500"
+    >
+      {expanded ? <ChevronUpIcon className="size-3" /> : <ChevronDownIcon className="size-3" />}
+      {expanded ? "접기" : `+${count.toLocaleString()} 하위`}
+    </button>
   );
 }
+
+// 펼침 상태(노드 id 집합) — 트리 루트에서 제공
+const ExpandCtx = React.createContext<{ expanded: Set<string>; toggle: (id: string) => void }>({ expanded: new Set(), toggle: () => {} });
 
 const LINE = "bg-n-300";
 
@@ -117,13 +133,16 @@ function Node({
         (b.meta?.activeCount ?? 0) - (a.meta?.activeCount ?? 0),
     );
   }
-  const showKids = depth < maxDepth ? kids.slice(0, maxChildren) : [];
-  const hidden = depth < maxDepth ? kids.length - showKids.length : kids.length;
+  // 펼친 노드는 깊이·개수 제한 없이 자식 전부 표시(자식의 하위는 다시 칩으로 → 한 단계씩 펼침)
+  const { expanded, toggle } = React.useContext(ExpandCtx);
+  const isExpanded = expanded.has(n.id);
+  const showKids = isExpanded ? kids : depth < maxDepth ? kids.slice(0, maxChildren) : [];
+  const hidden = isExpanded ? 0 : depth < maxDepth ? kids.length - showKids.length : kids.length;
 
   const cols: React.ReactNode[] = showKids.map((c, i) => {
     const childSpineLine = !!spine && i === 0 && (depth === 0 || !!spineLine);
     // 주력 라인만 깊게(maxDepth), 소실적 라인은 얕게(자식+칩만)
-    const childMaxDepth = !spine || childSpineLine ? maxDepth : depth + 1;
+    const childMaxDepth = isExpanded ? Math.max(depth + 1, !spine || childSpineLine ? maxDepth : depth + 1) : !spine || childSpineLine ? maxDepth : depth + 1;
     const childMajorHead = !!spine && depth === 0 && i === 0;
     return (
       <Node
@@ -142,11 +161,12 @@ function Node({
       />
     );
   });
-  if (hidden > 0) cols.push(<Chip key="more" count={hidden} />);
+  if (hidden > 0) cols.push(<Chip key="more" count={hidden} onToggle={() => toggle(n.id)} />);
 
   return (
     <div className="flex flex-col items-center">
       <Card n={n} highlight={!!spineLine} label={majorHead ? highlightLabel : undefined} spillover={isSpillover} variant={variant} placeable={placeable} />
+      {isExpanded ? <div className="mt-2"><Chip count={0} expanded onToggle={() => toggle(n.id)} /></div> : null}
       {cols.length > 0 ? (
         <>
           {/* 부모 → 가로 연결바 → 각 자식 세로선 */}
@@ -198,12 +218,23 @@ export function MemberTree({
   highlightLabel?: string;
   variant?: TreeVariant; // "partner": 파트너 라벨 + 관리자 상세 링크 없음
 }) {
+  const [expanded, setExpanded] = React.useState<Set<string>>(() => new Set());
+  const toggle = React.useCallback((id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
   if (!root) {
     return <div className="py-8 text-center text-sm text-text-tertiary">{variant === "partner" ? "팀 데이터가 없습니다." : "조직 데이터가 없습니다."}</div>;
   }
   return (
+    <ExpandCtx.Provider value={{ expanded, toggle }}>
     <div className="flex min-w-max justify-center py-2">
       <Node n={root} depth={0} maxDepth={maxDepth} maxChildren={maxChildren} showSpillover={showSpillover} spine={spine} highlightLabel={highlightLabel} variant={variant} placeable={placeable} />
     </div>
+    </ExpandCtx.Provider>
   );
 }
