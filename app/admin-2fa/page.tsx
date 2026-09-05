@@ -12,7 +12,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminTwoFactorPage() {
   const cur = await getCurrentAdmin();
   if (!cur) redirect("/admin-login");
-  if (cur.mfaOk) redirect("/admin/dashboard");
+  // 2FA 강제 중이면 통과한 세션은 대시보드로. 개발 모드(꺼짐)에서는 자발적 등록·재등록용으로 열어 둔다.
+  if (cur.mfaOk && cur.admin.totp_enabled) redirect("/admin/dashboard");
   const secret = await ensureTotpSecret(cur.admin.id, cur.admin.totp_secret);
   return (
     <AdminAuthShell

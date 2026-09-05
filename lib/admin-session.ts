@@ -9,6 +9,12 @@ import { getServerClient } from "@/lib/supabase/server";
 export const ADMIN_COOKIE = "ft_admin";
 export const ADMIN_SESSION_MAX_AGE = 60 * 60 * 12; // 12시간
 
+// 2단계 인증 강제 여부. 개발 중에는 .env.development.local 에 ADMIN_MFA=off 로 끈다(Victor 결정 2026-09-05: 개발 완료 후 켬).
+// 운영 빌드에서는 값이 없으면 항상 강제.
+export function isMfaRequired(): boolean {
+  return process.env.ADMIN_MFA !== "off";
+}
+
 export type AdminRole = "super" | "settlement" | "ops" | "viewer";
 export interface AdminRow {
   id: string;
@@ -54,10 +60,10 @@ export async function getCurrentAdmin(): Promise<{ admin: AdminRow; mfaOk: boole
   return { admin, mfaOk, token };
 }
 
-// /admin/* 가드: 미로그인 → /admin-login, 2FA 미통과(또는 미등록) → /admin-2fa
+// /admin/* 가드: 미로그인 → /admin-login, 2FA 미통과(또는 미등록) → /admin-2fa (ADMIN_MFA=off 면 2FA 생략)
 export async function requireAdmin(): Promise<AdminRow> {
   const cur = await getCurrentAdmin();
   if (!cur) redirect("/admin-login");
-  if (!cur.mfaOk) redirect("/admin-2fa");
+  if (isMfaRequired() && !cur.mfaOk) redirect("/admin-2fa");
   return cur.admin;
 }

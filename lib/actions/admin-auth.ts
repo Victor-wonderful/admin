@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { getServerClient } from "@/lib/supabase/server";
-import { ADMIN_COOKIE, ADMIN_SESSION_MAX_AGE, hashAdminToken, getCurrentAdmin } from "@/lib/admin-session";
+import { ADMIN_COOKIE, ADMIN_SESSION_MAX_AGE, hashAdminToken, getCurrentAdmin, isMfaRequired } from "@/lib/admin-session";
 import { generateTotpSecret, verifyTotp } from "@/lib/totp";
 
 export type AdminAuthState = { error?: string; ok?: boolean; values?: { email?: string } } | undefined;
@@ -43,6 +43,11 @@ export async function adminLogin(_prev: AdminAuthState, formData: FormData): Pro
   if (sErr) return { error: "세션 생성 실패", values: { email } };
   const store = await cookies();
   store.set(ADMIN_COOKIE, token, { path: "/", httpOnly: true, sameSite: "lax", maxAge: ADMIN_SESSION_MAX_AGE });
+  // 개발 모드(ADMIN_MFA=off): 2단계 없이 바로 입장. 등록된 관리자라도 코드를 묻지 않는다.
+  if (!isMfaRequired()) {
+    await sb.rpc("mark_admin_session_mfa", { p_token_hash: hashAdminToken(token) });
+    redirect("/admin/dashboard");
+  }
   redirect("/admin-2fa");
 }
 
@@ -124,4 +129,42 @@ export async function resetAdminTotp(adminId: string): Promise<{ ok: boolean; er
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/admins");
   return { ok: true };
+}
+
+// 내 비밀번호 변경 — 현재 비밀번호 확인(DB 함수) 후 변경. 다른 기기의 세션은 모두 끊는다(현재 세션 유지).
+const PW_ERRORS: Record<string, string> = { CURRENT_PASSWORD_WRONG: "현재 비밀번호가 맞지 않습니다", PASSWORD_TOO_SHORT: "새 비밀번호는 8자 이상이어야 합니다" };
+export async function changeAdminPassword(_prev: AdminAuthState, formData: FormData): Promise<AdminAuthState> {
+  const cur = await getCurrentAdmin();
+  if (!cur) redirect("/admin-login");
+  const current = String(formData.get("current") ?? "");
+  const next = String(formData.get("next") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (!current || !next) return { error: "현재 비밀번호와 새 비밀번호를 입력하세요" };
+  if (next !== confirm) return { error: "새 비밀번호 확인이 일치하지 않습니다" };
+  if (next === current) return { error: "현재 비밀번호와 다른 비밀번호를 입력하세요" };
+  const sb = getServerClient();
+  const { error } = await sb.rpc("change_admin_password", { p_admin: cur.admin.id, p_current: current, p_new: next });
+  if (error) {
+    const code = Object.keys(PW_ERRORS).find((k) => error.message.includes(k));
+    return { error: code ? PW_ERRORS[code] : "변경 처리 중 오류가 발생했습니다" };
+  }
+  await sb.from("admin_sessions").update({ revoked_at: new Date().toISOString(), revoke_reason: "password_changed" })
+    .eq("admin_id", cur.admin.id).is("revoked_at", null).neq("token_hash", hashAdminToken(cur.token));
+  revalidatePath("/admin/account");
+  return { ok: true };
+}
+
+// 내 2FA 재등록 시작 — 현재 비밀번호 확인 후 키를 지우고 /admin-2fa 로(새 QR).
+export async function restartMyTotp(_prev: AdminAuthState, formData: FormData): Promise<AdminAuthState> {
+  const cur = await getCurrentAdmin();
+  if (!cur) redirect("/admin-login");
+  const current = String(formData.get("current") ?? "");
+  if (!current) return { error: "현재 비밀번호를 입력하세요" };
+  const sb = getServerClient();
+  // 비밀번호 검증은 로그인 함수로(잠금 규칙 동일 적용)
+  const { error: lErr } = await sb.rpc("admin_login", { p_email: cur.admin.email, p_password: current });
+  if (lErr) return { error: "현재 비밀번호가 맞지 않습니다" };
+  await sb.from("admins").update({ totp_secret: null, totp_enabled: false }).eq("id", cur.admin.id);
+  await sb.from("admin_sessions").update({ mfa_ok: false }).eq("token_hash", hashAdminToken(cur.token));
+  redirect("/admin-2fa");
 }
