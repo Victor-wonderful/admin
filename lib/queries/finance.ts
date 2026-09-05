@@ -31,7 +31,7 @@ export interface Withdrawal {
   requested_at: string;
   processed_at: string | null;
   tx_hash: string | null;
-  members?: { display_name: string } | null;
+  members?: { display_name: string; email?: string | null } | null;
 }
 export interface Settlement {
   id: string;
@@ -43,10 +43,10 @@ export interface Settlement {
   total_amount: number;
   status: string;
   member_rank: number | null; // 그 달 평가 직급(0018)
-  members?: { display_name: string } | null;
+  members?: { display_name: string; email?: string | null } | null;
 }
 
-const NAME = "members(display_name)";
+const NAME = "members(display_name, email)";
 
 export async function getSystemWallets(): Promise<SystemWallet[]> {
   const sb = getServerClient();

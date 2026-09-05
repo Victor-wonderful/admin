@@ -9,6 +9,7 @@ import {
   ChevronRightIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { SearchIcon } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
 import { requireAdminPage } from "@/lib/admin-guard";
@@ -71,7 +72,7 @@ function rankPill(rank: number | undefined) {
   );
 }
 
-export default async function AdminSettlementsPage({ searchParams }: { searchParams: Promise<{ cycle?: string; status?: string }> }) {
+export default async function AdminSettlementsPage({ searchParams }: { searchParams: Promise<{ cycle?: string; status?: string; q?: string }> }) {
   const admin = await requireAdminPage("settlements");
   const readOnly = !can(admin.role, "settlement.write");
   const sp = await searchParams;
@@ -79,18 +80,23 @@ export default async function AdminSettlementsPage({ searchParams }: { searchPar
   const CYCLE = sp.cycle && CYCLE_RE.test(sp.cycle) && sp.cycle <= NOW ? sp.cycle : NOW;
   const statusFilter = STATUS_FILTERS.some((f) => f.k === sp.status) ? (sp.status as string) : "all";
   const isCurrent = CYCLE === NOW;
+  const q = (sp.q ?? "").trim().slice(0, 60);
+  const ql = q.toLowerCase();
   const [sum, allRows, recon, ranks] = await Promise.all([
     getSettlementSummary(CYCLE),
     listSettlements(CYCLE, 300),
     getPoolReconciliation(CYCLE),
     getMemberRanksMap(),
   ]);
-  const rows = (statusFilter === "all" ? allRows : allRows.filter((r) => r.status === statusFilter)).slice(0, 50);
+  const matches = (r: (typeof allRows)[number]) => !ql || `${toUid(r.member_id)} ${r.members?.display_name ?? ""} ${r.members?.email ?? ""}`.toLowerCase().includes(ql);
+  const byStatus = statusFilter === "all" ? allRows : allRows.filter((r) => r.status === statusFilter);
+  const rows = byStatus.filter(matches).slice(0, 50);
   const csvRows = rows.map((r) => {
     const rk = r.member_rank ?? ranks.get(r.member_id)?.rank;
-    return { uid: toUid(r.member_id), name: (r as { members?: { display_name: string } | null }).members?.display_name ?? "", rank: rk && rk > 0 ? `R${rk}` : "", level: Number(r.level_amount), rankAmt: Number(r.rank_amount), share: Number(r.share_amount), total: Number(r.total_amount), status: STATUS_LABEL[r.status] ?? r.status };
+    return { uid: toUid(r.member_id), name: r.members?.display_name ?? "", rank: rk && rk > 0 ? `R${rk}` : "", level: Number(r.level_amount), rankAmt: Number(r.rank_amount), share: Number(r.share_amount), total: Number(r.total_amount), status: STATUS_LABEL[r.status] ?? r.status };
   });
-  const filterHref = (k: string) => `/admin/settlements?cycle=${CYCLE}${k === "all" ? "" : `&status=${k}`}`;
+  const qs = q ? `&q=${encodeURIComponent(q)}` : "";
+  const filterHref = (k: string) => `/admin/settlements?cycle=${CYCLE}${k === "all" ? "" : `&status=${k}`}${qs}`;
 
   const lpct = pctOf(sum.level, sum.total);
   const rpct = pctOf(sum.rank, sum.total);
@@ -153,12 +159,12 @@ export default async function AdminSettlementsPage({ searchParams }: { searchPar
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
-              <Link href={`/admin/settlements?cycle=${shiftCycle(CYCLE, -1)}${statusFilter === "all" ? "" : `&status=${statusFilter}`}`} aria-label="이전 달" className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border hover:bg-surface-muted"><ChevronLeftIcon className="size-4" /></Link>
+              <Link href={`/admin/settlements?cycle=${shiftCycle(CYCLE, -1)}${statusFilter === "all" ? "" : `&status=${statusFilter}`}${qs}`} aria-label="이전 달" className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border hover:bg-surface-muted"><ChevronLeftIcon className="size-4" /></Link>
               <span className="text-sm font-bold text-text-primary">{CYCLE.slice(0, 4)}년 {Number(CYCLE.slice(5, 7))}월 정산{isCurrent ? <span className="ml-1.5 text-[11px] font-semibold text-green-700">당월</span> : null}</span>
               {isCurrent ? (
                 <span aria-disabled className="grid size-8 place-items-center rounded-md text-text-tertiary ring-1 ring-border opacity-40"><ChevronRightIcon className="size-4" /></span>
               ) : (
-                <Link href={`/admin/settlements?cycle=${shiftCycle(CYCLE, 1)}${statusFilter === "all" ? "" : `&status=${statusFilter}`}`} aria-label="다음 달" className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border hover:bg-surface-muted"><ChevronRightIcon className="size-4" /></Link>
+                <Link href={`/admin/settlements?cycle=${shiftCycle(CYCLE, 1)}${statusFilter === "all" ? "" : `&status=${statusFilter}`}${qs}`} aria-label="다음 달" className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border hover:bg-surface-muted"><ChevronRightIcon className="size-4" /></Link>
               )}
             </div>
             <div className="flex items-center gap-2">
@@ -227,7 +233,7 @@ export default async function AdminSettlementsPage({ searchParams }: { searchPar
         {/* ── 파트너별 정산 ── */}
         <Panel
           title="파트너별 정산"
-          sub={`${CYCLE} · ${statusFilter === "all" ? `상위 ${rows.length}명` : `${STATUS_LABEL[statusFilter]} ${rows.length}명`} · 지급 USDT`}
+          sub={`${CYCLE} · ${q ? `"${q}" 검색 ${rows.length}명` : statusFilter === "all" ? `상위 ${rows.length}명` : `${STATUS_LABEL[statusFilter]} ${rows.length}명`} · 금액순 · 지급 USDT`}
           action={
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex gap-0.5 rounded-[10px] bg-n-100 p-[3px] ring-1 ring-border">
@@ -241,6 +247,13 @@ export default async function AdminSettlementsPage({ searchParams }: { searchPar
                   );
                 })}
               </div>
+              <form method="get" action="/admin/settlements" className="flex items-center gap-2 rounded-[10px] bg-card px-3 py-1.5 ring-1 ring-border-strong">
+                <input type="hidden" name="cycle" value={CYCLE} />
+                {statusFilter !== "all" ? <input type="hidden" name="status" value={statusFilter} /> : null}
+                <SearchIcon className="size-3.5 text-text-tertiary" />
+                <input name="q" defaultValue={q} placeholder="UID · 닉네임 · 이메일" className="w-[170px] bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-tertiary" />
+                {q ? <Link href={filterHref(statusFilter).replace(qs, "")} className="text-[11px] font-medium text-text-tertiary hover:text-text-primary">지우기</Link> : null}
+              </form>
               <SettlementsExportButton cycle={CYCLE} rows={csvRows} />
             </div>
           }
@@ -255,6 +268,9 @@ export default async function AdminSettlementsPage({ searchParams }: { searchPar
               <span className="text-right">합계</span>
               <span className="text-right">상태</span>
             </div>
+            {rows.length === 0 ? (
+              <div className="py-10 text-center text-sm text-text-tertiary">{allRows.length === 0 ? `${CYCLE} 에는 산정된 정산이 없습니다.` : "조건에 맞는 파트너가 없습니다."}</div>
+            ) : null}
             {rows.map((r) => (
               <div key={r.id} className={cn("grid items-center gap-3 border-b py-3.5 last:border-0", COLS)}>
                 <div className="flex items-center gap-2.5">
@@ -264,7 +280,7 @@ export default async function AdminSettlementsPage({ searchParams }: { searchPar
                       <span className="truncate text-[13px] font-semibold text-text-primary">{toUid(r.member_id)}</span>
                       {rankPill(r.member_rank ?? ranks.get(r.member_id)?.rank)}
                     </div>
-                    <span className="text-[10px] text-text-tertiary">파트너 · 당월 수당</span>
+                    <span className="block truncate text-[10px] text-text-tertiary">{r.members?.display_name ?? "파트너"}{r.members?.email ? ` · ${r.members.email}` : ""}</span>
                   </div>
                 </div>
                 <span className="text-right text-[13px] tabular-nums text-text-secondary">{usd(r.level_amount)}</span>

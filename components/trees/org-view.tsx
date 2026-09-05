@@ -9,7 +9,6 @@ import {
   TrendingUpIcon,
   CircleCheckIcon,
   LayersIcon,
-  ChevronDownIcon,
   SearchIcon,
   CornerDownRightIcon,
 } from "lucide-react";
@@ -62,6 +61,7 @@ interface Stat {
 export function OrgView({
   rootName,
   rootRole,
+  rootPicker,
   unilevelVals,
   placementVals,
   unilevelTree,
@@ -69,6 +69,7 @@ export function OrgView({
 }: {
   rootName: string;
   rootRole: MemberRole;
+  rootPicker?: React.ReactNode;
   unilevelVals: UnilevelVals;
   placementVals: PlacementVals;
   unilevelTree: React.ReactNode;
@@ -102,16 +103,17 @@ export function OrgView({
     <div className="flex flex-1 flex-col gap-4 overflow-auto bg-canvas p-7">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 rounded-[10px] bg-card py-1.5 pr-2 pl-3 ring-1 ring-border">
-          <span className="text-xs text-text-secondary">기준 회원</span>
-          <span className="inline-flex items-center gap-2 rounded-lg bg-crypto-soft px-2.5 py-1">
-            <span className="grid size-[22px] place-items-center rounded-md bg-crypto text-[11px] font-bold text-white">
-              {(rootName.includes("·") ? rootName.split("·")[1] : rootName).replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase()}
+        {rootPicker ?? (
+          <div className="flex items-center gap-2.5 rounded-[10px] bg-card py-1.5 pr-2 pl-3 ring-1 ring-border">
+            <span className="text-xs text-text-secondary">기준 회원</span>
+            <span className="inline-flex items-center gap-2 rounded-lg bg-crypto-soft px-2.5 py-1">
+              <span className="grid size-[22px] place-items-center rounded-md bg-crypto text-[11px] font-bold text-white">
+                {(rootName.includes("·") ? rootName.split("·")[1] : rootName).replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase()}
+              </span>
+              <span className="text-xs font-semibold text-crypto">{rootName} · {ROLE_LABEL[rootRole]}</span>
             </span>
-            <span className="text-xs font-semibold text-crypto">{rootName} · {ROLE_LABEL[rootRole]}</span>
-          </span>
-          <ChevronDownIcon className="size-4 text-text-tertiary" />
-        </div>
+          </div>
+        )}
 
         <div className="flex gap-0.5 rounded-[10px] bg-surface-muted p-[3px] ring-1 ring-border">
           {toggles.map((t) => {
