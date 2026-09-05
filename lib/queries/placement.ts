@@ -52,36 +52,22 @@ export async function listPendingPlacements(recommenderId: string, autoDays = 7)
   }));
 }
 
-// 기준 파트너 본인 + 후원 조직 전체(클로저) — 배치 위치 선택지. 깊이·자리 순.
-export async function listPlacementTargets(ownerId: string, limit = 500): Promise<PlacementTarget[]> {
+// 기준 파트너 본인 + 후원 조직 전체 — 배치 위치 선택지(DB 함수 placement_targets, 깊이·자리 순).
+export async function listPlacementTargets(ownerId: string, limit = 2000): Promise<PlacementTarget[]> {
   const sb = getServerClient();
-  const { data: cl, error } = await sb.from("placement_closure").select("descendant_id, depth").eq("ancestor_id", ownerId).order("depth", { ascending: true }).limit(limit);
+  const { data, error } = await sb.rpc("placement_targets", { p_owner: ownerId, p_limit: limit });
   if (error) throw error;
-  const closure = (cl ?? []) as Array<{ descendant_id: string; depth: number }>;
-  const ids = closure.map((r) => r.descendant_id);
-  const { data: ms } = ids.length ? await sb.from("members").select("id, role, placement_slot, parent_id, is_active_subscriber").in("id", ids) : { data: [] };
-  const byId = new Map(((ms ?? []) as Array<{ id: string; role: MemberRole; placement_slot: number | null; parent_id: string | null; is_active_subscriber: boolean }>).map((m) => [m.id, m]));
-  type Row = { descendant_id: string; depth: number; members: { id: string; role: MemberRole; placement_slot: number | null; parent_id: string | null; is_active_subscriber: boolean } | null };
-  const rows: Row[] = closure.map((r) => ({ ...r, members: byId.get(r.descendant_id) ?? null })).filter((r) => r.members);
-  // 1번 라인 판정: owner 의 1번 자리 자식과 그 하위 전부
-  const firstHead = rows.find((r) => r.depth === 1 && r.members!.placement_slot === 1)?.descendant_id ?? null;
-  let firstLineIds = new Set<string>();
-  if (firstHead) {
-    const { data: sub } = await sb.from("placement_closure").select("descendant_id").eq("ancestor_id", firstHead);
-    firstLineIds = new Set(((sub ?? []) as Array<{ descendant_id: string }>).map((r) => r.descendant_id));
-  }
-  return rows
-    .map((r) => ({
-      id: r.members!.id,
-      uid: toUid(r.members!.id),
-      role: r.members!.role,
-      depth: r.depth,
-      slot: r.members!.placement_slot,
-      parent_id: r.members!.parent_id,
-      is_active_subscriber: r.members!.is_active_subscriber,
-      on_first_line: firstLineIds.has(r.members!.id),
-    }))
-    .sort((a, b) => a.depth - b.depth || (a.slot ?? 999) - (b.slot ?? 999) || a.uid.localeCompare(b.uid));
+  type Row = { id: string; role: MemberRole; depth: number; placement_slot: number | null; parent_id: string | null; is_active_subscriber: boolean; on_first_line: boolean };
+  return ((data ?? []) as Row[]).map((r) => ({
+    id: r.id,
+    uid: toUid(r.id),
+    role: r.role,
+    depth: Number(r.depth),
+    slot: r.placement_slot,
+    parent_id: r.parent_id,
+    is_active_subscriber: r.is_active_subscriber,
+    on_first_line: r.on_first_line,
+  }));
 }
 
 // 권장 위치: 1번 라인 최하단. 1번 라인이 없으면 null(→ 본인 바로 아래 다음 자리).

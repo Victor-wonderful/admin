@@ -62,7 +62,7 @@ function Card({ n, highlight, label, spillover, variant, placeable }: { n: TreeN
           </div>
         </div>
       </div>
-      {placeable ? <PlaceHereButton nodeId={n.id} /> : null}
+      {placeable ? <PlaceHereButton nodeId={n.id} nodeUid={n.name} /> : null}
     </Wrapper>
   );
 }

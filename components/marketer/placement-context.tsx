@@ -14,7 +14,7 @@ const ROLE_LABEL = { registered: "등록회원", subscriber: "구독회원", mar
 type Ctx = {
   pending: PendingPlacement[];
   // 배치 창 열기. member 를 지정하지 않으면 첫 대기 회원. parentId 를 지정하면(트리에서 열 때) 그 회원 아래로 미리 선택.
-  open: (opts?: { memberId?: string; parentId?: string }) => void;
+  open: (opts?: { memberId?: string; parentId?: string; parentUid?: string }) => void;
 };
 const PlacementCtx = React.createContext<Ctx | null>(null);
 export const usePlacement = () => React.useContext(PlacementCtx);
@@ -38,6 +38,7 @@ export function PlacementProvider({
   const [memberId, setMemberId] = React.useState<string>("");
   const [mode, setMode] = React.useState<"recommended" | "custom">("recommended");
   const [parentId, setParentId] = React.useState<string>("");
+  const [extra, setExtra] = React.useState<PlacementTarget | null>(null); // 트리에서 고른 회원이 후보 한도 밖일 때
   const [confirming, setConfirming] = React.useState(false);
   const [pendingTx, start] = React.useTransition();
   const [err, setErr] = React.useState<string | null>(null);
@@ -52,10 +53,14 @@ export function PlacementProvider({
   useEscapeKey(openState, close);
 
   const open = React.useCallback(
-    (opts?: { memberId?: string; parentId?: string }) => {
+    (opts?: { memberId?: string; parentId?: string; parentUid?: string }) => {
       if (pending.length === 0) return;
       setMemberId(opts?.memberId ?? pending[0].id);
+      setExtra(null);
       if (opts?.parentId) {
+        if (!targets.some((t) => t.id === opts.parentId)) {
+          setExtra({ id: opts.parentId, uid: opts.parentUid ?? opts.parentId, role: "subscriber", depth: 99, slot: null, parent_id: null, is_active_subscriber: false, on_first_line: false });
+        }
         setParentId(opts.parentId);
         setMode("custom");
       } else {
@@ -71,8 +76,9 @@ export function PlacementProvider({
   );
 
   const sel = pending.find((p) => p.id === memberId) ?? null;
+  const allTargets = extra ? [...targets, extra] : targets;
   const finalParent = mode === "recommended" ? (recommended?.id ?? targets[0]?.id ?? "") : parentId;
-  const finalTarget = targets.find((t) => t.id === finalParent);
+  const finalTarget = allTargets.find((t) => t.id === finalParent);
 
   const submit = () =>
     start(async () => {
@@ -148,9 +154,9 @@ export function PlacementProvider({
                         onChange={(e) => { setParentId(e.target.value); setMode("custom"); }}
                         className="mt-2 w-full rounded-md bg-card px-3 py-2 text-[13px] text-text-primary ring-1 ring-border-strong outline-none focus:ring-2 focus:ring-green-500"
                       >
-                        {targets.map((t) => (
+                        {allTargets.map((t) => (
                           <option key={t.id} value={t.id}>
-                            {"　".repeat(Math.min(t.depth, 6))}{t.depth === 0 ? `${t.uid} (나)` : `${t.uid} · ${ROLE_LABEL[t.role]} · ${t.slot ?? "-"}번${t.on_first_line ? " · 1번 라인" : ""}`}
+                            {t.depth === 99 ? `${t.uid} (후원배치도에서 선택)` : `${"　".repeat(Math.min(t.depth, 6))}${t.depth === 0 ? `${t.uid} (나)` : `${t.uid} · ${ROLE_LABEL[t.role]} · ${t.slot ?? "-"}번${t.on_first_line ? " · 1번 라인" : ""}`}`}
                           </option>
                         ))}
                       </select>
@@ -190,7 +196,7 @@ export function PlacementProvider({
 }
 
 // 후원배치도 회원 카드용 "＋배치" — 배치 대기가 있을 때만 보인다. 누르면 이 회원 아래로 미리 선택된 창이 열린다.
-export function PlaceHereButton({ nodeId }: { nodeId: string }) {
+export function PlaceHereButton({ nodeId, nodeUid }: { nodeId: string; nodeUid?: string }) {
   const ctx = usePlacement();
   if (!ctx || ctx.pending.length === 0) return null;
   return (
@@ -199,7 +205,7 @@ export function PlaceHereButton({ nodeId }: { nodeId: string }) {
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        ctx.open({ parentId: nodeId });
+        ctx.open({ parentId: nodeId, parentUid: nodeUid });
       }}
       title="이 회원 아래에 배치"
       className="absolute -right-2 -bottom-2.5 inline-flex items-center gap-0.5 rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-white shadow-sm ring-2 ring-card hover:bg-green-700"

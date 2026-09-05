@@ -15,6 +15,7 @@
     "test:gate": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/balance_gate_verify.sql",
     "test:transparency": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/transparency_verify.sql",
     "test:proration": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/proration_verify.sql",
+    "db:fresh": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/reset_fresh.sql",
     "test:workflow": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/workflow_verify.sql",
     "test:sharegate": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/share_gate_verify.sql",
     "test:monthly": "docker exec -i supabase_db_admin psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/monthly_rank_verify.sql",
