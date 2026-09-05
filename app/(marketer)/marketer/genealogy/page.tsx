@@ -63,7 +63,7 @@ export default async function MarketerGenealogyPage() {
 
   return (
     <>
-      <Topbar title="내 팀" sub="초대 관계(리워드) · 팀 배치(자동 배치)" uid={toUid(viewerId)} />
+      <Topbar title="내 팀" sub="추천조직 · 후원배치" uid={toUid(viewerId)} />
 
       <div className="flex-1 space-y-4 overflow-auto p-7">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -90,13 +90,14 @@ export default async function MarketerGenealogyPage() {
 
         <div id="team-trees" className="scroll-mt-4">
         <GenealogyTrees
+          labels={{ uni: "추천조직", place: "후원배치" }}
           unilevel={
-            <Panel bodyClassName="overflow-x-auto" sub="초대 관계 — 레벨리워드 1·2대">
+            <Panel bodyClassName="overflow-x-auto" sub="추천조직 — 내가 초대한 회원과 그 아래 (초대 리워드 1·2대)">
               <MemberTree root={unilevel} maxDepth={2} maxChildren={6} variant="partner" />
             </Panel>
           }
           placement={
-            <Panel bodyClassName="overflow-x-auto" sub="팀 배치 — 등급·팀 리워드 (자동 배치)">
+            <Panel bodyClassName="overflow-x-auto" sub="후원배치 — 등급·팀 리워드 산정 기준 조직 (자동 배치)">
               <MemberTree root={placement} maxDepth={3} maxChildren={6} variant="partner" />
             </Panel>
           }
@@ -105,7 +106,7 @@ export default async function MarketerGenealogyPage() {
 
         <div className="flex items-start gap-2.5 rounded-md bg-info-soft px-3.5 py-3 text-xs leading-relaxed text-info">
           <LayersIcon className="mt-0.5 size-4 shrink-0" />
-          소프트 압축 — 비활성(당월 미결제) 회원은 해당 월 레벨 리워드 집계에서 제외됩니다. 초대 관계는 유지되며 재결제 시 자동 회복·자리 영구 보존됩니다. (레벨 리워드는 1·2대만, 3대 이상 차단)
+          소프트 압축 — 비활성(당월 미결제) 회원은 해당 월 레벨 리워드 집계에서 제외됩니다. 추천조직·후원배치 자리는 유지되며 재결제 시 자동 회복됩니다. (레벨 리워드는 1·2대만, 3대 이상 차단)
         </div>
 
         <div className="grid gap-4 lg:grid-cols-[1fr_388px]">

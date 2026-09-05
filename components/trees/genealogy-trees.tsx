@@ -7,17 +7,19 @@ import { cn } from "@/lib/utils";
 export function GenealogyTrees({
   unilevel,
   placement,
+  labels = { uni: "초대 관계 (리워드)", place: "팀 배치 (자동 배치)" },
 }: {
   unilevel: React.ReactNode;
   placement: React.ReactNode;
+  labels?: { uni: string; place: string };
 }) {
   const [tab, setTab] = React.useState<"uni" | "place">("uni");
   return (
     <div className="space-y-4">
       <div className="flex w-fit gap-1 rounded-md bg-surface-muted p-1 ring-1 ring-border">
         {[
-          { k: "uni" as const, label: "초대 관계 (리워드)" },
-          { k: "place" as const, label: "팀 배치 (자동 배치)" },
+          { k: "uni" as const, label: labels.uni },
+          { k: "place" as const, label: labels.place },
         ].map((t) => (
           <button
             key={t.k}
