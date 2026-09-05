@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { getServerClient } from "@/lib/supabase/server";
 import { SESSION_COOKIE, SESSION_MAX_AGE, hashSessionToken, roleHome } from "@/lib/session";
 import { syncFortunaAccount } from "@/lib/fortuna-auth";
+import { sendEmail } from "@/lib/notify";
 import type { MemberRole } from "@/lib/supabase/types";
 
 export type AuthState = { error?: string; values?: Record<string, string> } | undefined;
@@ -105,4 +106,84 @@ export async function logout() {
   }
   store.delete(SESSION_COOKIE);
   redirect("/login");
+}
+
+// ── 비밀번호 찾기(이메일 링크 · 30분 · 1회용) ──────────────────────────────────
+
+// 재설정 링크의 기준 URL. PORTAL_BASE_URL 이 있으면 우선, 없으면 요청 헤더로 계산.
+async function getPortalBaseUrl(): Promise<string> {
+  const env = process.env.PORTAL_BASE_URL?.replace(/\/+$/, "");
+  if (env) return env;
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
+export type ResetState = { error?: string; ok?: boolean; values?: { email?: string }; devLink?: string } | undefined;
+
+// 링크 요청. 계정 존재 여부와 무관하게 같은 안내를 돌려준다(이메일 노출 방지).
+//  메일 제공자 미설정(개발)이면 링크를 서버 로그에 남기고, 비운영 빌드에서는 화면에도 보여준다.
+export async function requestMemberPasswordReset(_prev: ResetState, formData: FormData): Promise<ResetState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!email) return { error: "ID(이메일)를 입력하세요", values: { email } };
+
+  const token = randomBytes(32).toString("hex");
+  const h = await headers();
+  const ip = (h.get("x-forwarded-for") ?? h.get("x-real-ip") ?? "").split(",")[0].trim();
+  const sb = getServerClient();
+  const { data, error } = await sb.rpc("request_member_password_reset", { p_email: email, p_token_hash: hashSessionToken(token), p_ip: ip });
+  if (error) {
+    if (error.message.includes("RATE_LIMITED")) return { error: "요청이 너무 잦습니다. 1시간 뒤 다시 시도하세요", values: { email } };
+    return { error: "요청 처리 중 오류가 발생했습니다", values: { email } };
+  }
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { ok: true, values: { email } };
+
+  const link = `${await getPortalBaseUrl()}/reset-password?token=${token}`;
+  const result = await sendEmail(
+    row.email,
+    "[포르투나] 비밀번호 재설정 안내",
+    `${row.display_name}님,\n\n아래 링크에서 새 비밀번호를 설정하세요. 링크는 30분 동안 한 번만 사용할 수 있습니다.\n\n${link}\n\n본인이 요청하지 않았다면 이 메일을 무시하세요. 비밀번호는 바뀌지 않습니다.\n\n— 포르투나`,
+  );
+  if (result !== "sent") console.info(`[member-reset] 재설정 링크(${result}): ${link}`);
+  const devLink = result === "skipped" && process.env.NODE_ENV !== "production" ? link : undefined;
+  return { ok: true, values: { email }, devLink };
+}
+
+// 링크 토큰으로 새 비밀번호 설정 → Fortuna 앱 계정도 같은 비밀번호로 → 로그인 화면.
+const RESET_ERRORS: Record<string, string> = {
+  TOKEN_INVALID: "재설정 링크가 올바르지 않습니다. 다시 요청하세요",
+  TOKEN_USED: "이미 사용된 링크입니다. 다시 요청하세요",
+  TOKEN_EXPIRED: "링크가 만료되었습니다(30분). 다시 요청하세요",
+  PASSWORD_TOO_SHORT: "새 비밀번호는 8자 이상이어야 합니다",
+};
+export async function completeMemberPasswordReset(_prev: ResetState, formData: FormData): Promise<ResetState> {
+  const token = String(formData.get("token") ?? "").trim();
+  const next = String(formData.get("next") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (!/^[0-9a-f]{64}$/.test(token)) return { error: RESET_ERRORS.TOKEN_INVALID };
+  if (!next) return { error: "새 비밀번호를 입력하세요" };
+  if (next.length < 8) return { error: RESET_ERRORS.PASSWORD_TOO_SHORT };
+  if (next !== confirm) return { error: "비밀번호 확인이 일치하지 않습니다" };
+  const sb = getServerClient();
+  const { data, error } = await sb.rpc("complete_member_password_reset", { p_token_hash: hashSessionToken(token), p_new: next });
+  if (error) {
+    const code = Object.keys(RESET_ERRORS).find((k) => error.message.includes(k));
+    return { error: code ? RESET_ERRORS[code] : "재설정 처리 중 오류가 발생했습니다" };
+  }
+  const row = Array.isArray(data) ? data[0] : null;
+  if (row) await syncFortunaAccount({ memberId: row.member_id, email: row.email, password: next, displayName: row.display_name });
+  const store = await cookies();
+  store.delete(SESSION_COOKIE);
+  redirect("/login?reason=reset_done");
+}
+
+// 재설정 페이지 렌더용 — 토큰이 살아 있으면 대상 이메일.
+export async function checkMemberPasswordReset(token: string): Promise<{ email: string } | null> {
+  if (!/^[0-9a-f]{64}$/.test(token)) return null;
+  const sb = getServerClient();
+  const { data } = await sb.rpc("check_member_password_reset", { p_token_hash: hashSessionToken(token) });
+  const row = Array.isArray(data) ? data[0] : null;
+  return row ? { email: row.email as string } : null;
 }

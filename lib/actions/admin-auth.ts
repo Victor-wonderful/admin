@@ -8,8 +8,9 @@ import { revalidatePath } from "next/cache";
 import { getServerClient } from "@/lib/supabase/server";
 import { ADMIN_COOKIE, ADMIN_SESSION_MAX_AGE, hashAdminToken, getCurrentAdmin, isMfaRequired } from "@/lib/admin-session";
 import { generateTotpSecret, verifyTotp } from "@/lib/totp";
+import { sendEmail } from "@/lib/notify";
 
-export type AdminAuthState = { error?: string; ok?: boolean; values?: { email?: string } } | undefined;
+export type AdminAuthState = { error?: string; ok?: boolean; values?: { email?: string }; devLink?: string } | undefined;
 
 const LOGIN_ERRORS: Record<string, string> = {
   INVALID: "이메일 또는 비밀번호가 올바르지 않습니다",
@@ -167,4 +168,111 @@ export async function restartMyTotp(_prev: AdminAuthState, formData: FormData): 
   await sb.from("admins").update({ totp_secret: null, totp_enabled: false }).eq("id", cur.admin.id);
   await sb.from("admin_sessions").update({ mfa_ok: false }).eq("token_hash", hashAdminToken(cur.token));
   redirect("/admin-2fa");
+}
+
+// ── 비밀번호 복구 ────────────────────────────────────────────────────────────
+
+// 임시 비밀번호 생성 — 헷갈리는 글자(0/O, 1/l/I) 제외, 12자.
+function generateTempPassword(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const bytes = randomBytes(12);
+  let out = "";
+  for (const b of bytes) out += alphabet[b % alphabet.length];
+  return out;
+}
+
+// 재설정 링크의 기준 URL. ADMIN_BASE_URL 이 있으면 우선, 없으면 요청 헤더로 계산.
+async function getBaseUrl(): Promise<string> {
+  const env = process.env.ADMIN_BASE_URL?.replace(/\/+$/, "");
+  if (env) return env;
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") || host.startsWith("127.") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
+// (1) 슈퍼관리자가 다른 관리자의 비밀번호를 초기화 — 임시 비밀번호를 한 번만 화면에 보여준다.
+const RESET_ERRORS: Record<string, string> = {
+  NOT_SUPER: "슈퍼관리자만 초기화할 수 있습니다",
+  SELF_RESET: "본인 비밀번호는 내 계정에서 변경하세요",
+  NOT_FOUND: "관리자를 찾을 수 없습니다",
+};
+export async function resetAdminPassword(adminId: string): Promise<{ ok: boolean; tempPassword?: string; error?: string }> {
+  const cur = await getCurrentAdmin();
+  if (!cur || !cur.mfaOk || cur.admin.role !== "super") return { ok: false, error: RESET_ERRORS.NOT_SUPER };
+  if (cur.admin.id === adminId) return { ok: false, error: RESET_ERRORS.SELF_RESET };
+  const temp = generateTempPassword();
+  const sb = getServerClient();
+  const { error } = await sb.rpc("reset_admin_password", { p_admin: adminId, p_new: temp, p_by: cur.admin.id });
+  if (error) {
+    const code = Object.keys(RESET_ERRORS).find((k) => error.message.includes(k));
+    return { ok: false, error: code ? RESET_ERRORS[code] : "초기화 처리 중 오류가 발생했습니다" };
+  }
+  revalidatePath("/admin/admins");
+  return { ok: true, tempPassword: temp };
+}
+
+// (2-a) 이메일로 재설정 링크 요청. 계정 존재 여부와 무관하게 같은 안내를 돌려준다.
+//  메일 제공자 미설정(개발)이면 링크를 서버 로그에 남기고, 비운영 빌드에서는 화면에도 보여준다.
+export async function requestAdminPasswordReset(_prev: AdminAuthState, formData: FormData): Promise<AdminAuthState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  if (!email) return { error: "이메일을 입력하세요", values: { email } };
+
+  const token = randomBytes(32).toString("hex");
+  const h = await headers();
+  const ip = (h.get("x-forwarded-for") ?? h.get("x-real-ip") ?? "").split(",")[0].trim();
+  const sb = getServerClient();
+  const { data, error } = await sb.rpc("request_admin_password_reset", { p_email: email, p_token_hash: hashAdminToken(token), p_ip: ip });
+  if (error) {
+    if (error.message.includes("RATE_LIMITED")) return { error: "요청이 너무 잦습니다. 1시간 뒤 다시 시도하세요", values: { email } };
+    return { error: "요청 처리 중 오류가 발생했습니다", values: { email } };
+  }
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { ok: true, values: { email } }; // 미등록 이메일 — 노출 방지
+
+  const link = `${await getBaseUrl()}/admin-reset?token=${token}`;
+  const result = await sendEmail(
+    row.email,
+    "[포르투나 운영 콘솔] 관리자 비밀번호 재설정",
+    `${row.display_name}님,\n\n아래 링크에서 새 비밀번호를 설정하세요. 링크는 30분 동안 한 번만 사용할 수 있습니다.\n\n${link}\n\n본인이 요청하지 않았다면 이 메일을 무시하세요. 비밀번호는 바뀌지 않습니다.\n\n— 포르투나 운영 콘솔`,
+  );
+  if (result !== "sent") console.info(`[admin-reset] 재설정 링크(${result}): ${link}`);
+  const devLink = result === "skipped" && process.env.NODE_ENV !== "production" ? link : undefined;
+  return { ok: true, values: { email }, devLink };
+}
+
+// (2-b) 링크 토큰으로 새 비밀번호 설정 → 로그인 화면으로.
+const COMPLETE_ERRORS: Record<string, string> = {
+  TOKEN_INVALID: "재설정 링크가 올바르지 않습니다. 다시 요청하세요",
+  TOKEN_USED: "이미 사용된 링크입니다. 다시 요청하세요",
+  TOKEN_EXPIRED: "링크가 만료되었습니다(30분). 다시 요청하세요",
+  PASSWORD_TOO_SHORT: "새 비밀번호는 8자 이상이어야 합니다",
+};
+export async function completeAdminPasswordReset(_prev: AdminAuthState, formData: FormData): Promise<AdminAuthState> {
+  const token = String(formData.get("token") ?? "").trim();
+  const next = String(formData.get("next") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (!/^[0-9a-f]{64}$/.test(token)) return { error: COMPLETE_ERRORS.TOKEN_INVALID };
+  if (!next) return { error: "새 비밀번호를 입력하세요" };
+  if (next.length < 8) return { error: COMPLETE_ERRORS.PASSWORD_TOO_SHORT };
+  if (next !== confirm) return { error: "새 비밀번호 확인이 일치하지 않습니다" };
+  const sb = getServerClient();
+  const { error } = await sb.rpc("complete_admin_password_reset", { p_token_hash: hashAdminToken(token), p_new: next });
+  if (error) {
+    const code = Object.keys(COMPLETE_ERRORS).find((k) => error.message.includes(k));
+    return { error: code ? COMPLETE_ERRORS[code] : "재설정 처리 중 오류가 발생했습니다" };
+  }
+  // 이 브라우저에 남은 관리자 쿠키가 있어도 세션은 이미 끊겼으니 지운다.
+  const store = await cookies();
+  store.delete(ADMIN_COOKIE);
+  redirect("/admin-login?reset=1");
+}
+
+// 재설정 페이지 렌더용 — 토큰이 살아 있으면 대상 이메일.
+export async function checkAdminPasswordReset(token: string): Promise<{ email: string } | null> {
+  if (!/^[0-9a-f]{64}$/.test(token)) return null;
+  const sb = getServerClient();
+  const { data } = await sb.rpc("check_admin_password_reset", { p_token_hash: hashAdminToken(token) });
+  const row = Array.isArray(data) ? data[0] : null;
+  return row ? { email: row.email as string } : null;
 }

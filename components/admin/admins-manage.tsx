@@ -3,9 +3,9 @@
 import * as React from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlusIcon, Loader2Icon, CheckIcon, XIcon, KeyRoundIcon, PowerIcon } from "lucide-react";
+import { UserPlusIcon, Loader2Icon, CheckIcon, XIcon, KeyRoundIcon, PowerIcon, LockKeyholeIcon, CopyIcon } from "lucide-react";
 
-import { createAdmin, setAdminActive, resetAdminTotp } from "@/lib/actions/admin-auth";
+import { createAdmin, setAdminActive, resetAdminTotp, resetAdminPassword } from "@/lib/actions/admin-auth";
 import { Field } from "@/components/auth/field";
 import { useEscapeKey } from "@/hooks/use-escape-key";
 import { cn } from "@/lib/utils";
@@ -69,11 +69,47 @@ export function AddAdminButton({ disabled }: { disabled?: boolean }) {
   );
 }
 
-// 행 액션 — 활성/비활성 토글, 2FA 재설정(슈퍼관리자만)
-export function AdminRowActions({ adminId, active, isSelf, canManage }: { adminId: string; active: boolean; isSelf: boolean; canManage: boolean }) {
+// 임시 비밀번호 표시 모달 — 한 번만 보여주므로 복사해 전달하게 안내.
+function TempPasswordModal({ email, password, onClose }: { email: string; password: string; onClose: () => void }) {
+  const [copied, setCopied] = React.useState(false);
+  useEscapeKey(true, onClose);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(password); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  };
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center p-4">
+      <div className="absolute inset-0 bg-[#0B0F14]/80" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-[440px] overflow-hidden rounded-xl bg-card shadow-[0_20px_40px_-8px_rgba(11,15,20,0.35)]">
+        <div className="flex items-start justify-between border-b px-6 py-5">
+          <div>
+            <h2 className="text-base font-bold text-text-primary">임시 비밀번호 발급</h2>
+            <p className="mt-0.5 text-xs text-text-secondary">{email} · 이 창을 닫으면 다시 볼 수 없습니다</p>
+          </div>
+          <button type="button" onClick={onClose} className="grid size-7 place-items-center rounded-md text-text-tertiary hover:bg-surface-muted"><XIcon className="size-4" /></button>
+        </div>
+        <div className="space-y-3 px-6 py-5">
+          <button type="button" onClick={copy} className="flex w-full items-center gap-2 rounded-md bg-surface-muted px-3.5 py-3 text-left font-mono text-[15px] tracking-wider text-text-primary ring-1 ring-border-strong hover:ring-green-500">
+            <span className="flex-1">{password}</span>
+            {copied ? <CheckIcon className="size-4 text-green-600" /> : <CopyIcon className="size-4 text-text-tertiary" />}
+          </button>
+          <p className="text-[12px] leading-relaxed text-text-secondary">
+            해당 관리자에게 안전한 경로로 전달하세요. 기존 비밀번호는 즉시 무효화되고 모든 기기에서 로그아웃됩니다. 로그인 후 <b>내 계정</b>에서 비밀번호를 바꾸도록 안내하세요.
+          </p>
+        </div>
+        <div className="flex justify-end border-t px-6 py-4">
+          <button type="button" onClick={onClose} className="rounded-md bg-brand px-4 py-2 text-[13px] font-semibold text-white">닫기</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 행 액션 — 활성/비활성 토글, 2FA 재설정, 비밀번호 초기화(슈퍼관리자만)
+export function AdminRowActions({ adminId, email, active, isSelf, canManage }: { adminId: string; email: string; active: boolean; isSelf: boolean; canManage: boolean }) {
   const router = useRouter();
   const [pending, start] = React.useTransition();
   const [err, setErr] = React.useState<string | null>(null);
+  const [temp, setTemp] = React.useState<string | null>(null);
   if (!canManage) return <span className="text-[11px] text-text-tertiary">—</span>;
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>) =>
     start(async () => {
@@ -82,9 +118,22 @@ export function AdminRowActions({ adminId, active, isSelf, canManage }: { adminI
       if (!r.ok) setErr(r.error ?? "실패");
       else router.refresh();
     });
+  const resetPassword = () => {
+    if (!window.confirm(`${email} 의 비밀번호를 초기화할까요?\n기존 비밀번호는 무효화되고 모든 기기에서 로그아웃됩니다.`)) return;
+    start(async () => {
+      setErr(null);
+      const r = await resetAdminPassword(adminId);
+      if (!r.ok || !r.tempPassword) setErr(r.error ?? "실패");
+      else { setTemp(r.tempPassword); router.refresh(); }
+    });
+  };
   return (
     <span className="flex flex-col items-end gap-1">
+      {temp ? <TempPasswordModal email={email} password={temp} onClose={() => setTemp(null)} /> : null}
       <span className="flex gap-1.5">
+        <button type="button" disabled={pending || isSelf} onClick={resetPassword} title={isSelf ? "본인은 내 계정에서 변경" : "비밀번호 분실 시 임시 비밀번호 발급"} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-text-secondary ring-1 ring-border-strong disabled:opacity-50">
+          <LockKeyholeIcon className="size-3" /> 비밀번호 초기화
+        </button>
         <button type="button" disabled={pending} onClick={() => run(() => resetAdminTotp(adminId))} title="인증 앱 분실 시 재등록" className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-text-secondary ring-1 ring-border-strong disabled:opacity-50">
           <KeyRoundIcon className="size-3" /> 2FA 재설정
         </button>

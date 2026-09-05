@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { Loader2Icon, LogInIcon, TriangleAlertIcon } from "lucide-react";
+import { Loader2Icon, LogInIcon, TriangleAlertIcon, CheckIcon } from "lucide-react";
 
 import { loginByEmail } from "@/lib/actions/auth";
 import { Field } from "@/components/auth/field";
 
-export function LoginForm({ notice }: { notice?: string }) {
+export function LoginForm({ notice, noticeTone = "warning" }: { notice?: string; noticeTone?: "warning" | "success" }) {
   const [state, action, pending] = useActionState(loginByEmail, undefined);
 
   return (
@@ -18,10 +18,17 @@ export function LoginForm({ notice }: { notice?: string }) {
       </div>
 
       {notice ? (
-        <div className="flex gap-2 rounded-md bg-warning-soft px-3.5 py-3 text-xs leading-relaxed text-text-secondary">
-          <TriangleAlertIcon className="size-4 shrink-0 text-warning" />
-          <span>{notice}</span>
-        </div>
+        noticeTone === "success" ? (
+          <div className="flex gap-2 rounded-md bg-green-50 px-3.5 py-3 text-xs leading-relaxed text-green-700">
+            <CheckIcon className="size-4 shrink-0" />
+            <span>{notice}</span>
+          </div>
+        ) : (
+          <div className="flex gap-2 rounded-md bg-warning-soft px-3.5 py-3 text-xs leading-relaxed text-text-secondary">
+            <TriangleAlertIcon className="size-4 shrink-0 text-warning" />
+            <span>{notice}</span>
+          </div>
+        )
       ) : null}
 
       <form action={action} className="space-y-3">
@@ -54,12 +61,19 @@ export function LoginForm({ notice }: { notice?: string }) {
         </button>
       </form>
 
-      <p className="text-center text-xs text-text-secondary">
-        계정이 없으면{" "}
-        <Link href="/signup" className="font-semibold text-crypto hover:underline">
-          회원가입
-        </Link>
-      </p>
+      <div className="space-y-1.5 text-center text-xs text-text-secondary">
+        <p>
+          <Link href="/forgot" className="font-semibold text-text-secondary underline-offset-2 hover:underline">
+            비밀번호를 잊으셨나요?
+          </Link>
+        </p>
+        <p>
+          계정이 없으면{" "}
+          <Link href="/signup" className="font-semibold text-crypto hover:underline">
+            회원가입
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-// 관리자·권한 — 실데이터. 역할 4종, 관리자 목록(2FA·마지막 로그인·IP), 추가/비활성화/2FA 재설정(슈퍼관리자).
+// 관리자·권한 — 실데이터. 역할 4종, 관리자 목록(2FA·마지막 로그인·IP), 추가/비활성화/2FA 재설정/비밀번호 초기화(슈퍼관리자).
 type Tone = "crypto" | "green" | "info" | "neutral";
 const CARD = "rounded-xl bg-card p-[18px] ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]";
 const avatarTone: Record<Tone, string> = { crypto: "bg-crypto-soft text-crypto", green: "bg-green-50 text-green-700", info: "bg-info-soft text-info", neutral: "bg-n-100 text-n-500" };
@@ -21,7 +21,7 @@ const ROLE_META: Record<AdminRole, { tone: Tone; desc: string; perms: string[] }
   ops: { tone: "info", desc: "회원·조직·구독 운영 (정산 제외)", perms: ["회원", "조직", "구독"] },
   viewer: { tone: "neutral", desc: "읽기 전용 · 수정/승인 불가", perms: ["대시보드", "리포트"] },
 };
-const COLS = "grid-cols-[1.9fr_132px_84px_150px_140px_84px_220px]";
+const COLS = "grid-cols-[1.9fr_132px_84px_150px_140px_84px_330px]";
 
 type AdminListRow = { id: string; email: string; display_name: string; role: AdminRole; is_active: boolean; totp_enabled: boolean; last_login_at: string | null; created_at: string };
 
@@ -62,7 +62,7 @@ export default async function AdminAdminsPage() {
         </section>
 
         <Panel title="관리자 계정" sub={`총 ${rows.length}명 · 활성 ${rows.filter((a) => a.is_active).length}명 · 로그인 = 이메일 + 비밀번호 + 인증 앱 코드`} bodyClassName="overflow-x-auto">
-          <div className="min-w-[980px]">
+          <div className="min-w-[1090px]">
             <div className={cn("grid items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary", COLS)}>
               <span>관리자</span><span>역할</span><span>2FA</span><span>마지막 로그인</span><span>접속 IP</span><span>상태</span><span className="text-right">관리</span>
             </div>
@@ -84,7 +84,7 @@ export default async function AdminAdminsPage() {
                   <span className="text-[12px] tabular-nums text-text-secondary">{a.last_login_at ? toSeoulDateTime(a.last_login_at) : "—"}</span>
                   <span className="text-[12px] tabular-nums text-text-tertiary">{lastIp.get(a.id) ?? "—"}</span>
                   <span><Pill tone={a.is_active ? "green" : "neutral"} dot={a.is_active}>{a.is_active ? "활성" : "비활성"}</Pill></span>
-                  <AdminRowActions adminId={a.id} active={a.is_active} isSelf={a.id === me.id} canManage={canManage} />
+                  <AdminRowActions adminId={a.id} email={a.email} active={a.is_active} isSelf={a.id === me.id} canManage={canManage} />
                 </div>
               );
             })}
@@ -92,7 +92,7 @@ export default async function AdminAdminsPage() {
         </Panel>
 
         <div className="rounded-md bg-info-soft px-4 py-3 text-[12px] leading-relaxed text-info">
-          공개 가입은 없습니다. 슈퍼관리자가 이메일·임시 비밀번호로 계정을 만들어 전달하면, 그 관리자가 첫 로그인 때 인증 앱(Google Authenticator 등)을 등록합니다. 5회 오입력 시 15분 잠금, 세션은 12시간 후 만료됩니다. 초기 계정 admin@fortuna.demo 의 비밀번호는 운영 배포 전에 반드시 바꾸세요.
+          공개 가입은 없습니다. 슈퍼관리자가 이메일·임시 비밀번호로 계정을 만들어 전달하면, 그 관리자가 첫 로그인 때 인증 앱(Google Authenticator 등)을 등록합니다. 5회 오입력 시 15분 잠금, 세션은 12시간 후 만료됩니다. 비밀번호를 잊은 관리자는 로그인 화면의 비밀번호 찾기(이메일 링크)로 직접 바꾸거나, 슈퍼관리자가 여기서 임시 비밀번호를 발급합니다. 초기 계정 admin@fortuna.demo 의 비밀번호는 운영 배포 전에 반드시 바꾸세요.
         </div>
       </div>
     </>
