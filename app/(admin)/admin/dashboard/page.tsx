@@ -110,13 +110,15 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
 
   const pool = (k: string) => wallets.find((w) => w.kind === k)?.balance_usd ?? 0;
   const operating = pool("operating");
+  // 배분 비율은 고정 60/20/10/10. 잔액은 배분 누계에서 지급(수당 풀)·인출을 뺀 현재 보유액이므로 비율 배지와 다를 수 있다.
   const pools = [
-    { kind: "pool_commission", name: "수당 풀", desc: "레벨·직급·공유 지급 재원", color: "bg-green-500", tone: "green" as const, bal: pool("pool_commission") },
-    { kind: "pool_company", name: "회사 수익", desc: "운영 이익", color: "bg-info", tone: "info" as const, bal: pool("pool_company") },
-    { kind: "pool_equity", name: "지분자 배당", desc: "지분 보유자 분배 대기", color: "bg-crypto", tone: "crypto" as const, bal: pool("pool_equity") },
-    { kind: "pool_reserve", name: "예비비", desc: "리스크 적립금", color: "bg-n-400", tone: "neutral" as const, bal: pool("pool_reserve") },
+    { kind: "pool_commission", name: "수당 풀", desc: "레벨·직급·공유 지급 재원", color: "bg-green-500", tone: "green" as const, ratio: 60, bal: pool("pool_commission") },
+    { kind: "pool_company", name: "회사 수익", desc: "운영 이익", color: "bg-info", tone: "info" as const, ratio: 20, bal: pool("pool_company") },
+    { kind: "pool_equity", name: "지분자 배당", desc: "지분 보유자 분배 대기", color: "bg-crypto", tone: "crypto" as const, ratio: 10, bal: pool("pool_equity") },
+    { kind: "pool_reserve", name: "예비비", desc: "리스크 적립금", color: "bg-n-400", tone: "neutral" as const, ratio: 10, bal: pool("pool_reserve") },
   ];
   const poolTotal = pools.reduce((s, p) => s + p.bal, 0);
+  const allocatedTotal = revenue.total; // 누적 매출 = 배분 누계(결제 시 즉시 배분)
 
   const tiers = [
     { name: "등록회원", count: stats.registered, desc: "추천 코드로 가입 · 미결제", icon: UsersIcon, badge: "bg-n-100 text-n-500", conv: null as string | null },
@@ -201,7 +203,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-[15px] font-semibold text-text-primary">배분 풀 잔액</h3>
-              <p className="text-xs text-text-tertiary">매출 배분 구조에 따른 풀별 보유 잔액 · USDT</p>
+              <p className="text-xs text-text-tertiary">매출 60 / 20 / 10 / 10 배분 · 풀별 현재 보유 잔액 · USDT</p>
             </div>
             <div className="flex items-center gap-1.5 rounded-lg bg-surface-muted px-3 py-1.5 ring-1 ring-border">
               <span className="text-xs font-medium text-text-tertiary">합계</span>
@@ -210,18 +212,20 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {pools.map((p) => {
-              const pct = pctOf(p.bal, poolTotal);
+              const allocated = allocatedTotal * (p.ratio / 100); // 이 풀에 배분된 누계
+              const remainPct = allocated > 0 ? Math.min(100, Math.round((p.bal / allocated) * 100)) : 0;
+              const used = Math.max(0, allocated - p.bal);
               return (
                 <div key={p.kind} className={cn(SUBCARD, "space-y-3")}>
                   <div className="flex items-center justify-between">
                     <span className="text-[13px] font-semibold text-text-primary">{p.name}</span>
-                    <Pill tone={p.tone}>{pct}%</Pill>
+                    <Pill tone={p.tone}>배분 {p.ratio}%</Pill>
                   </div>
                   <div className="text-[22px] font-bold tabular-nums text-text-primary">{usd(p.bal)}</div>
-                  <div className="h-[7px] overflow-hidden rounded-full bg-n-100">
-                    <div className={cn("h-full rounded-full", p.color)} style={{ width: `${pct}%` }} />
+                  <div className="h-[7px] overflow-hidden rounded-full bg-n-100" title={`배분 누계 ${usd(allocated)} · 잔여 ${remainPct}%`}>
+                    <div className={cn("h-full rounded-full", p.color)} style={{ width: `${remainPct}%` }} />
                   </div>
-                  <p className="text-[11px] text-text-tertiary">{p.desc}</p>
+                  <p className="text-[11px] text-text-tertiary">{p.desc} · 배분 누계 {usd(allocated)}{used > 0 ? ` · 지급 ${usd(used)} · 잔여 ${remainPct}%` : ""}</p>
                 </div>
               );
             })}
