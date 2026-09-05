@@ -21,6 +21,7 @@ import { WithdrawalActions } from "@/components/withdrawals/withdrawal-actions";
 import type { WithdrawalStatus } from "@/lib/actions/withdrawals";
 import { can } from "@/lib/admin-permissions";
 import { getMemberRanksMap } from "@/lib/queries/ranks";
+import { getCompSettings } from "@/lib/queries/comp-settings";
 import { requireAdminPage } from "@/lib/admin-guard";
 import { PAGE_LABEL, type AdminPage } from "@/lib/admin-permissions";
 import { ADMIN_ROLE_LABEL } from "@/lib/admin-session";
@@ -36,6 +37,7 @@ import {
   listTransactions,
   getMonthlyRevenueByWeek,
   countRenewalsDue,
+  getAllocationTotals,
 } from "@/lib/queries/finance";
 import { toUid, uidInitials } from "@/lib/uid";
 import { cn } from "@/lib/utils";
@@ -86,7 +88,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   const admin = await requireAdminPage("dashboard");
   const { denied } = await searchParams;
   const deniedLabel = denied && denied in PAGE_LABEL ? PAGE_LABEL[denied as AdminPage] : null;
-  const [stats, wallets, settle, topSettle, wdStats, withdrawals, txns, revenue, weekBars, renewalsDue, ranksMap] = await Promise.all([
+  const [stats, wallets, settle, topSettle, wdStats, withdrawals, txns, revenue, weekBars, renewalsDue, ranksMap, allocTotals, settings] = await Promise.all([
     getMemberStats(),
     getSystemWallets(),
     getSettlementSummary(CYCLE),
@@ -98,6 +100,8 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
     getMonthlyRevenueByWeek(CYCLE),
     countRenewalsDue(7),
     getMemberRanksMap(),
+    getAllocationTotals(),
+    getCompSettings(),
   ]);
   const canFinance = can(admin.role, "finance.write");
   // 직급 분포 — member_ranks 실산정(R1~R9). R7 이상은 보라.
@@ -110,15 +114,14 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
 
   const pool = (k: string) => wallets.find((w) => w.kind === k)?.balance_usd ?? 0;
   const operating = pool("operating");
-  // 배분 비율은 고정 60/20/10/10. 잔액은 배분 누계에서 지급(수당 풀)·인출을 뺀 현재 보유액이므로 비율 배지와 다를 수 있다.
+  // 배분 비율은 수당체계 설정(comp_settings). 잔액은 배분 누계(revenue_allocations 원장)에서 지급(수당 풀)·인출을 뺀 현재 보유액.
   const pools = [
-    { kind: "pool_commission", name: "수당 풀", desc: "레벨·직급·공유 지급 재원", color: "bg-green-500", tone: "green" as const, ratio: 60, bal: pool("pool_commission") },
-    { kind: "pool_company", name: "회사 수익", desc: "운영 이익", color: "bg-info", tone: "info" as const, ratio: 20, bal: pool("pool_company") },
-    { kind: "pool_equity", name: "지분자 배당", desc: "지분 보유자 분배 대기", color: "bg-crypto", tone: "crypto" as const, ratio: 10, bal: pool("pool_equity") },
-    { kind: "pool_reserve", name: "예비비", desc: "리스크 적립금", color: "bg-n-400", tone: "neutral" as const, ratio: 10, bal: pool("pool_reserve") },
+    { kind: "pool_commission", name: "수당 풀", desc: "레벨·직급·공유 지급 재원", color: "bg-green-500", tone: "green" as const, ratio: settings.alloc_commission_pct, bal: pool("pool_commission"), allocated: allocTotals.pool_commission },
+    { kind: "pool_company", name: "회사 수익", desc: "운영 이익", color: "bg-info", tone: "info" as const, ratio: settings.alloc_company_pct, bal: pool("pool_company"), allocated: allocTotals.pool_company },
+    { kind: "pool_equity", name: "지분자 배당", desc: "지분 보유자 분배 대기", color: "bg-crypto", tone: "crypto" as const, ratio: settings.alloc_equity_pct, bal: pool("pool_equity"), allocated: allocTotals.pool_equity },
+    { kind: "pool_reserve", name: "예비비", desc: "리스크 적립금", color: "bg-n-400", tone: "neutral" as const, ratio: settings.alloc_reserve_pct, bal: pool("pool_reserve"), allocated: allocTotals.pool_reserve },
   ];
   const poolTotal = pools.reduce((s, p) => s + p.bal, 0);
-  const allocatedTotal = revenue.total; // 누적 매출 = 배분 누계(결제 시 즉시 배분)
 
   const tiers = [
     { name: "등록회원", count: stats.registered, desc: "추천 코드로 가입 · 미결제", icon: UsersIcon, badge: "bg-n-100 text-n-500", conv: null as string | null },
@@ -203,7 +206,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-[15px] font-semibold text-text-primary">배분 풀 잔액</h3>
-              <p className="text-xs text-text-tertiary">매출 60 / 20 / 10 / 10 배분 · 풀별 현재 보유 잔액 · USDT</p>
+              <p className="text-xs text-text-tertiary">매출 {settings.alloc_commission_pct} / {settings.alloc_company_pct} / {settings.alloc_equity_pct} / {settings.alloc_reserve_pct} 배분 · 풀별 현재 보유 잔액 · USDT</p>
             </div>
             <div className="flex items-center gap-1.5 rounded-lg bg-surface-muted px-3 py-1.5 ring-1 ring-border">
               <span className="text-xs font-medium text-text-tertiary">합계</span>
@@ -212,7 +215,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {pools.map((p) => {
-              const allocated = allocatedTotal * (p.ratio / 100); // 이 풀에 배분된 누계
+              const allocated = p.allocated; // 이 풀에 배분된 누계(원장)
               const remainPct = allocated > 0 ? Math.min(100, Math.round((p.bal / allocated) * 100)) : 0;
               const used = Math.max(0, allocated - p.bal);
               return (

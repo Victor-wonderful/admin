@@ -4,7 +4,8 @@ import { Topbar } from "@/components/shell/topbar";
 import { requireAdminPage } from "@/lib/admin-guard";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
-import { getSystemWallets } from "@/lib/queries/finance";
+import { getSystemWallets, getAllocationTotals } from "@/lib/queries/finance";
+import { getCompSettings } from "@/lib/queries/comp-settings";
 import { getWalletOverview } from "@/lib/queries/admin-finance";
 import { getDepositNetworks } from "@/lib/deposit-config";
 import { addressExplorerUrl, NETWORK_LABEL } from "@/lib/chain/explorer";
@@ -29,7 +30,10 @@ const NET_COLOR: Record<string, string> = { TRC20: "bg-green-500", BEP20: "bg-wa
 // 지갑잔액 — 수탁 원장 기준. 회사 보유(누적 입금 − 누적 출금)와 회원 예치금(부채), 배분 풀, 체인별 입출금, 14일 흐름.
 export default async function AdminWalletPage() {
   const admin = await requireAdminPage("wallet");
-  const [wallets, ov] = await Promise.all([getSystemWallets(), getWalletOverview()]);
+  const [wallets, ov, alloc, settings] = await Promise.all([getSystemWallets(), getWalletOverview(), getAllocationTotals(), getCompSettings()]);
+  const RATIO: Record<string, number> = { pool_commission: settings.alloc_commission_pct, pool_company: settings.alloc_company_pct, pool_equity: settings.alloc_equity_pct, pool_reserve: settings.alloc_reserve_pct };
+  const ALLOCATED: Record<string, number> = { pool_commission: alloc.pool_commission, pool_company: alloc.pool_company, pool_equity: alloc.pool_equity, pool_reserve: alloc.pool_reserve };
+  const ratioText = `${settings.alloc_commission_pct}/${settings.alloc_company_pct}/${settings.alloc_equity_pct}/${settings.alloc_reserve_pct}`;
   const cycle = currentCycle();
   const pools = POOL_ORDER.map((kind) => wallets.find((w) => w.kind === kind)).filter((w): w is NonNullable<typeof w> => Boolean(w));
   const poolTotal = pools.reduce((s, p) => s + p.balance_usd, 0);
@@ -88,20 +92,22 @@ export default async function AdminWalletPage() {
           </Panel>
         </div>
 
-        <Panel title="배분 풀 잔액" sub="결제마다 매출을 60/20/10/10 으로 배분 · 수당 풀은 리워드 지급분 차감" action={<Pill tone="green">합계 {usd(poolTotal)}</Pill>}>
+        <Panel title="배분 풀 잔액" sub={`결제마다 매출을 ${ratioText} 으로 배분 · 배지 = 배분 비율 · 막대 = 배분 누계 대비 잔여 · 수당 풀은 리워드 지급분 차감`} action={<Pill tone="green">합계 {usd(poolTotal)}</Pill>}>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {pools.map((p) => {
               const meta = POOL_META[p.kind] ?? { color: "bg-n-400", desc: "" };
-              const pct = pctOf(p.balance_usd, poolTotal);
+              const allocated = ALLOCATED[p.kind] ?? 0;
+              const remainPct = allocated > 0 ? Math.max(0, Math.min(100, Math.round((p.balance_usd / allocated) * 100))) : 0;
+              const used = Math.max(0, allocated - p.balance_usd);
               return (
                 <div key={p.kind} className="rounded-lg bg-surface-muted p-4 ring-1 ring-border">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2 text-[13px] font-semibold text-text-primary"><span className={cn("size-2.5 rounded-full", meta.color)} /> {p.label}</span>
-                    <span className="text-xs font-bold text-text-tertiary">{pct}%</span>
+                    <span className="text-xs font-bold text-text-tertiary">배분 {RATIO[p.kind] ?? "—"}%</span>
                   </div>
                   <div className={cn("mt-2 text-xl font-bold tabular-nums", p.balance_usd < 0 ? "text-negative" : "text-text-primary")}>{usd(p.balance_usd)}</div>
-                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-n-100"><div className={cn("h-full rounded-full", meta.color)} style={{ width: `${Math.max(0, pct)}%` }} /></div>
-                  <div className="mt-2 text-[11px] text-text-tertiary">{meta.desc}</div>
+                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-n-100" title={`배분 누계 ${usd(allocated)} · 잔여 ${remainPct}%`}><div className={cn("h-full rounded-full", meta.color)} style={{ width: `${remainPct}%` }} /></div>
+                  <div className="mt-2 text-[11px] text-text-tertiary">{meta.desc} · 배분 누계 {usd(allocated)}{used > 0 ? ` · 지급 ${usd(used)} · 잔여 ${remainPct}%` : ""}</div>
                 </div>
               );
             })}

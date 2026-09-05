@@ -428,7 +428,7 @@ export async function getVisibleSettlements(viewerId: string, cycle: string): Pr
 }
 
 // 매출 = subscriptions + annual_memberships 결제액 집계
-export async function getRevenueSummary() {
+export async function getRevenueSummary(cycle = currentCycle()) {
   const sb = getServerClient();
   const [subs, annual, purs] = await Promise.all([
     sb.from("subscriptions").select("amount_usd, paid_at"),
@@ -438,7 +438,7 @@ export async function getRevenueSummary() {
   if (subs.error) throw subs.error;
   if (annual.error) throw annual.error;
   if (purs.error) throw purs.error;
-  const month = currentCycle();
+  const month = cycle;
   const inMonth = (p: unknown) => typeof p === "string" && p.startsWith(month);
 
   let total = 0, monthTotal = 0;
@@ -512,4 +512,28 @@ export async function countRenewalsDue(days = 7): Promise<number> {
     .lte("period_end", end.toISOString().slice(0, 10));
   if (error) throw error;
   return count ?? 0;
+}
+
+// 배분 원장(revenue_allocations) — 사이클별 실제 배분액과 누계. 화면의 배분 카드는 비율×매출 추정이 아니라 이 원장을 보여준다.
+export interface AllocationRow { cycle: string; revenue_total: number; pool_commission: number; pool_company: number; pool_equity: number; pool_reserve: number }
+
+export async function getCycleAllocation(cycle = currentCycle()): Promise<AllocationRow | null> {
+  const sb = getServerClient();
+  const { data, error } = await sb.from("revenue_allocations").select("cycle, revenue_total, pool_commission, pool_company, pool_equity, pool_reserve").eq("cycle", cycle).maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const r = data as Record<string, unknown>;
+  return { cycle: String(r.cycle), revenue_total: Number(r.revenue_total), pool_commission: Number(r.pool_commission), pool_company: Number(r.pool_company), pool_equity: Number(r.pool_equity), pool_reserve: Number(r.pool_reserve) };
+}
+
+export async function getAllocationTotals(): Promise<Omit<AllocationRow, "cycle">> {
+  const sb = getServerClient();
+  const { data, error } = await sb.from("revenue_allocations").select("revenue_total, pool_commission, pool_company, pool_equity, pool_reserve");
+  if (error) throw error;
+  const t = { revenue_total: 0, pool_commission: 0, pool_company: 0, pool_equity: 0, pool_reserve: 0 };
+  for (const r of (data ?? []) as Array<Record<string, unknown>>) {
+    t.revenue_total += Number(r.revenue_total); t.pool_commission += Number(r.pool_commission);
+    t.pool_company += Number(r.pool_company); t.pool_equity += Number(r.pool_equity); t.pool_reserve += Number(r.pool_reserve);
+  }
+  return t;
 }

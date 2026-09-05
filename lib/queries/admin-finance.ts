@@ -184,14 +184,14 @@ export interface RevenueExtras {
   trend: Array<{ cycle: string; sub: number; membership: number; product: number }>; // 최근 12사이클(오래된 순)
   renewals: number; expiredNoRenew: number; renewRate: number | null; churnRate: number | null;
 }
-export async function getRevenueExtras(): Promise<RevenueExtras> {
+export async function getRevenueExtras(cycleArg?: string): Promise<RevenueExtras> {
   const sb = getServerClient();
   const [subs, anns, purs] = await Promise.all([
     sb.from("subscriptions").select("member_id, amount_usd, paid_at, period_start, period_end, status").order("paid_at", { ascending: true }),
     sb.from("annual_memberships").select("amount_usd, paid_at"),
     sb.from("product_purchases").select("amount_usd, paid_at, status"),
   ]);
-  const t = today(); const cyc = currentCycle(); const pc = prevCycle(cyc);
+  const t = today(); const cyc = cycleArg ?? currentCycle(); const pc = prevCycle(cyc);
   const cycles: string[] = []; { let c = cyc; for (let i = 0; i < 12; i++) { cycles.unshift(c); c = prevCycle(c); } }
   const trend = new Map(cycles.map((c) => [c, { cycle: c, sub: 0, membership: 0, product: 0 }]));
   const x: RevenueExtras = { todayAmount: 0, todayCount: 0, prevMonthTotal: 0, monthProduct: 0, monthProductCount: 0, trend: [], renewals: 0, expiredNoRenew: 0, renewRate: null, churnRate: null };
