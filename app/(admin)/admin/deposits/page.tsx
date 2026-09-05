@@ -1,4 +1,6 @@
+import Link from "next/link";
 import {
+  SearchIcon,
   CalendarCheckIcon,
   DollarSignIcon,
   SigmaIcon,
@@ -50,18 +52,51 @@ const STATUS: Record<string, { label: string; tone: "green" | "warning" | "neutr
 };
 
 const COLS = "grid-cols-[104px_1.2fr_1.4fr_1.5fr_1.3fr_120px]";
+const STATUS_ORDER = ["all", "credited", "unmatched", "ignored"] as const;
+const NETWORKS = ["TRC20", "BEP20"] as const;
+const PAGE = 50;
 const UNMATCHED_COLS = "grid-cols-[104px_92px_1.6fr_1.3fr_auto]";
 
-export default async function AdminDepositsPage() {
+export default async function AdminDepositsPage({ searchParams }: { searchParams: Promise<{ status?: string; network?: string; q?: string }> }) {
   const admin = await requireAdminPage("deposits");
   const readOnly = !can(admin.role, "finance.write");
-  const [sum, states, unmatched, onchain, ledger] = await Promise.all([
+  const sp = await searchParams;
+  const status = (STATUS_ORDER as readonly string[]).includes(sp.status ?? "") ? (sp.status as (typeof STATUS_ORDER)[number]) : "all";
+  const network = (NETWORKS as readonly string[]).includes(sp.network ?? "") ? sp.network! : "all";
+  const q = (sp.q ?? "").trim().slice(0, 80);
+  const ql = q.toLowerCase();
+  const [sum, states, unmatched, onchainAll, ledgerAll] = await Promise.all([
     getDepositSummary(),
     getScanStates(),
     listUnmatchedDeposits(),
-    listOnchainDeposits(30),
-    listTransactions({ type: "deposit", limit: 20 }),
+    listOnchainDeposits(1000),
+    listTransactions({ type: "deposit", limit: 1000 }),
   ]);
+  // 필터 — 온체인 원장: 상태·네트워크·검색(UID·주소·해시) / 잔액 반영 내역: 네트워크·검색(UID·닉네임·이메일·해시)
+  const onchainFiltered = onchainAll.filter((d) => {
+    if (status !== "all" && d.status !== status) return false;
+    if (network !== "all" && d.network !== network) return false;
+    if (ql && !`${d.member_id ? toUid(d.member_id) : ""} ${d.from_address} ${d.tx_hash}`.toLowerCase().includes(ql)) return false;
+    return true;
+  });
+  const onchain = onchainFiltered.slice(0, PAGE);
+  const ledgerFiltered = ledgerAll.filter((r) => {
+    if (network !== "all" && (r.network ?? "") !== network) return false;
+    if (ql && !`${toUid(r.member_id)} ${r.members?.display_name ?? ""} ${r.members?.email ?? ""} ${r.tx_hash ?? ""}`.toLowerCase().includes(ql)) return false;
+    return true;
+  });
+  const ledger = ledgerFiltered.slice(0, PAGE);
+  const countBy = (k: string) => onchainAll.filter((d) => k === "all" || d.status === k).length;
+  const href = (o: { status?: string; network?: string; q?: string }) => {
+    const p = new URLSearchParams();
+    const s = o.status ?? status; const n = o.network ?? network; const qq = o.q ?? q;
+    if (s !== "all") p.set("status", s);
+    if (n !== "all") p.set("network", n);
+    if (qq) p.set("q", qq);
+    const qs = p.toString();
+    return `/admin/deposits${qs ? `?${qs}` : ""}`;
+  };
+  const hasFilter = status !== "all" || network !== "all" || Boolean(q);
   const configs = getDepositConfigStatus();
   const readyCount = configs.filter((c) => c.ready).length;
 
@@ -176,14 +211,49 @@ export default async function AdminDepositsPage() {
         ) : null}
 
         {/* ── 온체인 감지 원장 ── */}
-        <Panel title="온체인 입금 원장" sub={`스캔으로 감지된 전송 · 최근 ${onchain.length}건`} bodyClassName="overflow-x-auto">
+        <Panel
+          title="온체인 입금 원장"
+          sub={`스캔으로 감지된 전송 · ${hasFilter ? `조건 일치 ${onchainFiltered.length.toLocaleString()}건` : `전체 ${onchainAll.length.toLocaleString()}건`}${onchainFiltered.length > PAGE ? ` · 최근 ${PAGE}건 표시` : ""}`}
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex gap-0.5 rounded-[10px] bg-n-100 p-[3px] ring-1 ring-border">
+                {STATUS_ORDER.map((k) => {
+                  const on = status === k;
+                  return (
+                    <Link key={k} href={href({ status: k })} className={cn("flex items-center gap-1 rounded-[7px] px-2.5 py-1 text-[12px] transition-colors", on ? "bg-card font-semibold text-text-primary shadow-sm ring-1 ring-border" : "font-medium text-n-500 hover:text-text-primary")}>
+                      {k === "all" ? "전체" : STATUS[k].label}<span className={cn("text-[11px] tabular-nums", on ? "text-green-600" : "text-n-400")}>{countBy(k)}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="flex gap-0.5 rounded-[10px] bg-n-100 p-[3px] ring-1 ring-border">
+                {(["all", ...NETWORKS] as const).map((n) => {
+                  const on = network === n;
+                  return (
+                    <Link key={n} href={href({ network: n })} className={cn("flex items-center gap-1.5 rounded-[7px] px-2.5 py-1 text-[12px] transition-colors", on ? "bg-card font-semibold text-text-primary shadow-sm ring-1 ring-border" : "font-medium text-n-500 hover:text-text-primary")}>
+                      {n !== "all" ? <span className={cn("size-1.5 rounded-full", NET_DOT[n])} /> : null}{n === "all" ? "전체 네트워크" : n}
+                    </Link>
+                  );
+                })}
+              </div>
+              <form method="get" action="/admin/deposits" className="flex items-center gap-2 rounded-[10px] bg-card px-3 py-1.5 ring-1 ring-border-strong">
+                {status !== "all" ? <input type="hidden" name="status" value={status} /> : null}
+                {network !== "all" ? <input type="hidden" name="network" value={network} /> : null}
+                <SearchIcon className="size-3.5 text-text-tertiary" />
+                <input name="q" defaultValue={q} placeholder="UID · 보낸 주소 · tx hash" className="w-[200px] bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-tertiary" />
+              </form>
+              {hasFilter ? <Link href="/admin/deposits" className="text-[12px] font-medium text-text-tertiary hover:text-text-primary">초기화</Link> : null}
+            </div>
+          }
+          bodyClassName="overflow-x-auto"
+        >
           <div className="min-w-[900px]">
             <div className={cn("grid items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary", COLS)}>
               <span>블록 시각</span><span>회원</span><span>보낸 주소</span><span>TxHash</span><span>금액 · 네트워크</span><span className="text-right">상태</span>
             </div>
             {onchain.length === 0 ? (
               <div className="py-12 text-center text-sm text-text-tertiary">
-                감지된 온체인 입금이 없습니다. {readyCount === 0 ? "키·주소를 설정하면 스캔이 시작됩니다." : "‘지금 스캔’을 누르거나 크론이 돌면 여기에 쌓입니다."}
+                {onchainAll.length > 0 ? "조건에 맞는 온체인 입금이 없습니다." : <>감지된 온체인 입금이 없습니다. {readyCount === 0 ? "키·주소를 설정하면 스캔이 시작됩니다." : "‘지금 스캔’을 누르거나 크론이 돌면 여기에 쌓입니다."}</>}
               </div>
             ) : (
               onchain.map((d) => {
@@ -194,7 +264,7 @@ export default async function AdminDepositsPage() {
                     {d.member_id ? (
                       <div className="flex items-center gap-2.5">
                         <span className="grid size-7 shrink-0 place-items-center rounded-full bg-green-50 text-[10px] font-bold text-green-700">{uidInitials(d.member_id)}</span>
-                        <span className="truncate text-[13px] font-semibold text-text-primary">{toUid(d.member_id)}</span>
+                        <Link href={`/admin/members/${d.member_id}`} className="truncate text-[13px] font-semibold text-text-primary hover:underline">{toUid(d.member_id)}</Link>
                       </div>
                     ) : (
                       <span className="text-[12px] text-text-tertiary">미매칭</span>
@@ -216,13 +286,13 @@ export default async function AdminDepositsPage() {
         </Panel>
 
         {/* ── 잔액 반영 입금 내역(지갑 원장) ── */}
-        <Panel title="잔액 반영 입금 내역" sub="회원 지갑에 실제로 더해진 입금 · 온체인 반영 + 개발용 테스트 입금" bodyClassName="overflow-x-auto">
+        <Panel title="잔액 반영 입금 내역" sub={`회원 지갑에 실제로 더해진 입금 · 온체인 반영 + 개발용 테스트 입금 · ${hasFilter ? `조건 일치 ${ledgerFiltered.length.toLocaleString()}건` : `전체 ${ledgerAll.length.toLocaleString()}건`}${ledgerFiltered.length > PAGE ? ` · 최근 ${PAGE}건 표시` : ""}${q ? " · 검색은 UID·닉네임·이메일·해시" : ""}`} bodyClassName="overflow-x-auto">
           <div className="min-w-[700px]">
             <div className="grid grid-cols-[104px_1.2fr_1.4fr_1fr_120px] items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary">
               <span>일시</span><span>회원</span><span>TxHash</span><span>금액 · 네트워크</span><span className="text-right">상태</span>
             </div>
             {ledger.length === 0 ? (
-              <div className="py-10 text-center text-sm text-text-tertiary">입금 내역이 없습니다.</div>
+              <div className="py-10 text-center text-sm text-text-tertiary">{ledgerAll.length > 0 ? "조건에 맞는 입금 내역이 없습니다." : "입금 내역이 없습니다."}</div>
             ) : (
               ledger.map((r) => {
                 const url = txExplorerUrl(r.network, r.tx_hash);
@@ -231,7 +301,10 @@ export default async function AdminDepositsPage() {
                     <span className="text-[12px] tabular-nums text-text-tertiary">{toSeoulDateTime(r.created_at)}</span>
                     <div className="flex items-center gap-2.5">
                       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-green-50 text-[10px] font-bold text-green-700">{uidInitials(r.member_id)}</span>
-                      <span className="truncate text-[13px] font-semibold text-text-primary">{toUid(r.member_id)}</span>
+                      <div className="min-w-0">
+                        <Link href={`/admin/members/${r.member_id}`} className="block truncate text-[13px] font-semibold text-text-primary hover:underline">{toUid(r.member_id)}</Link>
+                        <span className="block truncate text-[10px] text-text-tertiary">{r.members?.display_name ?? ""}{r.members?.email ? ` · ${r.members.email}` : ""}</span>
+                      </div>
                     </div>
                     {r.tx_hash ? (
                       <a href={url ?? "#"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-text-tertiary hover:underline">

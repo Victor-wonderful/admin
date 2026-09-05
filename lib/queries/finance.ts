@@ -18,7 +18,7 @@ export interface WalletTx {
   tx_hash: string | null;
   status: string;
   created_at: string;
-  members?: { display_name: string } | null;
+  members?: { display_name: string; email?: string | null } | null;
 }
 export interface Withdrawal {
   id: string;
