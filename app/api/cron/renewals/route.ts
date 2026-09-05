@@ -27,6 +27,10 @@ export async function GET(req: Request) {
   const { data: placed, error: pErr } = await sb.rpc("auto_place_pending", { p_days: 7 });
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
 
+  // 4) 매출 배분 안전망 — 결제 트리거가 결제마다 배분하지만, 이번 달 사이클을 한 번 더 재계산(멱등)
+  const { error: aErr } = await sb.rpc("allocate_revenue", { p_cycle: t.slice(0, 7) });
+  if (aErr) return NextResponse.json({ error: aErr.message }, { status: 500 });
+
   const { data: reminders, error: rErr } = await sb.rpc("list_renewal_reminders", { p_today: t, p_days: 3 });
   if (rErr) return NextResponse.json({ error: rErr.message }, { status: 500 });
 
