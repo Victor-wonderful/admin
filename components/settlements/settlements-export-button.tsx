@@ -4,7 +4,7 @@ import { DownloadIcon } from "lucide-react";
 
 import { downloadCsv } from "@/lib/csv";
 
-// 마케터별 정산 CSV 내보내기 — 화면에 표시된 행(필터 적용 후)을 그대로 내려받는다.
+// 파트너별 정산 CSV 내보내기 — 화면에 표시된 행(필터 적용 후)을 그대로 내려받는다.
 export type SettlementCsvRow = { uid: string; name: string; rank: string; level: number; rankAmt: number; share: number; total: number; status: string };
 
 export function SettlementsExportButton({ cycle, rows }: { cycle: string; rows: SettlementCsvRow[] }) {

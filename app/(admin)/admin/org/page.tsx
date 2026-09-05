@@ -29,7 +29,7 @@ function calcUnilevel(root: TreeNode | null) {
 
 export default async function AdminOrgPage() {
   const admin = await requireAdminPage("org");
-  // 기준 회원 = 하위가 가장 많은 활성 마케터(비활성 루트 회피).
+  // 기준 회원 = 하위가 가장 많은 활성 파트너(비활성 루트 회피).
   const rootId = (await getActiveRootId()) ?? ROOT_MARKETER_ID;
   const [{ unilevel, placement }, mm] = await Promise.all([
     getBothTrees(rootId),

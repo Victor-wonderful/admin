@@ -61,7 +61,7 @@ export function SignupForm({ refCode }: { refCode?: string }) {
           name="ref"
           placeholder="예: REF0"
           defaultValue={v.ref ?? refCode}
-          hint="추천한 마케터의 코드 · 가입 후 변경할 수 없습니다"
+          hint="추천한 파트너의 코드 · 가입 후 변경할 수 없습니다"
           required
         />
         {state?.error ? (

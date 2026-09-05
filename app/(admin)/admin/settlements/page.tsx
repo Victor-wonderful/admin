@@ -63,7 +63,7 @@ function statusPill(status: string) {
   return <Pill tone="neutral">산정</Pill>;
 }
 
-// 마케터 직급 뱃지 (R1~R9). 무직급/미산정은 표시 안 함.
+// 파트너 직급 뱃지 (R1~R9). 무직급/미산정은 표시 안 함.
 function rankPill(rank: number | undefined) {
   if (!rank || rank <= 0) return null;
   return (
@@ -224,9 +224,9 @@ export default async function AdminSettlementsPage({ searchParams }: { searchPar
           </Panel>
         </div>
 
-        {/* ── 마케터별 정산 ── */}
+        {/* ── 파트너별 정산 ── */}
         <Panel
-          title="마케터별 정산"
+          title="파트너별 정산"
           sub={`${CYCLE} · ${statusFilter === "all" ? `상위 ${rows.length}명` : `${STATUS_LABEL[statusFilter]} ${rows.length}명`} · 지급 USDT`}
           action={
             <div className="flex flex-wrap items-center gap-2">
@@ -264,7 +264,7 @@ export default async function AdminSettlementsPage({ searchParams }: { searchPar
                       <span className="truncate text-[13px] font-semibold text-text-primary">{toUid(r.member_id)}</span>
                       {rankPill(r.member_rank ?? ranks.get(r.member_id)?.rank)}
                     </div>
-                    <span className="text-[10px] text-text-tertiary">마케터 · 당월 수당</span>
+                    <span className="text-[10px] text-text-tertiary">파트너 · 당월 수당</span>
                   </div>
                 </div>
                 <span className="text-right text-[13px] tabular-nums text-text-secondary">{usd(r.level_amount)}</span>

@@ -4,7 +4,7 @@ import type { MemberRole } from "@/lib/supabase/types";
 const LABEL: Record<MemberRole, string> = {
   registered: "회원",
   subscriber: "구독자",
-  marketer: "마케터",
+  marketer: "파트너",
 };
 
 export function RoleBadge({ role }: { role: MemberRole }) {

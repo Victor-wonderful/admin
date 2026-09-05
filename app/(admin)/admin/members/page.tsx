@@ -11,7 +11,7 @@ export default async function AdminMembersPage() {
 
   return (
     <>
-      <Topbar title="회원 관리" sub="등록 · 구독 · 마케터 전체 회원" uid={admin.display_name} />
+      <Topbar title="회원 관리" sub="등록 · 구독 · 파트너 전체 회원" uid={admin.display_name} />
       <MembersExplorer rows={rows} counts={counts} />
     </>
   );

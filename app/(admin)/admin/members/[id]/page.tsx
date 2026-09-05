@@ -42,7 +42,7 @@ export const dynamic = "force-dynamic";
 
 const CYCLE = currentCycle();
 
-const ROLE_LABEL: Record<MemberRole, string> = { registered: "등록회원", subscriber: "구독회원", marketer: "마케터" };
+const ROLE_LABEL: Record<MemberRole, string> = { registered: "등록회원", subscriber: "구독회원", marketer: "파트너" };
 const ROLE_BADGE: Record<MemberRole, string> = {
   registered: "bg-n-100 text-n-600",
   subscriber: "bg-green-50 text-green-700",
@@ -331,7 +331,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
           </SectionCard>
         </div>
 
-        {/* 직급·자격 + 수당 구성 (마케터) */}
+        {/* 직급·자격 + 수당 구성 (파트너) */}
         {isMarketer && rank ? (
           <div className="grid gap-4 lg:grid-cols-2">
             <SectionCard title="직급 · 자격 산정" action={<span className="inline-flex items-center gap-1 rounded-full bg-crypto-soft px-2.5 py-1 text-[11px] font-semibold text-crypto"><TrophyIcon className="size-3" /> {rankLabel}</span>}>
@@ -378,7 +378,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
           </div>
         ) : null}
 
-        {/* 후원 레그별 활성 (마케터) */}
+        {/* 후원 레그별 활성 (파트너) */}
         {isMarketer && sortedLegs.length > 0 ? (
           <SectionCard title="후원 레그별 활성 구독자" action={<span className="text-xs font-medium text-text-tertiary">{sortedLegs.length}개 라인</span>}>
             <div>

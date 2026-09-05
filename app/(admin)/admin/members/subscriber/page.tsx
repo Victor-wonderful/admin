@@ -11,7 +11,7 @@ export default async function AdminSubscriberMembersPage() {
 
   return (
     <>
-      <Topbar title="구독회원" sub="구독 $120/월 또는 상품 결제 · 예비 마케터" uid={admin.display_name} />
+      <Topbar title="구독회원" sub="구독 $120/월 또는 상품 결제 · 예비 파트너" uid={admin.display_name} />
       <MembersExplorer rows={rows} counts={counts} lockedRole="subscriber" />
     </>
   );

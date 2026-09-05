@@ -11,7 +11,7 @@ export function SideNav({
 }: {
   title: string;
   items: { href: string; label: string }[];
-  preserveParam?: string; // 예: 'as' — 페이지 이동 시 선택 마케터 유지
+  preserveParam?: string; // 예: 'as' — 페이지 이동 시 선택 파트너 유지
 }) {
   const pathname = usePathname();
   const params = useSearchParams();

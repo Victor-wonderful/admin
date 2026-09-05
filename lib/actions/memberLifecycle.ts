@@ -42,7 +42,7 @@ export async function subscribeMember(memberId: string, amount = 120): Promise<L
   return { ok: true, dest: "/portal/subscriber" };
 }
 
-// 만료된 구독 즉시 갱신(구독회원·마케터 공용). 오늘부터 30일. 성공 시 등급 홈 경로 반환.
+// 만료된 구독 즉시 갱신(구독회원·파트너 공용). 오늘부터 30일. 성공 시 등급 홈 경로 반환.
 export async function renewSubscription(memberId: string, amount = 120): Promise<LifecycleResult> {
   const sb = getServerClient();
   const { error } = await sb.rpc("renew_subscription_now", { p_member: memberId, p_amount: amount, p_as_of: cycleAsOf() });
@@ -62,7 +62,7 @@ export async function renewPartnerMembership(memberId: string, amount?: number):
   return { ok: true, dest: "/marketer/orders" };
 }
 
-// 구독회원 → 마케터 (연회비 $200 결제). 마케터 홈 경로 반환.
+// 구독회원 → 파트너 (연회비 $200 결제). 파트너 홈 경로 반환.
 export async function upgradeToMarketer(memberId: string, amount = 200): Promise<LifecycleResult> {
   const sb = getServerClient();
   const { error } = await sb.rpc("upgrade_to_marketer", { p_member: memberId, p_amount: amount, p_as_of: cycleAsOf() });
@@ -71,7 +71,7 @@ export async function upgradeToMarketer(memberId: string, amount = 200): Promise
   return { ok: true, dest: "/marketer/dashboard" };
 }
 
-// 등록회원 → 마케터 한 번에 (구독+연회비 합산 $320). 마케터 홈 경로 반환.
+// 등록회원 → 파트너 한 번에 (구독+연회비 합산 $320). 파트너 홈 경로 반환.
 export async function subscribeAndUpgrade(memberId: string, sub = 120, annual = 200): Promise<LifecycleResult> {
   const sb = getServerClient();
   const { error } = await sb.rpc("subscribe_and_upgrade", {
@@ -80,7 +80,7 @@ export async function subscribeAndUpgrade(memberId: string, sub = 120, annual = 
     p_annual: annual,
     p_as_of: cycleAsOf(),
   });
-  if (error) return { ok: false, error: toMessage(error, "마케터 전환에 실패했습니다") };
+  if (error) return { ok: false, error: toMessage(error, "파트너 전환에 실패했습니다") };
   revalidatePortals();
   return { ok: true, dest: "/marketer/dashboard" };
 }

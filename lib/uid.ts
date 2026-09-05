@@ -1,5 +1,5 @@
 // 회원 식별 UID — 회원은 실명이 없고 모든 화면에서 UID(FT·XXXXXX)로 표시한다.
-// 시드 display_name(예: "마케터#0")이 아니라 회원 id에서 결정적으로 파생한다(FNV-1a 32bit).
+// 시드 display_name(예: "파트너#0")이 아니라 회원 id에서 결정적으로 파생한다(FNV-1a 32bit).
 export function toUid(id: string | null | undefined): string {
   if (!id) return "—";
   let h = 0x811c9dc5 >>> 0;

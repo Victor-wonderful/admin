@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { placeUnderMajorLeg } from "@/lib/actions/spillover";
 
-// 대상 회원을 지정 마케터의 대실적 라인 최하단으로 후원배치.
+// 대상 회원을 지정 파트너의 대실적 라인 최하단으로 후원배치.
 export function SpilloverButton({
   marketerId,
   targetMemberId,

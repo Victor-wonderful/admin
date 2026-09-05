@@ -6,7 +6,7 @@ import { audit } from "@/lib/audit";
 import { assertCapability } from "@/lib/admin-guard";
 import { toUid } from "@/lib/uid";
 
-// 스필오버 배치: 대상 회원을 마케터 M 의 대실적 라인 최하단으로 이동.
+// 스필오버 배치: 대상 회원을 파트너 M 의 대실적 라인 최하단으로 이동.
 export async function placeUnderMajorLeg(marketerId: string, targetMemberId: string) {
   await assertCapability("members.write", "주력 라인 이동");
   const sb = getServerClient();

@@ -138,7 +138,7 @@ export function SidebarNavItem({
 
   if (locked) {
     return (
-      <div className="cursor-not-allowed" title="마케터 전용" aria-disabled>
+      <div className="cursor-not-allowed" title="파트너 전용" aria-disabled>
         {inner}
       </div>
     );

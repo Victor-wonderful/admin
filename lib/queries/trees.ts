@@ -54,7 +54,7 @@ export async function getUnilevelTree(rootId: string): Promise<TreeNode | null> 
   return buildTree(members, rootId, "recommender_id");
 }
 
-// 조직도 기본 기준 회원 — 활성 마케터 중, 후원 트리에 활성 자식을 가지고
+// 조직도 기본 기준 회원 — 활성 파트너 중, 후원 트리에 활성 자식을 가지고
 // 활성 하위가 가장 많은 회원(비활성 루트·비활성 주력 라인 회피).
 export async function getActiveRootId(): Promise<string | null> {
   const members = await getAllMembers();

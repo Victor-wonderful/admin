@@ -11,7 +11,7 @@ export default async function AdminMarketerMembersPage() {
 
   return (
     <>
-      <Topbar title="마케터" sub="연회비 $200/년 · 수당 자격" uid={admin.display_name} />
+      <Topbar title="파트너" sub="연회비 $200/년 · 수당 자격" uid={admin.display_name} />
       <MembersExplorer rows={rows} counts={counts} lockedRole="marketer" />
     </>
   );

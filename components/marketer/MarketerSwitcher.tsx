@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
-// 목(mock) "현재 마케터" 셀렉터 — ?as=<id> 로 전환. (실인증은 다음 단계)
+// 목(mock) "현재 파트너" 셀렉터 — ?as=<id> 로 전환. (실인증은 다음 단계)
 export function MarketerSwitcher({
   marketers,
   defaultId,
@@ -23,7 +23,7 @@ export function MarketerSwitcher({
 
   return (
     <div className="px-3 py-2">
-      <label className="mb-1 block text-xs text-muted-foreground">현재 마케터 (목)</label>
+      <label className="mb-1 block text-xs text-muted-foreground">현재 파트너 (목)</label>
       <select
         value={current}
         onChange={onChange}

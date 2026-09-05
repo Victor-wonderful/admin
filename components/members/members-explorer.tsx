@@ -28,10 +28,10 @@ export interface ExplorerRow {
   active: boolean;
   recommenderName: string | null;
   joinedAt: string; // YYYY-MM-DD
-  rank: number | null; // 마케터 직급 R1~R9, 0=무직급, null=비마케터
+  rank: number | null; // 파트너 직급 R1~R9, 0=무직급, null=비파트너
 }
 
-const ROLE_LABEL: Record<MemberRole, string> = { registered: "등록회원", subscriber: "구독회원", marketer: "마케터" };
+const ROLE_LABEL: Record<MemberRole, string> = { registered: "등록회원", subscriber: "구독회원", marketer: "파트너" };
 const ROLE_AVATAR: Record<MemberRole, string> = {
   registered: "bg-n-100 text-n-500",
   subscriber: "bg-green-50 text-green-700",
@@ -69,7 +69,7 @@ function subLabel(r: ExplorerRow): { text: string; cls: string } {
   if (r.active) return { text: "활성", cls: "bg-green-50 text-green-700" };
   return { text: "만료", cls: "bg-n-100 text-n-600" };
 }
-// 직급 셀: 마케터만 R1~R9 / 무직급, 비마케터는 — (직급 개념 없음)
+// 직급 셀: 파트너만 R1~R9 / 무직급, 비파트너는 — (직급 개념 없음)
 function rankCell(r: ExplorerRow): { text: string; cls: string } {
   if (r.role !== "marketer" || r.rank == null) return { text: "—", cls: "text-n-300" };
   if (r.rank === 0) return { text: "무직급", cls: "bg-n-100 text-n-500" };
@@ -83,7 +83,7 @@ export function MembersExplorer({
 }: {
   rows: ExplorerRow[];
   counts: { all: number; registered: number; subscriber: number; marketer: number };
-  // 하위 페이지(등록/구독/마케터)는 역할 고정 — 역할 탭 대신 헤딩 표시.
+  // 하위 페이지(등록/구독/파트너)는 역할 고정 — 역할 탭 대신 헤딩 표시.
   lockedRole?: MemberRole;
 }) {
   const [roleTab, setRoleTab] = React.useState<"all" | MemberRole>(lockedRole ?? "all");
@@ -138,14 +138,14 @@ export function MembersExplorer({
   const ROLE_AVATAR_LABEL: Record<MemberRole, string> = {
     registered: "등록회원",
     subscriber: "구독회원",
-    marketer: "마케터",
+    marketer: "파트너",
   };
 
   const tabs: { key: "all" | MemberRole; label: string; count: number }[] = [
     { key: "all", label: "전체", count: counts.all },
     { key: "registered", label: "등록회원", count: counts.registered },
     { key: "subscriber", label: "구독회원", count: counts.subscriber },
-    { key: "marketer", label: "마케터", count: counts.marketer },
+    { key: "marketer", label: "파트너", count: counts.marketer },
   ];
 
   const pageBtns = pageNumbers(safePage, totalPages);

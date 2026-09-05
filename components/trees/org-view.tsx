@@ -36,17 +36,17 @@ export interface PlacementVals {
 const ROLE_LABEL: Record<MemberRole, string> = {
   registered: "등록회원",
   subscriber: "구독회원",
-  marketer: "마케터",
+  marketer: "파트너",
 };
 
 const LEGEND_UNI = [
-  { c: "bg-crypto", t: "마케터" },
+  { c: "bg-crypto", t: "파트너" },
   { c: "bg-green-600", t: "구독회원" },
   { c: "bg-n-300", t: "등록회원" },
   { c: "bg-green-500 ring-2 ring-card", t: "점 = 활성 구독 중" },
 ];
 const LEGEND_PLACE = [
-  { c: "bg-crypto", t: "마케터" },
+  { c: "bg-crypto", t: "파트너" },
   { c: "bg-green-600 ring-2 ring-green-200", t: "주력 라인 (대실적)" },
   { c: "bg-warning", t: "후원배치 회원 (추천인≠후원부모)" },
   { c: "bg-green-500 ring-2 ring-card", t: "점 = 활성 구독 중" },
@@ -167,7 +167,7 @@ export function OrgView({
             <div className="space-y-1.5">
               <div className="text-[13px] font-bold text-warning">후원배치란?</div>
               <p className="text-xs leading-relaxed text-text-secondary">
-                추천한 회원을 본인 바로 밑이 아니라 후원배치 라인의 더 아래(하위 마케터 밑)에 꽂는 것입니다. 추천선(수당)은 본인 그대로지만 후원 부모는 달라집니다 — 즉 <b className="text-text-primary">추천인 ≠ 후원부모</b>.
+                추천한 회원을 본인 바로 밑이 아니라 후원배치 라인의 더 아래(하위 파트너 밑)에 꽂는 것입니다. 추천선(수당)은 본인 그대로지만 후원 부모는 달라집니다 — 즉 <b className="text-text-primary">추천인 ≠ 후원부모</b>.
                 <b className="text-warning"> ★ 아무 데나가 아니라 정해진 ‘단일 주력 라인(보통 왼쪽 한 라인)’에만</b> 계속 몰아줘(밀어주기) 그 라인을 깊게 누적시킵니다 → 대실적(MAX leg). 나머지 직추 라인은 소실적이 되고, 라인 위쪽 전원의 후원 하부로 함께 카운트돼 직급이 도미노로 상승합니다.
               </p>
               <div className="mt-1 inline-flex items-center gap-1.5 rounded-lg bg-card px-3 py-1.5 text-[11px] font-medium text-text-secondary ring-1 ring-warning/40">

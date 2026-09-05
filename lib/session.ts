@@ -59,7 +59,7 @@ export async function requireMember(expected?: MemberRole): Promise<MemberRow> {
   return member;
 }
 
-// 마케터 화면 뷰어 id — 로그인한 마케터 본인. 미로그인/타 등급은 requireMember 가 각자 홈으로 보낸다(M0 폴백 없음).
+// 파트너 화면 뷰어 id — 로그인한 파트너 본인. 미로그인/타 등급은 requireMember 가 각자 홈으로 보낸다(M0 폴백 없음).
 export async function getMarketerViewerId(): Promise<string> {
   const member = await requireMember("marketer");
   return member.id;

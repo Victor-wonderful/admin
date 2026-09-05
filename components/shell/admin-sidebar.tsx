@@ -67,7 +67,7 @@ export function AdminSidebar({ name = "관리자", role = "viewer", roleLabel = 
         <SidebarNavGroup href="/admin/members" icon={UsersIcon} label="회원관리" sublabel="Members">
           <SidebarSubItem href="/admin/members/registered" label="등록회원" />
           <SidebarSubItem href="/admin/members/subscriber" label="구독회원" />
-          <SidebarSubItem href="/admin/members/marketer" label="마케터" />
+          <SidebarSubItem href="/admin/members/marketer" label="파트너" />
         </SidebarNavGroup>
         <Item role={role} href="/admin/org" icon={NetworkIcon} label="조직도" sublabel="Genealogy" />
       </SidebarSection>

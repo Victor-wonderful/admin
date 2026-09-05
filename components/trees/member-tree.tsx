@@ -14,11 +14,11 @@ const ROLE_RING: Record<MemberRole, string> = {
   registered: "ring-n-300",
 };
 const ROLE_LABEL: Record<MemberRole, string> = {
-  marketer: "마케터",
+  marketer: "파트너",
   subscriber: "구독회원",
   registered: "등록회원",
 };
-// 파트너 포털(회원 화면)용 라벨 — 마케터·후원배치 대신 파트너·자동 배치. 관리자 링크도 없음.
+// 파트너 포털(회원 화면)용 라벨 — 파트너·후원배치 대신 파트너·자동 배치. 관리자 링크도 없음.
 const PARTNER_ROLE_LABEL: Record<MemberRole, string> = {
   marketer: "파트너",
   subscriber: "구독회원",

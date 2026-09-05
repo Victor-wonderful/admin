@@ -218,7 +218,7 @@ export async function getSettlementSummary(cycle: string) {
   return { level, rank, share, total, pending, count: rows.length, status };
 }
 
-// ── 마케터 통합 지갑 ───────────────────────────────────────────────
+// ── 파트너 통합 지갑 ───────────────────────────────────────────────
 // 현재 사이클 = 실제 이번 달(Asia/Seoul).
 const CURRENT_CYCLE = currentCycle();
 
@@ -419,7 +419,7 @@ export interface VisibleSettlement {
   relation: "self" | "placement" | "referral";
 }
 
-// 마케터 시점 수당 조회: 본인 + 하위(후원/직추)만. 상위(업라인) 수당은 절대 노출 안 됨.
+// 파트너 시점 수당 조회: 본인 + 하위(후원/직추)만. 상위(업라인) 수당은 절대 노출 안 됨.
 export async function getVisibleSettlements(viewerId: string, cycle: string): Promise<VisibleSettlement[]> {
   const sb = getServerClient();
   const { data, error } = await sb.rpc("visible_settlements", { p_viewer: viewerId, p_cycle: cycle });

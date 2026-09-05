@@ -123,7 +123,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   const tiers = [
     { name: "등록회원", count: stats.registered, desc: "추천 코드로 가입 · 미결제", icon: UsersIcon, badge: "bg-n-100 text-n-500", conv: null as string | null },
     { name: "구독회원", count: stats.subscriber, desc: "구독 $120/월 또는 상품 결제", icon: CircleCheckIcon, badge: "bg-green-50 text-green-700", conv: stats.registered ? `${pctOf(stats.subscriber, stats.registered)}%` : null },
-    { name: "마케터", count: stats.marketer, desc: "연회비 $200/년 · 수당 자격", icon: BadgeCheckIcon, badge: "bg-crypto-soft text-crypto", conv: stats.subscriber ? `${pctOf(stats.marketer, stats.subscriber)}%` : null },
+    { name: "파트너", count: stats.marketer, desc: "연회비 $200/년 · 수당 자격", icon: BadgeCheckIcon, badge: "bg-crypto-soft text-crypto", conv: stats.subscriber ? `${pctOf(stats.marketer, stats.subscriber)}%` : null },
   ];
 
   const mix = [
@@ -237,7 +237,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-[15px] font-semibold text-text-primary">회원 현황 · Members</h3>
-              <p className="text-xs text-text-tertiary">등록회원 → 구독회원 → 마케터</p>
+              <p className="text-xs text-text-tertiary">등록회원 → 구독회원 → 파트너</p>
             </div>
             <span className="text-[13px] font-semibold text-text-secondary">전체 {stats.total.toLocaleString()}명</span>
           </div>
@@ -285,7 +285,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           ))}
         </section>
 
-        {/* ── 수당 구성 + 상위 마케터 ── */}
+        {/* ── 수당 구성 + 상위 파트너 ── */}
         <section className="grid gap-[18px] lg:grid-cols-2">
           {/* MixCard */}
           <div className={cn(CARD, "flex flex-col gap-4")}>
@@ -326,7 +326,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           {/* TopMarketers */}
           <div className={cn(CARD, "flex flex-col gap-3.5")}>
             <div className="flex items-center justify-between">
-              <h3 className="text-[15px] font-semibold text-text-primary">상위 마케터</h3>
+              <h3 className="text-[15px] font-semibold text-text-primary">상위 파트너</h3>
               <span className="text-xs font-medium text-green-700">이번 달</span>
             </div>
             <div className="space-y-3">
@@ -345,7 +345,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
               ))}
             </div>
             <div className="mt-auto flex items-center justify-center gap-1.5 border-t pt-3.5 text-xs font-medium text-text-secondary">
-              전체 마케터 보기 <ChevronRightIcon className="size-3.5 text-text-tertiary" />
+              전체 파트너 보기 <ChevronRightIcon className="size-3.5 text-text-tertiary" />
             </div>
           </div>
         </section>
@@ -380,7 +380,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           <div className={cn(CARD, "flex flex-col gap-4")}>
             <div className="flex items-center justify-between">
               <h3 className="text-[15px] font-semibold text-text-primary">직급 분포</h3>
-              <span className="text-xs font-medium text-text-tertiary">마케터 {stats.marketer.toLocaleString()}명</span>
+              <span className="text-xs font-medium text-text-tertiary">파트너 {stats.marketer.toLocaleString()}명</span>
             </div>
             <div className="flex flex-1 items-end gap-2">
               {rankDist.map((r) => (

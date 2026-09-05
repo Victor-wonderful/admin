@@ -8,7 +8,7 @@ import { toUid } from "@/lib/uid";
 
 export type WithdrawalStatus = "pending" | "approved" | "sending" | "completed" | "rejected";
 
-// 출금 신청(마케터). 잔액 검증 + 홀드(지갑 차감) 후 pending 생성. 신규 withdrawal id 반환.
+// 출금 신청(파트너). 잔액 검증 + 홀드(지갑 차감) 후 pending 생성. 신규 withdrawal id 반환.
 export async function requestWithdrawal(
   memberId: string,
   amount: number,
