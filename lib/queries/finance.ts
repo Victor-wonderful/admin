@@ -415,17 +415,20 @@ export async function getVisibleSettlements(viewerId: string, cycle: string): Pr
 // 매출 = subscriptions + annual_memberships 결제액 집계
 export async function getRevenueSummary() {
   const sb = getServerClient();
-  const [subs, annual] = await Promise.all([
+  const [subs, annual, purs] = await Promise.all([
     sb.from("subscriptions").select("amount_usd, paid_at"),
     sb.from("annual_memberships").select("amount_usd, paid_at"),
+    sb.from("product_purchases").select("amount_usd, paid_at, status"),
   ]);
   if (subs.error) throw subs.error;
   if (annual.error) throw annual.error;
+  if (purs.error) throw purs.error;
   const month = currentCycle();
   const inMonth = (p: unknown) => typeof p === "string" && p.startsWith(month);
 
   let total = 0, monthTotal = 0;
   let monthSub = 0, monthAnnual = 0, monthSubCount = 0, monthAnnualCount = 0;
+  let monthProduct = 0, monthProductCount = 0;
   for (const r of subs.data ?? []) {
     const amt = Number(r.amount_usd);
     total += amt;
@@ -436,6 +439,13 @@ export async function getRevenueSummary() {
     total += amt;
     if (inMonth(r.paid_at)) { monthTotal += amt; monthAnnual += amt; monthAnnualCount++; }
   }
+  // 상품(카탈로그) 구매도 매출·배분 대상(환불·실패 제외)
+  for (const r of purs.data ?? []) {
+    if (r.status === "refunded" || r.status === "failed") continue;
+    const amt = Number(r.amount_usd);
+    total += amt;
+    if (inMonth(r.paid_at)) { monthTotal += amt; monthProduct += amt; monthProductCount++; }
+  }
   return {
     total,
     monthTotal,
@@ -443,6 +453,8 @@ export async function getRevenueSummary() {
     monthAnnual,
     monthSubCount,
     monthAnnualCount,
+    monthProduct,
+    monthProductCount,
     subCount: subs.data?.length ?? 0,
     annualCount: annual.data?.length ?? 0,
   };

@@ -57,17 +57,18 @@ export default async function AdminRevenuePage() {
   const monthDelta = x.prevMonthTotal > 0 ? ((m - x.prevMonthTotal) / x.prevMonthTotal) * 100 : null;
   const TREND = x.trend.map((t) => ({ m: String(Number(t.cycle.slice(5, 7))), e: t.sub, a: t.membership, p: t.product }));
   const TREND_MAX = Math.max(1, ...TREND.map((t) => t.e + t.a + t.p));
-  const cnt = rev.monthSubCount + rev.monthAnnualCount;
+  const cnt = rev.monthSubCount + rev.monthAnnualCount + rev.monthProductCount;
   const arpu = cnt > 0 ? m / cnt : 0;
   const subPct = pctOf(rev.monthSub, m);
   const annPct = pctOf(rev.monthAnnual, m);
+  const prodPct = Math.max(0, 100 - subPct - annPct) > 0 && rev.monthProduct > 0 ? pctOf(rev.monthProduct, m) : 0;
 
   const KPIS = [
     { icon: CalendarCheckIcon, tone: "green" as const, label: "당일 매출 (USDT)", value: usd(x.todayAmount), delta: null as number | null, deltaLabel: `${x.todayCount}건` },
     { icon: TrendingUpIcon, tone: "green" as const, label: "당월 매출 (USDT)", value: usd(m), delta: monthDelta, deltaLabel: monthDelta == null ? cycleLabel : "vs 전월" },
     { icon: SigmaIcon, tone: "neutral" as const, label: "누적 매출", value: usd(rev.total), delta: null, deltaLabel: "전체 기간" },
     { icon: CoinsIcon, tone: "crypto" as const, label: "객단가 (ARPU)", value: usd1(arpu), delta: null, deltaLabel: `${cnt.toLocaleString()}건 기준` },
-    { icon: RotateCcwIcon, tone: "negative" as const, label: "당월 상품 매출", value: usd(x.monthProduct), delta: null, deltaLabel: `${x.monthProductCount}건 · 배분 미포함` },
+    { icon: RotateCcwIcon, tone: "info" as const, label: "당월 상품 매출", value: usd(rev.monthProduct), delta: null, deltaLabel: `${rev.monthProductCount}건 · 배분 포함` },
   ];
 
   const ALLOC = [
@@ -79,13 +80,15 @@ export default async function AdminRevenuePage() {
 
   const COMPOSITION = [
     { label: "포르투나 구독", value: usd(rev.monthSub), pct: subPct, dot: "bg-green-500" },
-    { label: "마케터 연회비", value: usd(rev.monthAnnual), pct: annPct, dot: "bg-crypto" },
+    { label: "파트너 멤버십", value: usd(rev.monthAnnual), pct: annPct, dot: "bg-crypto" },
+    { label: "상품", value: usd(rev.monthProduct), pct: prodPct, dot: "bg-info" },
   ];
-  const donut = `conic-gradient(#1f9d55 0 ${subPct}%, #7c3aed ${subPct}% 100%)`;
+  const donut = `conic-gradient(#1f9d55 0 ${subPct}%, #7c3aed ${subPct}% ${subPct + annPct}%, #2f6fed ${subPct + annPct}% 100%)`;
 
   const PRODUCTS = [
     { name: "포르투나 구독", price: "$120 / 월", dot: "bg-green-500", count: rev.monthSubCount, value: rev.monthSub, pct: subPct, avg: rev.monthSubCount ? rev.monthSub / rev.monthSubCount : 0 },
-    { name: "마케터 연회비", price: "$200 / 년", dot: "bg-crypto", count: rev.monthAnnualCount, value: rev.monthAnnual, pct: annPct, avg: rev.monthAnnualCount ? rev.monthAnnual / rev.monthAnnualCount : 0 },
+    { name: "파트너 멤버십", price: "$200 / 년", dot: "bg-crypto", count: rev.monthAnnualCount, value: rev.monthAnnual, pct: annPct, avg: rev.monthAnnualCount ? rev.monthAnnual / rev.monthAnnualCount : 0 },
+    { name: "상품(카탈로그)", price: "상품별 가격", dot: "bg-info", count: rev.monthProductCount, value: rev.monthProduct, pct: prodPct, avg: rev.monthProductCount ? rev.monthProduct / rev.monthProductCount : 0 },
   ];
 
 
@@ -139,7 +142,7 @@ export default async function AdminRevenuePage() {
         <div className="grid gap-[18px] lg:grid-cols-[1fr_388px]">
           <Panel title="매출 추이" sub="최근 12개월 · 항목별 (USDT)" action={<span className="rounded-md bg-surface-muted px-2.5 py-1.5 text-[12px] font-medium text-text-secondary ring-1 ring-border">{x.trend[0]?.cycle} ~ {cycle}</span>}>
             <div className="mb-4 flex items-center gap-4">
-              {[...COMPOSITION, { label: "상품", dot: "bg-info" }].map((c) => (
+              {COMPOSITION.map((c) => (
                 <span key={c.label} className="flex items-center gap-1.5 text-[12px] font-medium text-text-secondary">
                   <span className={cn("size-2.5 rounded-full", c.dot)} />
                   {c.label}
@@ -168,7 +171,7 @@ export default async function AdminRevenuePage() {
             </div>
           </Panel>
 
-          <Panel title="매출 구성" sub={`당월 · ${cycleLabel} · 구독·멤버십(배분 대상)`}>
+          <Panel title="매출 구성" sub={`당월 · ${cycleLabel} · 구독·멤버십·상품 전부 배분 대상`}>
             <div className="flex flex-col items-center gap-5">
               <div className="relative grid size-44 place-items-center rounded-full" style={{ background: donut }}>
                 <div className="grid size-28 place-items-center rounded-full bg-card text-center">
@@ -218,7 +221,7 @@ export default async function AdminRevenuePage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between rounded-lg bg-surface-muted px-4 py-3 ring-1 ring-border">
                 <span className="text-[13px] font-semibold text-text-primary">지갑 잔액 결제</span>
-                <span className="text-[13px] font-bold tabular-nums text-text-primary">{usd(m + x.monthProduct)} · 100%</span>
+                <span className="text-[13px] font-bold tabular-nums text-text-primary">{usd(m)} · 100%</span>
               </div>
               <div className="text-[11px] leading-relaxed text-text-tertiary">
                 회원은 회사 입금 주소(Tron TRC20 / BSC BEP20)로 USDT 를 보내 잔액을 채우고, 구독·멤버십·상품은 그 잔액에서 결제됩니다. 체인별 입금 비중은 지갑잔액 화면의 ‘체인별 입출금’에 있습니다.
@@ -230,7 +233,7 @@ export default async function AdminRevenuePage() {
         {/* ── 상품별 매출 (라이브) ── */}
         <Panel
           title="상품별 매출"
-          sub={`${cycleLabel} · 결제수단 USDT · 상품 매출은 구독·주문 화면에서`}
+          sub={`${cycleLabel} · 결제수단 USDT · 상품 상세는 구독·주문 화면에서`}
           bodyClassName="overflow-x-auto"
         >
           <div className="min-w-[720px]">
