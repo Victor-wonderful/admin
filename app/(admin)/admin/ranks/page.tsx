@@ -2,7 +2,6 @@ import {
   ArrowDownToLineIcon,
   LayersIcon,
   InfoIcon,
-  PlusIcon,
   CornerDownRightIcon,
   ArrowDownIcon,
 } from "lucide-react";
@@ -12,7 +11,6 @@ import { requireAdminPage } from "@/lib/admin-guard";
 import { can } from "@/lib/admin-permissions";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
-import { RankToggle } from "@/components/ranks/rank-toggle";
 import { RankConfigEditor } from "@/components/ranks/rank-config-editor";
 import { listRanks } from "@/lib/queries/ranks";
 import { cn } from "@/lib/utils";
@@ -41,16 +39,6 @@ const LEVELS = [
   { n: 2, name: "레벨 2", rate: "9", on: true, muted: false },
   { n: 3, name: "레벨 3 이상", rate: null, on: false, muted: true },
 ];
-
-// 값 입력 박스 (편집 가능 · uncontrolled)
-function NumBox({ value, unit = "%", w = "w-8" }: { value: string; unit?: string; w?: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-card px-2.5 py-1.5 ring-1 ring-border-strong">
-      <input defaultValue={value} className={cn("bg-transparent text-right text-sm font-bold tabular-nums text-text-primary outline-none", w)} />
-      <span className="text-[11px] text-text-tertiary">{unit}</span>
-    </span>
-  );
-}
 
 export default async function AdminRanksPage() {
   const admin = await requireAdminPage("ranks");
@@ -170,7 +158,7 @@ export default async function AdminRanksPage() {
         {/* ── 레벨 수당 ── */}
         <Panel
           title={<span className="flex items-center gap-2"><span className="grid size-7 place-items-center rounded-md bg-green-50 text-green-700"><LayersIcon className="size-4" /></span>레벨 수당</span>}
-          sub="추천 세대별 요율 · 레벨 1·2대 지급, 3 이상 차단"
+          sub="추천 세대별 요율 · 레벨 1·2대 지급, 3 이상 차단 · 정산 엔진 고정값(변경은 배포 필요)"
         >
           <div className="grid grid-cols-[40px_1fr_auto_auto] items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary">
             <span>레벨</span><span /><span className="text-right">지급 요율</span><span className="text-right">지급 여부</span>
@@ -179,13 +167,10 @@ export default async function AdminRanksPage() {
             <div key={l.n} className="grid grid-cols-[40px_1fr_auto_auto] items-center gap-3 border-b py-3.5 last:border-0">
               <span className={cn("grid size-7 place-items-center rounded-md text-xs font-bold", l.muted ? "bg-n-100 text-n-400" : "bg-green-50 text-green-700")}>{l.n}</span>
               <span className={cn("text-sm font-semibold", l.muted ? "text-text-tertiary" : "text-text-primary")}>{l.name}</span>
-              <span className="flex justify-end">{l.rate ? <NumBox value={l.rate} /> : <span className="text-[13px] font-medium text-text-tertiary">지급 차단</span>}</span>
-              <span className="flex justify-end"><RankToggle defaultOn={l.on} /></span>
+              <span className="flex justify-end">{l.rate ? <span className="text-sm font-bold tabular-nums text-text-primary">{l.rate}%</span> : <span className="text-[13px] font-medium text-text-tertiary">지급 차단</span>}</span>
+              <span className="flex justify-end"><Pill tone={l.on ? "green" : "neutral"} dot={l.on}>{l.on ? "지급" : "차단"}</Pill></span>
             </div>
           ))}
-          <button className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border-strong py-2.5 text-[13px] font-medium text-text-secondary">
-            <PlusIcon className="size-4" /> 레벨 추가
-          </button>
         </Panel>
 
         {/* ── 직급 자격 기준 · 공유수당 (실DB 편집) ── */}

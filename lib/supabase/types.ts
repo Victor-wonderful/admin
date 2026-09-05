@@ -22,6 +22,8 @@ export interface MemberRow {
   placed_by?: string | null; // system | partner | admin | seed
   placement_locked?: boolean; // 한 번 확정되면 true(파트너 변경 불가)
   placement_note?: string | null;
+  suspended_at?: string | null; // 관리자 계정 정지 시각(null = 정상)
+  suspend_reason?: string | null;
 }
 
 export interface ReferralCodeRow {

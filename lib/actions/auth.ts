@@ -40,7 +40,10 @@ export async function loginByEmail(_prev: AuthState, formData: FormData): Promis
 
   const sb = getServerClient();
   const { data, error } = await sb.rpc("member_login", { p_email: email, p_password: password });
-  if (error) return { error: "로그인 처리 중 오류가 발생했습니다", values: { email } };
+  if (error) {
+    if (error.message.includes("SUSPENDED")) return { error: "정지된 계정입니다. 고객센터에 문의하세요", values: { email } };
+    return { error: "로그인 처리 중 오류가 발생했습니다", values: { email } };
+  }
   const row = Array.isArray(data) ? data[0] : null;
   if (!row) return { error: "ID 또는 비밀번호가 올바르지 않습니다", values: { email } };
 

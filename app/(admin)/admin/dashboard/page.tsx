@@ -3,23 +3,24 @@ import {
   ArrowDownLeftIcon,
   ArrowUpRightIcon,
   LayersIcon,
-  Building2Icon,
-  PieChartIcon,
-  ShieldIcon,
   UsersIcon,
   CircleCheckIcon,
   BadgeCheckIcon,
   CalculatorIcon,
   CircleArrowUpIcon,
   CalendarIcon,
-  TrendingUpIcon,
   ChevronRightIcon,
-  HistoryIcon,
   UserIcon,
   WalletIcon,
 } from "lucide-react";
 
+import Link from "next/link";
+
 import { Topbar } from "@/components/shell/topbar";
+import { WithdrawalActions } from "@/components/withdrawals/withdrawal-actions";
+import type { WithdrawalStatus } from "@/lib/actions/withdrawals";
+import { can } from "@/lib/admin-permissions";
+import { getMemberRanksMap } from "@/lib/queries/ranks";
 import { requireAdminPage } from "@/lib/admin-guard";
 import { PAGE_LABEL, type AdminPage } from "@/lib/admin-permissions";
 import { ADMIN_ROLE_LABEL } from "@/lib/admin-session";
@@ -33,6 +34,8 @@ import {
   listSettlements,
   listWithdrawals,
   listTransactions,
+  getMonthlyRevenueByWeek,
+  countRenewalsDue,
 } from "@/lib/queries/finance";
 import { toUid, uidInitials } from "@/lib/uid";
 import { cn } from "@/lib/utils";
@@ -64,22 +67,6 @@ function relTime(iso: string): string {
   return `${d}일 전`;
 }
 
-// 직급 분포(정적 — 회원별 직급 산정은 비용이 커 추후 집계 연동)
-const RANK_DIST = [
-  { l: "R1", c: 120, crypto: false },
-  { l: "R2", c: 78, crypto: false },
-  { l: "R3", c: 45, crypto: false },
-  { l: "R4", c: 28, crypto: false },
-  { l: "R5", c: 18, crypto: false },
-  { l: "R6", c: 11, crypto: false },
-  { l: "R7", c: 7, crypto: true },
-  { l: "R8", c: 4, crypto: true },
-  { l: "R9", c: 1, crypto: true },
-];
-const RANK_MAX = 120;
-
-const WEEK_BARS = [40, 52, 46, 62, 74];
-
 const TX_META: Record<string, { label: string; icon: typeof UserIcon; tone: "green" | "crypto" | "info" }> = {
   deposit: { label: "충전 입금", icon: ArrowDownLeftIcon, tone: "green" },
   payment: { label: "구독 결제", icon: UserIcon, tone: "info" },
@@ -99,7 +86,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   const admin = await requireAdminPage("dashboard");
   const { denied } = await searchParams;
   const deniedLabel = denied && denied in PAGE_LABEL ? PAGE_LABEL[denied as AdminPage] : null;
-  const [stats, wallets, settle, topSettle, wdStats, withdrawals, txns, revenue] = await Promise.all([
+  const [stats, wallets, settle, topSettle, wdStats, withdrawals, txns, revenue, weekBars, renewalsDue, ranksMap] = await Promise.all([
     getMemberStats(),
     getSystemWallets(),
     getSettlementSummary(CYCLE),
@@ -108,7 +95,18 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
     listWithdrawals(4),
     listTransactions({ limit: 5 }),
     getRevenueSummary(),
+    getMonthlyRevenueByWeek(CYCLE),
+    countRenewalsDue(7),
+    getMemberRanksMap(),
   ]);
+  const canFinance = can(admin.role, "finance.write");
+  // 직급 분포 — member_ranks 실산정(R1~R9). R7 이상은 보라.
+  const rankDist = Array.from({ length: 9 }, (_, i) => ({ l: `R${i + 1}`, c: 0, crypto: i >= 6 }));
+  for (const r of ranksMap.values()) if (r.rank >= 1 && r.rank <= 9) rankDist[r.rank - 1].c++;
+  const rankMax = Math.max(1, ...rankDist.map((r) => r.c));
+  // 자금 흐름 — 당월 주차별 매출 입금. 현재 주차 강조.
+  const weekMax = Math.max(1, ...weekBars);
+  const curWeek = Math.min(4, Math.floor((new Date().getUTCDate() - 1) / 7));
 
   const pool = (k: string) => wallets.find((w) => w.kind === k)?.balance_usd ?? 0;
   const operating = pool("operating");
@@ -136,7 +134,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
     { icon: LayersIcon, badge: "bg-crypto-soft text-crypto", pill: "당월", pillTone: "crypto" as const, value: usd(settle.share), label: "공유수당 (당월)" },
     { icon: CalculatorIcon, badge: "bg-n-100 text-n-500", pill: `${settle.count}명`, pillTone: "neutral" as const, value: usd(settle.total), label: "이번달 정산 예정" },
     { icon: CircleArrowUpIcon, badge: "bg-warning-soft text-warning", pill: `${wdStats.pending}건`, pillTone: "warning" as const, value: usd(wdStats.pendingAmount), label: "출금 대기" },
-    { icon: CalendarIcon, badge: "bg-info-soft text-info", pill: "7일 내", pillTone: "info" as const, value: "38건", label: "구독 갱신 임박" },
+    { icon: CalendarIcon, badge: "bg-info-soft text-info", pill: "7일 내", pillTone: "info" as const, value: `${renewalsDue}건`, label: "구독 갱신 임박" },
   ];
 
   return (
@@ -158,22 +156,18 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
               <div className="text-xs text-text-tertiary">포르투나 운영 지갑 · {NET_LABEL[wallets.find((w) => w.kind === "operating")?.network ?? ""] ?? "네트워크 미설정"} · USDT</div>
             </div>
             <div className="flex gap-2">
-              <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-green-50 px-3 py-2 text-[13px] font-semibold text-green-700">
-                <ArrowDownLeftIcon className="size-4" /> 입금
-              </button>
-              <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-semibold text-text-secondary">
-                <ArrowUpRightIcon className="size-4" /> 출금
-              </button>
+              <Link href="/admin/deposits" className="inline-flex items-center gap-1.5 rounded-[10px] bg-green-50 px-3 py-2 text-[13px] font-semibold text-green-700 hover:bg-green-100">
+                <ArrowDownLeftIcon className="size-4" /> 입금내역
+              </Link>
+              <Link href="/admin/withdrawals" className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-semibold text-text-secondary hover:bg-n-100">
+                <ArrowUpRightIcon className="size-4" /> 출금내역
+              </Link>
             </div>
           </div>
 
           <div className="flex items-center justify-between gap-3 border-t pt-4">
             <span className="text-xs font-semibold text-text-secondary">자금 흐름 · 입금/출금</span>
-            <div className="flex gap-1 rounded-md bg-surface-muted p-1 text-[12px] ring-1 ring-border">
-              {["일", "주", "월"].map((t, i) => (
-                <span key={t} className={cn("rounded px-2.5 py-1", i === 2 ? "bg-card font-semibold text-text-primary shadow-sm" : "text-text-secondary")}>{t}</span>
-              ))}
-            </div>
+            <span className="text-[11px] font-medium text-text-tertiary">{Number(CYCLE.slice(5, 7))}월 · 주차별 매출 입금</span>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1.1fr]">
@@ -192,10 +186,10 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
               </div>
             </div>
             <div className="flex items-end gap-2.5 rounded-lg bg-surface-muted px-4 py-3">
-              {WEEK_BARS.map((h, i) => (
-                <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
-                  <div className={cn("w-4 rounded-t", i === WEEK_BARS.length - 1 ? "bg-green-500" : "bg-n-200")} style={{ height: `${h}px` }} />
-                  <span className="text-[10px] text-text-tertiary">W{i + 1}</span>
+              {weekBars.map((v, i) => (
+                <div key={i} className="flex flex-1 flex-col items-center gap-1.5" title={`W${i + 1} · ${usd(v)}`}>
+                  <div className={cn("w-4 rounded-t", v === 0 ? "bg-n-200" : i === curWeek ? "bg-green-500" : "bg-green-300")} style={{ height: `${v === 0 ? 4 : Math.max(6, Math.round((v / weekMax) * 74))}px` }} />
+                  <span className={cn("text-[10px]", i === curWeek ? "font-semibold text-text-secondary" : "text-text-tertiary")}>W{i + 1}</span>
                 </div>
               ))}
             </div>
@@ -361,7 +355,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
                 <h3 className="text-[15px] font-semibold text-text-primary">출금 승인 대기</h3>
                 <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning">{wdStats.pending}건</span>
               </div>
-              <span className="text-xs font-medium text-text-tertiary">전체 보기</span>
+              <Link href="/admin/withdrawals" className="text-xs font-medium text-text-tertiary hover:text-text-primary hover:underline">전체 보기</Link>
             </div>
             <div>
               {withdrawals.map((w) => (
@@ -372,10 +366,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
                     <div className="text-[11px] text-text-tertiary">{netLabel(w.network)} · {relTime(w.requested_at)}</div>
                   </div>
                   <span className="text-[13px] font-bold tabular-nums text-text-primary">{usd2(w.amount_usd)}</span>
-                  <div className="flex gap-1.5">
-                    <button className="rounded-lg bg-green-500 px-3 py-1.5 text-xs font-semibold text-white">승인</button>
-                    <button className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-text-secondary ring-1 ring-border-strong">보류</button>
-                  </div>
+                  <WithdrawalActions id={w.id} status={w.status as WithdrawalStatus} network={w.network} txHash={w.tx_hash} readOnly={!canFinance} />
                 </div>
               ))}
             </div>
@@ -388,10 +379,10 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
               <span className="text-xs font-medium text-text-tertiary">마케터 {stats.marketer.toLocaleString()}명</span>
             </div>
             <div className="flex flex-1 items-end gap-2">
-              {RANK_DIST.map((r) => (
+              {rankDist.map((r) => (
                 <div key={r.l} className="flex flex-1 flex-col items-center justify-end gap-1.5">
                   <span className="text-[10px] font-semibold text-text-secondary">{r.c}</span>
-                  <div className={cn("w-full rounded-t", r.crypto ? "bg-crypto" : "bg-green-500")} style={{ height: `${(r.c / RANK_MAX) * 130}px` }} />
+                  <div className={cn("w-full rounded-t", r.crypto ? "bg-crypto" : "bg-green-500")} style={{ height: `${Math.max(3, Math.round((r.c / rankMax) * 130))}px` }} />
                   <span className="text-[10px] text-text-tertiary">{r.l}</span>
                 </div>
               ))}
@@ -406,9 +397,9 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
               <h3 className="text-[15px] font-semibold text-text-primary">최근 온체인 입·출금</h3>
               <p className="text-xs text-text-tertiary">실시간 트랜잭션</p>
             </div>
-            <span className="inline-flex items-center gap-1 rounded-[10px] bg-surface-muted px-3 py-1.5 text-xs font-medium text-text-secondary ring-1 ring-border">
+            <Link href="/admin/transactions" className="inline-flex items-center gap-1 rounded-[10px] bg-surface-muted px-3 py-1.5 text-xs font-medium text-text-secondary ring-1 ring-border hover:bg-n-100">
               전체 보기 <ChevronRightIcon className="size-3.5 text-text-tertiary" />
-            </span>
+            </Link>
           </div>
           <div>
             {txns.map((t) => {

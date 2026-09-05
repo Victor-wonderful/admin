@@ -72,6 +72,14 @@ export async function ensureFortunaUser(args: {
   }
 }
 
+// Fortuna 앱 계정 차단/해제(회원 정지 연동). 차단은 100년 ban, 해제는 none. 실패해도 무시.
+export async function setFortunaBanned(fortunaUserId: string, banned: boolean): Promise<void> {
+  const sb = fortunaAdmin();
+  if (!sb) return;
+  const { error } = await sb.auth.admin.updateUserById(fortunaUserId, { ban_duration: banned ? "876000h" : "none" });
+  if (error) console.warn("[fortuna-auth] 계정 차단 상태 변경 실패:", error.message);
+}
+
 // Fortuna profiles.display_name 갱신(닉네임 변경 시). 실패해도 무시.
 export async function updateFortunaDisplayName(fortunaUserId: string, displayName: string): Promise<void> {
   const sb = fortunaAdmin();

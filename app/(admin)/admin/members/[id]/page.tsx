@@ -12,9 +12,6 @@ import {
   CreditCardIcon,
   CalendarDaysIcon,
   TrophyIcon,
-  KeyRoundIcon,
-  LockIcon,
-  BanIcon,
   MailIcon,
 } from "lucide-react";
 
@@ -25,6 +22,7 @@ import { getMember, getMemberSubscriptions, listReferred } from "@/lib/queries/m
 import { listMemberSessions, describeDevice } from "@/lib/queries/sessions";
 import { ForceLogoutButton } from "@/components/members/force-logout-button";
 import { AdminPlaceForm } from "@/components/members/admin-place-form";
+import { MemberAdminActions } from "@/components/members/member-admin-actions";
 
 // 세션 종료 사유 표기
 const SESSION_END: Record<string, string> = { logout: "로그아웃", other_device: "다른 기기 로그인", expired: "만료", admin: "관리자 종료" };
@@ -199,14 +197,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-card px-3.5 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong">
-              <KeyRoundIcon className="size-3.5" /> 비밀번호 재설정
-            </button>
-            <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-card px-3.5 py-2 text-[13px] font-medium text-negative ring-1 ring-border-strong">
-              <BanIcon className="size-3.5" /> 계정 정지
-            </button>
-          </div>
+          <MemberAdminActions memberId={me.id} label={`${me.display_name} (${uid})`} suspended={Boolean(me.suspended_at)} suspendReason={me.suspend_reason ?? null} readOnly={!canManage} />
         </section>
 
         {/* 포르투나 구독 상태 */}
@@ -298,7 +289,13 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
 
           <SectionCard title="계정 · 보안">
             <div>
-              <InfoRow label="계정 상태"><span className="inline-flex items-center gap-1.5 text-green-700"><span className="size-1.5 rounded-full bg-green-700" /> 정상</span></InfoRow>
+              <InfoRow label="계정 상태">
+                {me.suspended_at ? (
+                  <span className="inline-flex items-center gap-1.5 text-negative"><span className="size-1.5 rounded-full bg-negative" /> 정지 · {me.suspended_at.slice(0, 10)}{me.suspend_reason ? ` · ${me.suspend_reason}` : ""}</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-green-700"><span className="size-1.5 rounded-full bg-green-700" /> 정상</span>
+                )}
+              </InfoRow>
               <InfoRow label="로그인 방식">이메일 + 비밀번호 · 1기기 제한</InfoRow>
               <InfoRow label="현재 접속">
                 {activeSession ? (
@@ -314,9 +311,6 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
               </InfoRow>
             </div>
             <div className="mt-3 flex gap-2">
-              <button className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[10px] bg-card py-2 text-[12px] font-medium text-text-secondary ring-1 ring-border-strong">
-                <LockIcon className="size-3.5" /> 잠금 해제
-              </button>
               <ForceLogoutButton memberId={id} activeCount={activeSession ? 1 : 0} readOnly={!canManage} />
             </div>
             {sessions.length > 0 ? (

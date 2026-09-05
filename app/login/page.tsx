@@ -13,6 +13,7 @@ const REASON_NOTICE: Record<string, string> = {
   admin: "관리자에 의해 접속이 종료되었습니다. 다시 로그인해 주세요.",
   password_reset: "비밀번호가 변경되어 이 기기의 접속이 종료되었습니다. 새 비밀번호로 로그인해 주세요.",
   reset_done: "비밀번호를 변경했습니다. 새 비밀번호로 로그인하세요.",
+  suspended: "계정이 정지되어 접속이 종료되었습니다. 고객센터에 문의하세요.",
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ reason?: string }> }) {

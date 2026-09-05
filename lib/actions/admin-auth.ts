@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { getServerClient } from "@/lib/supabase/server";
 import { ADMIN_COOKIE, ADMIN_SESSION_MAX_AGE, ADMIN_ROLE_LABEL, hashAdminToken, getCurrentAdmin, isMfaRequired, type AdminRole } from "@/lib/admin-session";
 import { audit } from "@/lib/audit";
+import { generateTempPassword } from "@/lib/passwords";
 import { generateTotpSecret, verifyTotp } from "@/lib/totp";
 import { sendEmail } from "@/lib/notify";
 
@@ -196,15 +197,6 @@ export async function restartMyTotp(_prev: AdminAuthState, formData: FormData): 
 }
 
 // ── 비밀번호 복구 ────────────────────────────────────────────────────────────
-
-// 임시 비밀번호 생성 — 헷갈리는 글자(0/O, 1/l/I) 제외, 12자.
-function generateTempPassword(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-  const bytes = randomBytes(12);
-  let out = "";
-  for (const b of bytes) out += alphabet[b % alphabet.length];
-  return out;
-}
 
 // 재설정 링크의 기준 URL. ADMIN_BASE_URL 이 있으면 우선, 없으면 요청 헤더로 계산.
 async function getBaseUrl(): Promise<string> {

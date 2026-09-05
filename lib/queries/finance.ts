@@ -1,6 +1,6 @@
 import "server-only";
 import { getServerClient } from "@/lib/supabase/server";
-import { currentCycle } from "@/lib/dates";
+import { currentCycle, today } from "@/lib/dates";
 
 export interface SystemWallet {
   kind: string;
@@ -473,4 +473,43 @@ export async function getRevenueSummary() {
     subCount: subs.data?.length ?? 0,
     annualCount: annual.data?.length ?? 0,
   };
+}
+
+// 당월 주차별(1–7 · 8–14 · 15–21 · 22–28 · 29~) 매출 입금 합계 — 대시보드 자금 흐름 막대. 구독·멤버십·상품(환불·실패 제외).
+export async function getMonthlyRevenueByWeek(cycle = currentCycle()): Promise<number[]> {
+  const sb = getServerClient();
+  const [subs, annual, purs] = await Promise.all([
+    sb.from("subscriptions").select("amount_usd, paid_at"),
+    sb.from("annual_memberships").select("amount_usd, paid_at"),
+    sb.from("product_purchases").select("amount_usd, paid_at, status"),
+  ]);
+  if (subs.error) throw subs.error;
+  if (annual.error) throw annual.error;
+  if (purs.error) throw purs.error;
+  const bars = [0, 0, 0, 0, 0];
+  const add = (paid: unknown, amt: number) => {
+    if (typeof paid !== "string" || !paid.startsWith(cycle)) return;
+    const day = Number(paid.slice(8, 10)) || 1;
+    bars[Math.min(4, Math.floor((day - 1) / 7))] += amt;
+  };
+  for (const r of subs.data ?? []) add(r.paid_at, Number(r.amount_usd));
+  for (const r of annual.data ?? []) add(r.paid_at, Number(r.amount_usd));
+  for (const r of purs.data ?? []) if (r.status !== "refunded" && r.status !== "failed") add(r.paid_at, Number(r.amount_usd));
+  return bars;
+}
+
+// N일 안에 종료되는 활성 구독 수(자동 갱신 대상) — 대시보드 "구독 갱신 임박".
+export async function countRenewalsDue(days = 7): Promise<number> {
+  const sb = getServerClient();
+  const t = today();
+  const end = new Date(`${t}T00:00:00Z`);
+  end.setUTCDate(end.getUTCDate() + days);
+  const { count, error } = await sb
+    .from("subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active")
+    .gte("period_end", t)
+    .lte("period_end", end.toISOString().slice(0, 10));
+  if (error) throw error;
+  return count ?? 0;
 }

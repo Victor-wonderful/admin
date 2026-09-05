@@ -7,9 +7,8 @@ import {
   ClockIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  SlidersHorizontalIcon,
-  DownloadIcon,
 } from "lucide-react";
+import Link from "next/link";
 
 import { Topbar } from "@/components/shell/topbar";
 import { requireAdminPage } from "@/lib/admin-guard";
@@ -20,6 +19,7 @@ import { RunSettlementButton } from "@/components/settlements/run-settlement-but
 import { PayCommissionButton } from "@/components/settlements/pay-commission-button";
 import { ConfirmSettlementsButton } from "@/components/settlements/confirm-settlements-button";
 import { SettlementHoldButton } from "@/components/settlements/settlement-hold-button";
+import { SettlementsExportButton } from "@/components/settlements/settlements-export-button";
 import { getSettlementSummary, listSettlements, getPoolReconciliation } from "@/lib/queries/finance";
 import { getMemberRanksMap } from "@/lib/queries/ranks";
 import { toUid, uidInitials } from "@/lib/uid";
@@ -27,7 +27,17 @@ import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-const CYCLE = currentCycle();
+// 사이클(YYYY-MM) 이동 — ?cycle= 로 과거 정산 조회. 미래 사이클은 없음.
+const CYCLE_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+function shiftCycle(cycle: string, delta: number): string {
+  const [y, m] = cycle.split("-").map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+const STATUS_FILTERS = [
+  { k: "all", l: "전체" }, { k: "calculated", l: "산정" }, { k: "confirmed", l: "확정" }, { k: "held", l: "보류" }, { k: "paid", l: "지급 완료" },
+] as const;
+const STATUS_LABEL: Record<string, string> = { calculated: "산정", confirmed: "확정", held: "보류", paid: "지급 완료" };
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const compact = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : usd(n));
@@ -61,15 +71,26 @@ function rankPill(rank: number | undefined) {
   );
 }
 
-export default async function AdminSettlementsPage() {
+export default async function AdminSettlementsPage({ searchParams }: { searchParams: Promise<{ cycle?: string; status?: string }> }) {
   const admin = await requireAdminPage("settlements");
   const readOnly = !can(admin.role, "settlement.write");
-  const [sum, rows, recon, ranks] = await Promise.all([
+  const sp = await searchParams;
+  const NOW = currentCycle();
+  const CYCLE = sp.cycle && CYCLE_RE.test(sp.cycle) && sp.cycle <= NOW ? sp.cycle : NOW;
+  const statusFilter = STATUS_FILTERS.some((f) => f.k === sp.status) ? (sp.status as string) : "all";
+  const isCurrent = CYCLE === NOW;
+  const [sum, allRows, recon, ranks] = await Promise.all([
     getSettlementSummary(CYCLE),
-    listSettlements(CYCLE, 8),
+    listSettlements(CYCLE, 300),
     getPoolReconciliation(CYCLE),
     getMemberRanksMap(),
   ]);
+  const rows = (statusFilter === "all" ? allRows : allRows.filter((r) => r.status === statusFilter)).slice(0, 50);
+  const csvRows = rows.map((r) => {
+    const rk = r.member_rank ?? ranks.get(r.member_id)?.rank;
+    return { uid: toUid(r.member_id), name: (r as { members?: { display_name: string } | null }).members?.display_name ?? "", rank: rk && rk > 0 ? `R${rk}` : "", level: Number(r.level_amount), rankAmt: Number(r.rank_amount), share: Number(r.share_amount), total: Number(r.total_amount), status: STATUS_LABEL[r.status] ?? r.status };
+  });
+  const filterHref = (k: string) => `/admin/settlements?cycle=${CYCLE}${k === "all" ? "" : `&status=${k}`}`;
 
   const lpct = pctOf(sum.level, sum.total);
   const rpct = pctOf(sum.rank, sum.total);
@@ -132,9 +153,13 @@ export default async function AdminSettlementsPage() {
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2.5">
-              <button className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border"><ChevronLeftIcon className="size-4" /></button>
-              <span className="text-sm font-bold text-text-primary">{CYCLE.slice(0, 4)}년 {Number(CYCLE.slice(5, 7))}월 정산</span>
-              <button className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border"><ChevronRightIcon className="size-4" /></button>
+              <Link href={`/admin/settlements?cycle=${shiftCycle(CYCLE, -1)}${statusFilter === "all" ? "" : `&status=${statusFilter}`}`} aria-label="이전 달" className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border hover:bg-surface-muted"><ChevronLeftIcon className="size-4" /></Link>
+              <span className="text-sm font-bold text-text-primary">{CYCLE.slice(0, 4)}년 {Number(CYCLE.slice(5, 7))}월 정산{isCurrent ? <span className="ml-1.5 text-[11px] font-semibold text-green-700">당월</span> : null}</span>
+              {isCurrent ? (
+                <span aria-disabled className="grid size-8 place-items-center rounded-md text-text-tertiary ring-1 ring-border opacity-40"><ChevronRightIcon className="size-4" /></span>
+              ) : (
+                <Link href={`/admin/settlements?cycle=${shiftCycle(CYCLE, 1)}${statusFilter === "all" ? "" : `&status=${statusFilter}`}`} aria-label="다음 달" className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border hover:bg-surface-muted"><ChevronRightIcon className="size-4" /></Link>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {PIPELINE.map((p, i) => (
@@ -202,11 +227,21 @@ export default async function AdminSettlementsPage() {
         {/* ── 마케터별 정산 ── */}
         <Panel
           title="마케터별 정산"
-          sub={`${CYCLE} · 상위 ${rows.length}명 · 지급 USDT`}
+          sub={`${CYCLE} · ${statusFilter === "all" ? `상위 ${rows.length}명` : `${STATUS_LABEL[statusFilter]} ${rows.length}명`} · 지급 USDT`}
           action={
-            <div className="flex items-center gap-2">
-              <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border"><SlidersHorizontalIcon className="size-4" /> 상태</button>
-              <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border"><DownloadIcon className="size-4" /> 내보내기</button>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex gap-0.5 rounded-[10px] bg-n-100 p-[3px] ring-1 ring-border">
+                {STATUS_FILTERS.map((f) => {
+                  const on = statusFilter === f.k;
+                  const n = f.k === "all" ? allRows.length : allRows.filter((r) => r.status === f.k).length;
+                  return (
+                    <Link key={f.k} href={filterHref(f.k)} className={cn("flex items-center gap-1 rounded-[7px] px-2.5 py-1 text-[12px] transition-colors", on ? "bg-card font-semibold text-text-primary shadow-sm ring-1 ring-border" : "font-medium text-n-500 hover:text-text-primary")}>
+                      {f.l}<span className={cn("text-[11px] tabular-nums", on ? "text-green-600" : "text-n-400")}>{n}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+              <SettlementsExportButton cycle={CYCLE} rows={csvRows} />
             </div>
           }
           bodyClassName="overflow-x-auto"
