@@ -15,6 +15,10 @@ type Ctx = {
   pending: PendingPlacement[];
   // 배치 창 열기. member 를 지정하지 않으면 첫 대기 회원. parentId 를 지정하면(트리에서 열 때) 그 회원 아래로 미리 선택.
   open: (opts?: { memberId?: string; parentId?: string; parentUid?: string }) => void;
+  // 후원배치도에서 위치를 고르는 중인 대기 회원(이때만 카드에 "여기 아래" 표시)
+  picking: PendingPlacement | null;
+  startPick: (memberId: string) => void;
+  cancelPick: () => void;
 };
 const PlacementCtx = React.createContext<Ctx | null>(null);
 export const usePlacement = () => React.useContext(PlacementCtx);
@@ -39,6 +43,7 @@ export function PlacementProvider({
   const [mode, setMode] = React.useState<"recommended" | "custom">("recommended");
   const [parentId, setParentId] = React.useState<string>("");
   const [extra, setExtra] = React.useState<PlacementTarget | null>(null); // 트리에서 고른 회원이 후보 한도 밖일 때
+  const [pickingId, setPickingId] = React.useState<string | null>(null);
   const [confirming, setConfirming] = React.useState(false);
   const [pendingTx, start] = React.useTransition();
   const [err, setErr] = React.useState<string | null>(null);
@@ -76,6 +81,13 @@ export function PlacementProvider({
   );
 
   const sel = pending.find((p) => p.id === memberId) ?? null;
+  const picking = pending.find((p) => p.id === pickingId) ?? null;
+  const startPick = React.useCallback((id: string) => {
+    setPickingId(id);
+    setOpenState(false);
+    document.getElementById("team-trees")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+  const cancelPick = React.useCallback(() => setPickingId(null), []);
   const allTargets = extra ? [...targets, extra] : targets;
   const finalParent = mode === "recommended" ? (recommended?.id ?? targets[0]?.id ?? "") : parentId;
   const finalTarget = allTargets.find((t) => t.id === finalParent);
@@ -95,8 +107,19 @@ export function PlacementProvider({
     });
 
   return (
-    <PlacementCtx.Provider value={{ pending, open }}>
+    <PlacementCtx.Provider value={{ pending, open: (o) => { setPickingId(null); open(o); }, picking, startPick, cancelPick }}>
       {children}
+
+      {/* 위치 선택 모드 안내 바 */}
+      {picking && !openState ? (
+        <div className="fixed inset-x-0 bottom-5 z-40 flex justify-center px-4">
+          <div className="flex items-center gap-3 rounded-full bg-[#0B0F14] px-5 py-3 text-[13px] text-white shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5)]">
+            <span className="size-2 animate-pulse rounded-full bg-green-400" />
+            <span><b>{picking.uid}</b> 를 넣을 자리 선택 중 · 후원배치도에서 원하는 회원 카드의 <b>‘여기 아래’</b>를 누르세요</span>
+            <button type="button" onClick={cancelPick} className="rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold hover:bg-white/25">취소</button>
+          </div>
+        </div>
+      ) : null}
 
       {openState && sel ? (
         <div className="fixed inset-0 z-50 grid place-items-center p-4">
@@ -160,7 +183,10 @@ export function PlacementProvider({
                           </option>
                         ))}
                       </select>
-                      <div className="mt-1 text-[11px] text-text-tertiary">들여쓰기 = 깊이 · 후원배치도에서 회원 카드의 ‘＋배치’를 눌러도 여기에 선택됩니다 · 그 회원 아래 다음 빈 자리(2번 이상)</div>
+                      <div className="mt-1 text-[11px] text-text-tertiary">들여쓰기 = 깊이 · 선택한 회원 아래 다음 빈 자리(2번 이상)</div>
+                      <button type="button" onClick={() => startPick(sel.id)} className="mt-2 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] font-semibold text-green-700 ring-1 ring-green-500 hover:bg-green-50">
+                        <PlusIcon className="size-3.5" /> 후원배치도에서 자리 고르기
+                      </button>
                     </div>
                   </label>
 
@@ -195,22 +221,24 @@ export function PlacementProvider({
   );
 }
 
-// 후원배치도 회원 카드용 "＋배치" — 배치 대기가 있을 때만 보인다. 누르면 이 회원 아래로 미리 선택된 창이 열린다.
+// 후원배치도 회원 카드용 "여기 아래" — 대기 회원의 자리를 고르는 중일 때만 보인다(항상 붙어 있으면 그 회원을 옮기는 것처럼 오해).
+// 누르면 고르던 회원을 이 회원 아래로 미리 선택한 확정 창이 열린다.
 export function PlaceHereButton({ nodeId, nodeUid }: { nodeId: string; nodeUid?: string }) {
   const ctx = usePlacement();
-  if (!ctx || ctx.pending.length === 0) return null;
+  if (!ctx || !ctx.picking) return null;
+  const memberId = ctx.picking.id;
   return (
     <button
       type="button"
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        ctx.open({ parentId: nodeId, parentUid: nodeUid });
+        ctx.open({ memberId, parentId: nodeId, parentUid: nodeUid });
       }}
-      title="이 회원 아래에 배치"
+      title={`${ctx.picking.uid} 를 이 회원 아래에 배치`}
       className="absolute -right-2 -bottom-2.5 inline-flex items-center gap-0.5 rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-white shadow-sm ring-2 ring-card hover:bg-green-700"
     >
-      <PlusIcon className="size-3" /> 배치
+      <PlusIcon className="size-3" /> 여기 아래
     </button>
   );
 }

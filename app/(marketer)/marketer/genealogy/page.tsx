@@ -110,7 +110,7 @@ export default async function MarketerGenealogyPage() {
             </Panel>
           }
           placement={
-            <Panel sub={`후원배치 — 직급·팀 리워드 산정 기준 조직 · 휠: 확대/축소 · 드래그: 이동${pending.length > 0 ? " · 회원 카드의 ＋배치 = 그 아래에 배치" : ""}`}>
+            <Panel sub="후원배치 — 직급·팀 리워드 산정 기준 조직 · 휠: 확대/축소 · 드래그: 이동 · 좌측 1번 라인 = 첫 파트너 고정">
               <ZoomPanCanvas><MemberTree root={placement} maxDepth={3} maxChildren={6} variant="partner" placeable={pending.length > 0} /></ZoomPanCanvas>
             </Panel>
           }

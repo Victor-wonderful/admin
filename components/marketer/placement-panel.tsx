@@ -19,7 +19,7 @@ export function PlacementPanel({ pending, autoDays }: { pending: PendingPlacemen
             <GitBranchIcon className="size-4 text-warning" /> 후원배치 대기 <span className="rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning">{pending.length}명</span>
           </div>
           <div className="mt-0.5 text-xs text-text-secondary">
-            내가 초대한 회원 중 구독을 시작했지만 아직 후원 조직에 자리가 없는 회원 · 자리는 한 번만 정할 수 있습니다 · 아래 후원배치도에서 회원 카드의 ‘＋배치’를 눌러 그 자리에 바로 넣을 수도 있습니다
+            내가 초대한 회원 중 구독을 시작했지만 아직 후원 조직에 자리가 없는 회원 · 자리는 한 번만 정할 수 있습니다 · ‘배치’를 누른 뒤 권장 위치, 목록 선택, 또는 후원배치도에서 카드를 골라 넣습니다
           </div>
         </div>
       </div>
