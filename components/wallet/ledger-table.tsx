@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { ExternalLinkIcon } from "lucide-react";
 
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
 import type { LedgerEntry } from "@/lib/queries/finance";
 import { toSeoulDateTime } from "@/lib/dates";
+import { txExplorerUrl } from "@/lib/chain/explorer";
 import { cn } from "@/lib/utils";
 
 type TxType = LedgerEntry["tx_type"];
@@ -75,7 +77,16 @@ export function LedgerTable({ ledger, showCommission }: { ledger: LedgerEntry[];
                 <span className="text-text-tertiary tabular-nums">{fmtDate(r.ts)}</span>
                 <span><Pill tone={meta.tone}>{meta.label}</Pill></span>
                 <span className="text-text-secondary">{r.desc}</span>
-                <span className="text-xs text-text-tertiary">{r.network ?? "—"}</span>
+                {(() => {
+                  const url = txExplorerUrl(r.network, r.tx_hash);
+                  return url ? (
+                    <a href={url} target="_blank" rel="noopener noreferrer" title={r.tx_hash ?? undefined} className="inline-flex items-center gap-1 text-xs text-text-tertiary hover:text-text-primary hover:underline">
+                      {r.network} <ExternalLinkIcon className="size-3" />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-text-tertiary">{r.network ?? "—"}</span>
+                  );
+                })()}
                 <span className={cn("text-right font-bold tabular-nums", r.amount_usd >= 0 ? "text-green-700" : "text-text-primary")}>{signed(r.amount_usd)}</span>
               </div>
             );

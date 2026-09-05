@@ -6,9 +6,6 @@ import {
   SendIcon,
   WalletIcon,
   CopyIcon,
-  DownloadIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
@@ -17,6 +14,7 @@ import { Pill } from "@/components/ui/pill";
 import { WithdrawalActions } from "@/components/withdrawals/withdrawal-actions";
 import { listWithdrawals, getWithdrawalSummary } from "@/lib/queries/finance";
 import { toUid, uidInitials } from "@/lib/uid";
+import { toSeoulDateTime, currentCycle } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { WithdrawalStatus } from "@/lib/actions/withdrawals";
 
@@ -38,9 +36,10 @@ const compact = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : usd(n
 
 const NET_DOT: Record<string, string> = {
   TRC20: "bg-green-500",
+  BEP20: "bg-warning",
+  BSC: "bg-warning", // 구 데이터 표기
   ERC20: "bg-info",
   Polygon: "bg-crypto",
-  BSC: "bg-warning",
 };
 
 const STATE: Record<WithdrawalStatus, { label: string; tone: "warning" | "info" | "green" | "negative" | "neutral" }> = {
@@ -53,20 +52,17 @@ const STATE: Record<WithdrawalStatus, { label: string; tone: "warning" | "info" 
 
 const COLS = "grid-cols-[110px_1.2fr_1.7fr_92px_112px_188px]";
 
-function fmtTime(iso: string): string {
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
-}
+const fmtTime = (iso: string) => toSeoulDateTime(iso); // 서울 기준
 function shortAddr(a: string): string {
   return a.length > 12 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a;
 }
 
 export default async function AdminWithdrawalsPage() {
   const [rows, sum] = await Promise.all([listWithdrawals(20), getWithdrawalSummary()]);
+  const cycle = currentCycle();
 
   const KPIS = [
-    { icon: CalendarCheckIcon, tone: "green" as const, label: "당월 완료 출금", value: compact(sum.completedMonthAmount), info: "2026-06" },
+    { icon: CalendarCheckIcon, tone: "green" as const, label: "당월 완료 출금", value: compact(sum.completedMonthAmount), info: cycle },
     { icon: DollarSignIcon, tone: "green" as const, label: "누적 출금 (완료)", value: compact(sum.completedTotalAmount), info: "전체 기간" },
     { icon: SigmaIcon, tone: "neutral" as const, label: "총 신청 건수", value: `${rows.length}`, info: "최근 표시분" },
     { icon: ClockIcon, tone: "warning" as const, label: "승인 대기", value: compact(sum.pendingAmount), info: `${sum.pendingCount}건 대기`, warn: true },
@@ -76,7 +72,7 @@ export default async function AdminWithdrawalsPage() {
 
   return (
     <>
-      <Topbar title="출금내역" sub="마케터 출금 신청 · 승인 · 온체인 송금 (USDT)" uid="운영자" />
+      <Topbar title="출금내역" sub="회원 출금 신청 · 승인 · 지갑 앱에서 송금 후 tx_hash 입력 (USDT)" uid="운영자" />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 상단 KPI 6종 (실데이터) ── */}
@@ -99,10 +95,7 @@ export default async function AdminWithdrawalsPage() {
         <Panel bodyClassName="overflow-x-auto">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <span className="text-sm font-bold text-text-primary">출금 승인 큐 · 최근 {rows.length}건</span>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border">2026년 6월</span>
-              <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border"><DownloadIcon className="size-4" /> 내보내기</button>
-            </div>
+            <span className="text-[12px] text-text-tertiary">승인 → 송금 시작 → 지갑 앱(TronLink/MetaMask)에서 보낸 뒤 tx_hash 입력으로 완료</span>
           </div>
 
           <div className="min-w-[900px]">
@@ -139,21 +132,14 @@ export default async function AdminWithdrawalsPage() {
                       {r.network}
                     </span>
                     <span><Pill tone={st.tone} dot={status === "completed"}>{st.label}</Pill></span>
-                    <WithdrawalActions id={r.id} status={status} txHash={r.tx_hash} />
+                    <WithdrawalActions id={r.id} status={status} network={r.network} txHash={r.tx_hash} />
                   </div>
                 );
               })
             )}
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-[12px] text-text-tertiary">최근 {rows.length}건 표시</span>
-            <div className="flex items-center gap-1">
-              <button className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border" disabled><ChevronLeftIcon className="size-4" /></button>
-              <button className="grid size-8 place-items-center rounded-md bg-green-500 text-[13px] font-semibold text-white">1</button>
-              <button className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border" disabled><ChevronRightIcon className="size-4" /></button>
-            </div>
-          </div>
+          <div className="mt-4 text-[12px] text-text-tertiary">최근 {rows.length}건 표시</div>
         </Panel>
       </div>
     </>

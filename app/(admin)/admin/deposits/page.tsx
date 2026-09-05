@@ -3,27 +3,29 @@ import {
   DollarSignIcon,
   SigmaIcon,
   ReceiptIcon,
-  ClockIcon,
   TriangleAlertIcon,
   ExternalLinkIcon,
-  CheckIcon,
-  SlidersHorizontalIcon,
-  DownloadIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ArrowUpRightIcon,
+  RadarIcon,
+  HashIcon,
+  CircleCheckIcon,
+  CircleAlertIcon,
 } from "lucide-react";
 
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { DepositScanButton, UnmatchedDepositActions } from "@/components/deposits/deposit-actions";
+import { listOnchainDeposits, listUnmatchedDeposits, getScanStates, getDepositConfigStatus, getDepositSummary } from "@/lib/queries/deposits";
+import { listTransactions } from "@/lib/queries/finance";
+import { txExplorerUrl, addressExplorerUrl, shortHash, NETWORK_LABEL } from "@/lib/chain/explorer";
+import { toSeoulDateTime, currentCycle } from "@/lib/dates";
+import { toUid, uidInitials } from "@/lib/uid";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-// 입금내역 — Pencil 디자인(XCDfU) 1:1. 온체인 입금 원장.
-const SUBCARD =
-  "rounded-lg bg-card p-[18px] ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]";
+// 입금내역 — 온체인 입금 감지 원장(실데이터). 회사 입금 주소로 들어온 USDT 를 스캔해 회원 잔액에 반영한다.
+const SUBCARD = "rounded-lg bg-card p-[18px] ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]";
 
 const badgeTone: Record<string, string> = {
   green: "bg-green-50 text-green-700",
@@ -33,66 +35,44 @@ const badgeTone: Record<string, string> = {
   neutral: "bg-n-100 text-n-500",
 };
 
-const KPIS = [
-  { icon: CalendarCheckIcon, tone: "green" as const, label: "당일 입금", value: "$8,940", delta: 6.2, deltaLabel: "· 42건" },
-  { icon: DollarSignIcon, tone: "green" as const, label: "당월 입금 총액", value: "$184,260", delta: 12.4, deltaLabel: "vs 전월" },
-  { icon: SigmaIcon, tone: "neutral" as const, label: "누적 입금 (전체)", value: "$2.42M", delta: null, info: "전체 기간" },
-  { icon: ReceiptIcon, tone: "info" as const, label: "입금 건수", value: "1,250건", delta: 8.2, deltaLabel: "vs 전월" },
-  { icon: ClockIcon, tone: "crypto" as const, label: "평균 확인 시간", value: "1.4분", delta: null, info: "TRC20 기준" },
-  { icon: TriangleAlertIcon, tone: "warning" as const, label: "대기·미확인", value: "6건", delta: null, info: "확인 대기 중", warn: true },
-];
+const NET_DOT: Record<string, string> = { TRC20: "bg-green-500", BEP20: "bg-warning" };
 
-const TABS = ["전체", "포르투나 구독", "연회비", "상품"];
+const usd = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+const compact = (n: number) => (n >= 1000 ? `$${(n / 1000).toFixed(1)}K` : usd(n));
+const shortAddr = (a: string) => (a.length > 14 ? `${a.slice(0, 8)}…${a.slice(-6)}` : a);
 
-const NET_DOT: Record<string, string> = {
-  TRC20: "bg-green-500",
-  ERC20: "bg-info",
-  Polygon: "bg-crypto",
-  BSC: "bg-warning",
+const STATUS: Record<string, { label: string; tone: "green" | "warning" | "neutral" }> = {
+  credited: { label: "잔액 반영", tone: "green" },
+  unmatched: { label: "미확인", tone: "warning" },
+  ignored: { label: "무시", tone: "neutral" },
 };
 
-type Status = "completed" | "confirming" | "failed";
-const ROWS: {
-  time: string; uid: string; item: string; itemTone: string; amount: string; net: string; hash: string; status: Status; conf: string;
-}[] = [
-  { time: "06-16 14:32", uid: "FT-8F3A21", item: "포르투나 구독", itemTone: "bg-green-500", amount: "$120", net: "TRC20", hash: "0x7a3f…e21b", status: "completed", conf: "19/19" },
-  { time: "06-16 13:58", uid: "FT-2B91C0", item: "연회비", itemTone: "bg-crypto", amount: "$200", net: "TRC20", hash: "0x14c8…9af0", status: "completed", conf: "19/19" },
-  { time: "06-16 13:21", uid: "FT-77D4E2", item: "크립토카드", itemTone: "bg-info", amount: "$300", net: "ERC20", hash: "0x9820…3d7c", status: "confirming", conf: "6/12" },
-  { time: "06-16 12:47", uid: "FT-19A0FF", item: "포르투나 구독", itemTone: "bg-green-500", amount: "$120", net: "Polygon", hash: "0x5e1d…77aa", status: "completed", conf: "50/50" },
-  { time: "06-16 12:05", uid: "FT-5C32B8", item: "포르투나 구독", itemTone: "bg-green-500", amount: "$120", net: "TRC20", hash: "0x2b20…1b3e", status: "completed", conf: "19/19" },
-  { time: "06-16 11:33", uid: "FT-A1B2C3", item: "연회비", itemTone: "bg-crypto", amount: "$200", net: "BSC", hash: "0x7ffa…c401", status: "confirming", conf: "5/15" },
-  { time: "06-16 10:58", uid: "FT-6E7F88", item: "포르투나 구독", itemTone: "bg-green-500", amount: "$120", net: "TRC20", hash: "0x3a0e…ff29", status: "completed", conf: "19/19" },
-  { time: "06-16 10:12", uid: "FT-D33C19", item: "크립토카드", itemTone: "bg-info", amount: "$300", net: "ERC20", hash: "0xe471…0b8d", status: "failed", conf: "—" },
-];
+const COLS = "grid-cols-[104px_1.2fr_1.4fr_1.5fr_1.3fr_120px]";
+const UNMATCHED_COLS = "grid-cols-[104px_92px_1.6fr_1.3fr_auto]";
 
-const COLS = "grid-cols-[96px_1.4fr_1fr_1.1fr_1.2fr_150px]";
+export default async function AdminDepositsPage() {
+  const [sum, states, unmatched, onchain, ledger] = await Promise.all([
+    getDepositSummary(),
+    getScanStates(),
+    listUnmatchedDeposits(),
+    listOnchainDeposits(30),
+    listTransactions({ type: "deposit", limit: 20 }),
+  ]);
+  const configs = getDepositConfigStatus();
+  const readyCount = configs.filter((c) => c.ready).length;
 
-function StatusCell({ status, conf }: { status: Status; conf: string }) {
-  if (status === "completed")
-    return (
-      <span className="flex items-center justify-end gap-2">
-        <Pill tone="green" dot>확인 완료</Pill>
-        <span className="text-[11px] tabular-nums text-text-tertiary">{conf}</span>
-      </span>
-    );
-  if (status === "confirming")
-    return (
-      <span className="flex items-center justify-end gap-2">
-        <Pill tone="warning">확인중</Pill>
-        <span className="text-[11px] tabular-nums text-text-tertiary">{conf}</span>
-      </span>
-    );
-  return (
-    <span className="flex justify-end">
-      <Pill tone="negative">실패</Pill>
-    </span>
-  );
-}
+  const KPIS = [
+    { icon: CalendarCheckIcon, tone: "green" as const, label: "당일 입금", value: compact(sum.todayAmount), info: `${sum.todayCount}건` },
+    { icon: DollarSignIcon, tone: "green" as const, label: "당월 입금 총액", value: compact(sum.monthAmount), info: `${currentCycle()} · ${sum.monthCount}건` },
+    { icon: SigmaIcon, tone: "neutral" as const, label: "누적 입금 (전체)", value: compact(sum.totalAmount), info: "전체 기간" },
+    { icon: ReceiptIcon, tone: "info" as const, label: "입금 건수", value: `${sum.totalCount}건`, info: "잔액 반영 기준" },
+    { icon: RadarIcon, tone: "crypto" as const, label: "스캔 연동", value: `${readyCount} / ${configs.length}`, info: readyCount === configs.length ? "전 네트워크 준비" : "키·주소 미설정 있음", warn: readyCount < configs.length },
+    { icon: TriangleAlertIcon, tone: "warning" as const, label: "미확인 입금", value: `${sum.unmatchedCount}건`, info: sum.unmatchedCount ? `${usd(sum.unmatchedAmount)} 매칭 대기` : "대기 없음", warn: sum.unmatchedCount > 0 },
+  ];
 
-export default function AdminDepositsPage() {
   return (
     <>
-      <Topbar title="입금내역" sub="운영 지급 USDT 입금 · 구독료 · 연회비 · 상품대금" uid="운영자" />
+      <Topbar title="입금내역" sub="회사 입금 주소로 들어온 USDT · 보낸 주소로 회원 식별 · 잔액 반영" uid="운영자" actions={<DepositScanButton />} />
 
       <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
         {/* ── 상단 KPI 6종 ── */}
@@ -106,80 +86,165 @@ export default function AdminDepositsPage() {
                 <span className="text-xs font-medium text-text-secondary">{k.label}</span>
               </div>
               <div className="text-[22px] leading-none font-bold tabular-nums text-text-primary">{k.value}</div>
-              {k.delta !== null && k.delta !== undefined ? (
-                <span className={cn("inline-flex items-center gap-1 text-[11px] font-semibold", k.delta >= 0 ? "text-positive" : "text-negative")}>
-                  <ArrowUpRightIcon className="size-3" />
-                  +{k.delta.toFixed(1)}%
-                  <span className="font-medium text-text-tertiary">{k.deltaLabel}</span>
-                </span>
-              ) : (
-                <span className={cn("text-[11px] font-medium", "warn" in k && k.warn ? "text-warning" : "text-text-tertiary")}>{k.info}</span>
-              )}
+              <span className={cn("text-[11px] font-medium", "warn" in k && k.warn ? "text-warning" : "text-text-tertiary")}>{k.info}</span>
             </div>
           ))}
         </section>
 
-        {/* ── 입금 원장 ── */}
-        <Panel bodyClassName="overflow-x-auto">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex gap-1 rounded-md bg-surface-muted p-1 ring-1 ring-border">
-              {TABS.map((t, i) => (
-                <span key={t} className={cn("rounded px-3 py-1.5 text-[13px]", i === 0 ? "bg-card font-semibold text-text-primary shadow-sm" : "font-medium text-text-secondary")}>{t}</span>
-              ))}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border">2026년 6월 <ChevronRightIcon className="size-3.5 rotate-90 text-text-tertiary" /></span>
-              <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border"><SlidersHorizontalIcon className="size-4" /> 필터</button>
-              <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-surface-muted px-3 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border"><DownloadIcon className="size-4" /> 내보내기</button>
-            </div>
-          </div>
-
-          <div className="min-w-[820px]">
-            <div className={cn("grid items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary", COLS)}>
-              <span>일시</span>
-              <span>회원</span>
-              <span>항목</span>
-              <span>금액 · 네트워크</span>
-              <span>TxHash</span>
-              <span className="text-right">확인 상태</span>
-            </div>
-            {ROWS.map((r, i) => (
-              <div key={i} className={cn("grid items-center gap-3 border-b py-3.5 text-sm last:border-0", COLS)}>
-                <span className="text-[12px] tabular-nums text-text-tertiary">{r.time}</span>
-                <div className="flex items-center gap-2.5">
-                  <span className="size-7 shrink-0 rounded-full bg-n-100" />
-                  <span className="truncate text-[13px] font-semibold text-text-primary">{r.uid}</span>
-                </div>
-                <span className="flex items-center gap-2 text-[13px] text-text-secondary">
-                  <span className={cn("size-2.5 shrink-0 rounded-[4px]", r.itemTone)} />
-                  {r.item}
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="text-[13px] font-bold tabular-nums text-green-700">{r.amount}</span>
-                  <span className="flex items-center gap-1 text-[11px] text-text-tertiary">
-                    <span className={cn("size-1.5 rounded-full", NET_DOT[r.net] ?? "bg-n-400")} />
-                    {r.net}
+        {/* ── 연동 상태(네트워크별) ── */}
+        <section className="grid gap-4 lg:grid-cols-2">
+          {configs.map((c) => {
+            const st = states.find((s) => s.network === c.network);
+            const addrUrl = addressExplorerUrl(c.network, c.address);
+            return (
+              <div key={c.network} className={cn(SUBCARD, "space-y-3")}>
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-2 text-sm font-bold text-text-primary">
+                    <span className={cn("size-2 rounded-full", NET_DOT[c.network])} /> {NETWORK_LABEL[c.network]}
                   </span>
-                </span>
-                <span className="flex items-center gap-1.5 text-[12px] tabular-nums text-text-tertiary">
-                  {r.hash}
-                  <ExternalLinkIcon className="size-3 text-n-400" />
-                </span>
-                <StatusCell status={r.status} conf={r.conf} />
+                  {c.ready ? <Pill tone="green" dot>스캔 준비됨</Pill> : <Pill tone="warning">미설정</Pill>}
+                </div>
+                <div className="flex items-center gap-2 rounded-md bg-surface-muted px-3 py-2 ring-1 ring-border">
+                  <HashIcon className="size-3 shrink-0 text-text-tertiary" />
+                  {c.address ? (
+                    <a href={addrUrl ?? "#"} target="_blank" rel="noopener noreferrer" className="flex-1 truncate font-mono text-xs text-text-primary hover:underline">
+                      {c.address}
+                    </a>
+                  ) : (
+                    <span className="flex-1 text-xs text-text-tertiary">회사 입금 주소 미설정</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
+                  <span className="text-text-secondary">마지막 스캔</span>
+                  <span className="text-right font-medium text-text-primary">{st?.last_run_at ? toSeoulDateTime(st.last_run_at) : "—"}</span>
+                  <span className="text-text-secondary">커서(마지막 블록 시각)</span>
+                  <span className="text-right font-medium text-text-primary">{st?.last_block_time ? toSeoulDateTime(st.last_block_time) : "—"}</span>
+                  <span className="text-text-secondary">마지막 조회 건수</span>
+                  <span className="text-right font-medium text-text-primary">{st?.seen_count ?? 0}</span>
+                </div>
+                {!c.ready ? (
+                  <div className="flex items-start gap-2 rounded-md bg-warning-soft px-3 py-2 text-[11px] leading-relaxed text-text-secondary">
+                    <CircleAlertIcon className="mt-0.5 size-3.5 shrink-0 text-warning" />
+                    <span>환경변수 필요: <span className="font-mono">{c.missing.join(", ")}</span> — .env.local 에 기입 후 서버 재시작</span>
+                  </div>
+                ) : st?.last_error ? (
+                  <div className="flex items-start gap-2 rounded-md bg-negative-soft px-3 py-2 text-[11px] leading-relaxed text-negative">
+                    <CircleAlertIcon className="mt-0.5 size-3.5 shrink-0" /> 마지막 오류: {st.last_error}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-[11px] text-text-tertiary">
+                    <CircleCheckIcon className="size-3.5 text-green-600" /> 크론 /api/cron/deposits 또는 ‘지금 스캔’으로 조회
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+            );
+          })}
+        </section>
 
-          {/* ── 페이지네이션 ── */}
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-[12px] text-text-tertiary">1–8 / 1,250건</span>
-            <div className="flex items-center gap-1">
-              <button className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border"><ChevronLeftIcon className="size-4" /></button>
-              {[1, 2, 3].map((p) => (
-                <button key={p} className={cn("grid size-8 place-items-center rounded-md text-[13px] font-semibold", p === 1 ? "bg-green-500 text-white" : "text-text-secondary ring-1 ring-border")}>{p}</button>
+        {/* ── 미확인 입금 (수동 매칭) ── */}
+        {unmatched.length > 0 ? (
+          <Panel
+            title="미확인 입금"
+            sub="보낸 주소가 회원 프로필의 지갑 주소와 일치하지 않은 건 · 회원을 지정해 반영하거나 무시"
+            action={<Pill tone="warning">{unmatched.length}건 대기</Pill>}
+            bodyClassName="overflow-x-auto"
+          >
+            <div className="min-w-[760px]">
+              <div className={cn("grid items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary", UNMATCHED_COLS)}>
+                <span>블록 시각</span><span>네트워크</span><span>보낸 주소 · TxHash</span><span>금액</span><span className="text-right">처리</span>
+              </div>
+              {unmatched.map((d) => (
+                <div key={d.id} className={cn("grid items-center gap-3 border-b py-3 text-sm last:border-0", UNMATCHED_COLS)}>
+                  <span className="text-[12px] tabular-nums text-text-tertiary">{toSeoulDateTime(d.block_time)}</span>
+                  <span className="flex items-center gap-1 text-[12px] text-text-tertiary"><span className={cn("size-1.5 rounded-full", NET_DOT[d.network])} />{d.network}</span>
+                  <span className="flex flex-col gap-0.5">
+                    <a href={addressExplorerUrl(d.network, d.from_address) ?? "#"} target="_blank" rel="noopener noreferrer" className="font-mono text-[12px] text-text-primary hover:underline">{d.from_address}</a>
+                    <a href={txExplorerUrl(d.network, d.tx_hash) ?? "#"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono text-[11px] text-text-tertiary hover:underline">
+                      {shortHash(d.tx_hash)} <ExternalLinkIcon className="size-3" />
+                    </a>
+                  </span>
+                  <span className="text-[13px] font-bold tabular-nums text-green-700">{usd(d.amount_usd)} USDT</span>
+                  <UnmatchedDepositActions depositId={d.id} />
+                </div>
               ))}
-              <button className="grid size-8 place-items-center rounded-md text-text-secondary ring-1 ring-border"><ChevronRightIcon className="size-4" /></button>
             </div>
+          </Panel>
+        ) : null}
+
+        {/* ── 온체인 감지 원장 ── */}
+        <Panel title="온체인 입금 원장" sub={`스캔으로 감지된 전송 · 최근 ${onchain.length}건`} bodyClassName="overflow-x-auto">
+          <div className="min-w-[900px]">
+            <div className={cn("grid items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary", COLS)}>
+              <span>블록 시각</span><span>회원</span><span>보낸 주소</span><span>TxHash</span><span>금액 · 네트워크</span><span className="text-right">상태</span>
+            </div>
+            {onchain.length === 0 ? (
+              <div className="py-12 text-center text-sm text-text-tertiary">
+                감지된 온체인 입금이 없습니다. {readyCount === 0 ? "키·주소를 설정하면 스캔이 시작됩니다." : "‘지금 스캔’을 누르거나 크론이 돌면 여기에 쌓입니다."}
+              </div>
+            ) : (
+              onchain.map((d) => {
+                const st = STATUS[d.status] ?? STATUS.unmatched;
+                return (
+                  <div key={d.id} className={cn("grid items-center gap-3 border-b py-3.5 text-sm last:border-0", COLS)}>
+                    <span className="text-[12px] tabular-nums text-text-tertiary">{toSeoulDateTime(d.block_time)}</span>
+                    {d.member_id ? (
+                      <div className="flex items-center gap-2.5">
+                        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-green-50 text-[10px] font-bold text-green-700">{uidInitials(d.member_id)}</span>
+                        <span className="truncate text-[13px] font-semibold text-text-primary">{toUid(d.member_id)}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[12px] text-text-tertiary">미매칭</span>
+                    )}
+                    <a href={addressExplorerUrl(d.network, d.from_address) ?? "#"} target="_blank" rel="noopener noreferrer" className="truncate font-mono text-[12px] text-text-secondary hover:underline">{shortAddr(d.from_address)}</a>
+                    <a href={txExplorerUrl(d.network, d.tx_hash) ?? "#"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-text-tertiary hover:underline">
+                      {shortHash(d.tx_hash)} <ExternalLinkIcon className="size-3 text-n-400" />
+                    </a>
+                    <span className="flex items-center gap-2">
+                      <span className="text-[13px] font-bold tabular-nums text-green-700">{usd(d.amount_usd)}</span>
+                      <span className="flex items-center gap-1 text-[11px] text-text-tertiary"><span className={cn("size-1.5 rounded-full", NET_DOT[d.network])} />{d.network}</span>
+                    </span>
+                    <span className="flex justify-end"><Pill tone={st.tone} dot={d.status === "credited"}>{st.label}</Pill></span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </Panel>
+
+        {/* ── 잔액 반영 입금 내역(지갑 원장) ── */}
+        <Panel title="잔액 반영 입금 내역" sub="회원 지갑에 실제로 더해진 입금 · 온체인 반영 + 개발용 테스트 입금" bodyClassName="overflow-x-auto">
+          <div className="min-w-[700px]">
+            <div className="grid grid-cols-[104px_1.2fr_1.4fr_1fr_120px] items-center gap-3 border-b pb-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary">
+              <span>일시</span><span>회원</span><span>TxHash</span><span>금액 · 네트워크</span><span className="text-right">상태</span>
+            </div>
+            {ledger.length === 0 ? (
+              <div className="py-10 text-center text-sm text-text-tertiary">입금 내역이 없습니다.</div>
+            ) : (
+              ledger.map((r) => {
+                const url = txExplorerUrl(r.network, r.tx_hash);
+                return (
+                  <div key={r.id} className="grid grid-cols-[104px_1.2fr_1.4fr_1fr_120px] items-center gap-3 border-b py-3 text-sm last:border-0">
+                    <span className="text-[12px] tabular-nums text-text-tertiary">{toSeoulDateTime(r.created_at)}</span>
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-green-50 text-[10px] font-bold text-green-700">{uidInitials(r.member_id)}</span>
+                      <span className="truncate text-[13px] font-semibold text-text-primary">{toUid(r.member_id)}</span>
+                    </div>
+                    {r.tx_hash ? (
+                      <a href={url ?? "#"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-text-tertiary hover:underline">
+                        {shortHash(r.tx_hash)} <ExternalLinkIcon className="size-3 text-n-400" />
+                      </a>
+                    ) : (
+                      <span className="text-[12px] text-text-tertiary">— (테스트 입금)</span>
+                    )}
+                    <span className="flex items-center gap-2">
+                      <span className="text-[13px] font-bold tabular-nums text-green-700">{usd(Number(r.amount_usd))}</span>
+                      <span className="text-[11px] text-text-tertiary">{r.network ?? "—"}</span>
+                    </span>
+                    <span className="flex justify-end"><Pill tone={r.status === "completed" ? "green" : "warning"} dot={r.status === "completed"}>{r.status === "completed" ? "반영 완료" : r.status}</Pill></span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </Panel>
       </div>

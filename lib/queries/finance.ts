@@ -236,6 +236,7 @@ export interface LedgerEntry {
   network: string | null;
   desc: string;
   status: string;
+  tx_hash?: string | null; // 온체인 입금/출금 해시(탐색기 링크용)
 }
 
 export interface MemberWalletData {
@@ -270,6 +271,15 @@ const paymentDesc = (label: string | null | undefined) => {
   return l;
 };
 
+// 출금 상태별 회원 표시 문구
+const WD_DESC: Record<string, string> = {
+  pending: "출금 신청 (승인 대기)",
+  approved: "출금 승인됨 (송금 대기)",
+  sending: "출금 송금 중",
+  completed: "온체인 출금 송금",
+  rejected: "출금 반려 (환불)",
+};
+
 // 통합 원장 = wallet_transactions(입금/결제) + withdrawals(출금) + settlements(수당) 병합.
 // 잔액·주소는 wallets, 수당은 정산 테이블에서 파생(시드가 commission 거래를 안 만들어서).
 export async function getMemberWalletData(memberId: string): Promise<MemberWalletData> {
@@ -278,12 +288,12 @@ export async function getMemberWalletData(memberId: string): Promise<MemberWalle
     getMemberWallet(memberId),
     sb
       .from("wallet_transactions")
-      .select("tx_type, amount_usd, network, status, created_at")
+      .select("tx_type, amount_usd, network, status, created_at, tx_hash")
       .eq("member_id", memberId)
       .in("tx_type", ["deposit", "payment"]),
     sb
       .from("withdrawals")
-      .select("amount_usd, fee_usd, network, status, requested_at")
+      .select("amount_usd, fee_usd, network, status, requested_at, tx_hash")
       .eq("member_id", memberId),
     sb
       .from("settlements")
@@ -306,7 +316,7 @@ export async function getMemberWalletData(memberId: string): Promise<MemberWalle
     if (r.tx_type === "deposit") {
       totalDeposit += amt;
       if (inMonth) monthDeposit += amt;
-      ledger.push({ ts: r.created_at, tx_type: "deposit", amount_usd: amt, network: r.network, desc: "USDT 입금", status: r.status });
+      ledger.push({ ts: r.created_at, tx_type: "deposit", amount_usd: amt, network: r.network, desc: r.tx_hash ? "USDT 입금 (온체인)" : "USDT 입금", status: r.status, tx_hash: r.tx_hash });
     } else {
       if (inMonth) monthPayment += amt;
       ledger.push({ ts: r.created_at, tx_type: "payment", amount_usd: -amt, network: "잔액 차감", desc: paymentDesc(r.network), status: r.status });
@@ -315,7 +325,7 @@ export async function getMemberWalletData(memberId: string): Promise<MemberWalle
 
   for (const r of wdRes.data ?? []) {
     const amt = Number(r.amount_usd);
-    ledger.push({ ts: r.requested_at, tx_type: "withdrawal", amount_usd: -amt, network: r.network, desc: "온체인 출금 송금", status: r.status });
+    ledger.push({ ts: r.requested_at, tx_type: "withdrawal", amount_usd: -amt, network: r.network, desc: WD_DESC[r.status] ?? "온체인 출금 송금", status: r.status, tx_hash: r.tx_hash });
   }
 
   for (const r of stRes.data ?? []) {
