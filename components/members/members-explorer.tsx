@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { toUid } from "@/lib/uid";
+import { downloadCsv } from "@/lib/csv";
 
 export type MemberRole = "registered" | "subscriber" | "marketer";
 
@@ -107,6 +109,13 @@ export function MembersExplorer({
   // 필터 변경 시 1페이지로
   React.useEffect(() => setPage(1), [roleTab, subStatus, activeOnly, recQuery]);
 
+  const exportCsv = () =>
+    downloadCsv(
+      `members-${new Date().toISOString().slice(0, 10)}.csv`,
+      ["UID", "이름", "이메일", "회원 구분", "활성 구독", "추천인", "가입일", "직급"],
+      filtered.map((r) => [toUid(r.id), r.name, r.email ?? "", ROLE_LABEL[r.role], r.active ? "Y" : "", r.recommenderName ?? "", r.joinedAt, r.rank == null ? "" : r.rank > 0 ? `R${r.rank}` : "무직급"]),
+    );
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
@@ -183,7 +192,7 @@ export function MembersExplorer({
           >
             <SlidersHorizontalIcon className="size-3.5" /> 필터
           </button>
-          <button className="inline-flex items-center gap-1.5 rounded-[10px] bg-card px-3.5 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong">
+          <button type="button" onClick={exportCsv} disabled={filtered.length === 0} className="inline-flex items-center gap-1.5 rounded-[10px] bg-card px-3.5 py-2 text-[13px] font-medium text-text-secondary ring-1 ring-border-strong disabled:opacity-50">
             <DownloadIcon className="size-3.5" /> 내보내기
           </button>
         </div>
