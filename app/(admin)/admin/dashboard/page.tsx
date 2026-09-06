@@ -1,4 +1,5 @@
 import { currentCycle } from "@/lib/dates";
+import { getCompanyOnchainBalances, sumOnchain } from "@/lib/chain/balances";
 import {
   ArrowDownLeftIcon,
   ArrowUpRightIcon,
@@ -50,7 +51,7 @@ const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const usd2 = (n: number) => `$${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const pctOf = (part: number, total: number) => (total > 0 ? Math.round((part / total) * 100) : 0);
 
-const NET_LABEL: Record<string, string> = { TRC20: "Tron", ERC20: "Ethereum", Polygon: "Polygon", BSC: "BSC" };
+const NET_LABEL: Record<string, string> = { TRC20: "Tron", BEP20: "BSC", ERC20: "Ethereum", Polygon: "Polygon", BSC: "BSC" };
 const netLabel = (n: string | null) => (n ? NET_LABEL[n] ?? n : "—");
 
 // 카드 셸 스타일
@@ -113,7 +114,13 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   const curWeek = Math.min(4, Math.floor((new Date().getUTCDate() - 1) / 7));
 
   const pool = (k: string) => wallets.find((w) => w.kind === k)?.balance_usd ?? 0;
-  const operating = pool("operating");
+  // 운영 지갑 잔액은 체인 실잔액 우선(설정된 네트워크가 있을 때), 없으면 원장(system_wallets) 값.
+  const onchain = await getCompanyOnchainBalances();
+  const onchainTotal = sumOnchain(onchain);
+  const operating = onchainTotal ?? pool("operating");
+  const operatingNote = onchainTotal != null
+    ? onchain.map((b) => `${NET_LABEL[b.network] ?? b.network} ${b.usdt != null ? usd(b.usdt) : b.error === "미설정" ? "미설정" : "조회 실패"}`).join(" · ")
+    : (NET_LABEL[wallets.find((w) => w.kind === "operating")?.network ?? ""] ?? "네트워크 미설정");
   // 배분 비율은 수당체계 설정(comp_settings). 잔액은 배분 누계(revenue_allocations 원장)에서 지급(수당 풀)·인출을 뺀 현재 보유액.
   const pools = [
     { kind: "pool_commission", name: "수당 풀", desc: "레벨·직급·공유 지급 재원", color: "bg-green-500", tone: "green" as const, ratio: settings.alloc_commission_pct, bal: pool("pool_commission"), allocated: allocTotals.pool_commission },
@@ -158,7 +165,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
             <div className="space-y-2">
               <div className="text-[13px] font-medium text-text-secondary">어드민 지갑 잔액 · Wallet Balance</div>
               <div className="text-[40px] leading-none font-bold tabular-nums text-text-primary">{usd(operating)}</div>
-              <div className="text-xs text-text-tertiary">포르투나 운영 지갑 · {NET_LABEL[wallets.find((w) => w.kind === "operating")?.network ?? ""] ?? "네트워크 미설정"} · USDT</div>
+              <div className="text-xs text-text-tertiary">포르투나 운영 지갑 · {operatingNote} · USDT{onchainTotal != null ? " · 체인 실잔액" : ""}</div>
             </div>
             <div className="flex gap-2">
               <Link href="/admin/deposits" className="inline-flex items-center gap-1.5 rounded-[10px] bg-green-50 px-3 py-2 text-[13px] font-semibold text-green-700 hover:bg-green-100">

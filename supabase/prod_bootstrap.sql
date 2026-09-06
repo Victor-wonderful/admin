@@ -6,6 +6,7 @@
 --
 -- 하는 일:
 --   1) 상품 카탈로그 4종(코드 고정: bot_sub / annual_fee / coin_visa / exchange_fee_share). 이미 있으면 건너뜀.
+--   1-b) 시스템 지갑 5행(운영 + 풀 4개, 잔액 0). 이미 있으면 건너뜀.
 --   2) 루트 파트너(회사 계정) 1명 + 초대 코드 1개. 회원가입은 활성 초대 코드가 있어야만 가능하므로
 --      첫 회원을 받으려면 이 계정이 반드시 필요하다. 이미 같은 이메일이 있으면 건너뜀.
 --      이메일·비밀번호 없이 만든다(로그인 불가). 추천 조직의 뿌리 역할만 한다.
@@ -22,6 +23,16 @@ values
   ('coin_visa',          '코인 비자 카드',     null,   'event',   false, true, false, 30),
   ('exchange_fee_share', '거래소 수수료 분배', null,   'event',   false, true, false, 40)
 on conflict (code) do nothing;
+
+-- 1-b) 시스템 지갑 행(운영 지갑 + 매출 배분 풀 4개). 결제 시 배분 갱신은 이 행들을 update 하므로 반드시 있어야 한다.
+--      잔액은 0에서 시작. 운영 지갑 실제 잔액은 체인에서 읽어 화면에 보여준다.
+insert into system_wallets(kind, label, balance_usd, network) values
+  ('operating',       '운영 지갑',   0, 'TRC20'),
+  ('pool_commission', '수당 풀',     0, null),
+  ('pool_company',    '회사 수익',   0, null),
+  ('pool_equity',     '지분자 배당', 0, null),
+  ('pool_reserve',    '예비비',      0, null)
+on conflict (kind) do nothing;
 
 -- 2) 루트 파트너(회사 계정)
 do $$

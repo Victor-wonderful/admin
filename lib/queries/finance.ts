@@ -1,4 +1,5 @@
 import "server-only";
+import { getCompanyOnchainBalances, sumOnchain } from "@/lib/chain/balances";
 import { getServerClient } from "@/lib/supabase/server";
 import { currentCycle, today } from "@/lib/dates";
 
@@ -103,7 +104,7 @@ export async function getWithdrawalSummary(): Promise<WithdrawalSummary> {
   const s: WithdrawalSummary = {
     pendingCount: 0, pendingAmount: 0, sendingCount: 0, sendingAmount: 0,
     completedMonthAmount: 0, completedTotalAmount: 0,
-    operatingBalance: sw ? Number(sw.balance_usd) : 0,
+    operatingBalance: sumOnchain(await getCompanyOnchainBalances()) ?? (sw ? Number(sw.balance_usd) : 0),
   };
   for (const r of wd ?? []) {
     const amt = Number(r.amount_usd);
