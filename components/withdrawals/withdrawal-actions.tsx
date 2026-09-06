@@ -7,7 +7,7 @@ import { transitionWithdrawal, type WithdrawalStatus } from "@/lib/actions/withd
 import { isValidTxHash, txExplorerUrl, shortHash } from "@/lib/chain/explorer";
 import { cn } from "@/lib/utils";
 
-// 출금 행 액션 — 상태별 다음 전이. pending→승인/반려, approved→송금 시작/반려, sending→tx_hash 입력 후 완료.
+// 출금 행 액션 — 상태별 다음 전이. pending→승인/반려, approved→송금 시작/반려, sending→tx_hash 입력 후 완료 또는 반려(0051: 아직 안 보낸 건 되돌리기).
 // 송금은 운영자가 TronLink/MetaMask 로 직접 보내고(2026-09-04 결정), 체인에서 받은 tx_hash 를 여기 입력해 완료 처리한다.
 export function WithdrawalActions({
   id,
@@ -101,6 +101,15 @@ export function WithdrawalActions({
               className="inline-flex items-center gap-1 rounded-md bg-green-500 px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
             >
               {spinner ?? <CheckCheckIcon className="size-3.5" />} 완료
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => { if (window.confirm("지갑 앱에서 아직 보내지 않은 건만 반려하세요. 반려하면 회원 잔액에 금액+수수료가 환불됩니다. 계속할까요?")) act("rejected"); }}
+              title="송금을 못 하게 된 경우(잔액 부족 등) 되돌리기 — 회원 잔액 환불"
+              className="rounded-md px-2.5 py-1.5 text-xs font-semibold text-negative ring-1 ring-negative-soft disabled:opacity-60"
+            >
+              반려
             </button>
           </>
         )}
