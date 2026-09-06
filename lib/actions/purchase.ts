@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { syncMemberAccess } from "@/lib/member-access";
 import { getServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/lib/session";
 import { today } from "@/lib/dates";
@@ -16,6 +17,7 @@ export async function purchaseProduct(productId: string): Promise<PurchaseResult
   const { data, error } = await sb.rpc("purchase_product", { p_member: me.id, p_product: productId, p_as_of: today() });
   if (error) return { ok: false, error: error.message?.trim() || "구매 처리에 실패했습니다" };
 
+  await syncMemberAccess(me.id); // 구독 상품 구매 시 앱 이용 기간 갱신
   for (const p of ["/portal/orders", "/marketer/orders", "/portal/wallet", "/marketer/wallet", "/portal/subscriber", "/portal/registered"]) revalidatePath(p);
   return { ok: true, purchaseId: String(data) };
 }

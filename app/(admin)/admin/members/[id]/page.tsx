@@ -23,6 +23,9 @@ import { listMemberSessions, describeDevice } from "@/lib/queries/sessions";
 import { ForceLogoutButton } from "@/components/members/force-logout-button";
 import { AdminPlaceForm } from "@/components/members/admin-place-form";
 import { MemberAdminActions } from "@/components/members/member-admin-actions";
+import { getMemberAccessUntil } from "@/lib/member-access";
+
+const isPast = (iso: string) => new Date(iso).getTime() < Date.now();
 
 // 세션 종료 사유 표기
 const SESSION_END: Record<string, string> = { logout: "로그아웃", other_device: "다른 기기 로그인", expired: "만료", admin: "관리자 종료" };
@@ -108,9 +111,11 @@ function Kpi({ icon: Icon, badge, label, value }: { icon: React.ComponentType<{ 
 export default async function MemberDetail({ params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdminPage("members");
   const canManage = can(admin.role, "members.write");
+  const isSuper = admin.role === "super";
   const { id } = await params;
   const me = await getMember(id);
   if (!me) notFound();
+  const accessUntil = await getMemberAccessUntil(me.id);
 
   const isMarketer = me.role === "marketer";
   const paysSub = me.role !== "registered";
@@ -194,10 +199,13 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
               <div className="mt-1 flex items-center gap-3 text-xs text-text-tertiary">
                 <span className="inline-flex items-center gap-1"><MailIcon className="size-3" /> {maskEmail(me.email)}</span>
                 <span>가입 {me.created_at.slice(0, 10)}</span>
+                <span title="포르투나 앱 이용 기한(체험 2일 / 구독 종료일 / 체험 연장 중 가장 늦은 것)">
+                  앱 이용 {accessUntil ? new Date(accessUntil).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" }) + (isPast(accessUntil) ? " 만료" : " 까지") : "—"}
+                </span>
               </div>
             </div>
           </div>
-          <MemberAdminActions memberId={me.id} label={`${me.display_name} (${uid})`} suspended={Boolean(me.suspended_at)} suspendReason={me.suspend_reason ?? null} readOnly={!canManage} />
+          <MemberAdminActions memberId={me.id} label={`${me.display_name} (${uid})`} suspended={Boolean(me.suspended_at)} suspendReason={me.suspend_reason ?? null} readOnly={!canManage} canExtendTrial={isSuper} accessUntil={accessUntil} />
         </section>
 
         {/* 포르투나 구독 상태 */}

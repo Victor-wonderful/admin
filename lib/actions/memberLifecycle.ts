@@ -3,6 +3,7 @@
 import { today } from "@/lib/dates";
 import { getServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { syncMemberAccess } from "@/lib/member-access";
 
 // 결제 기준일 = 실제 오늘
 const cycleAsOf = () => today();
@@ -38,6 +39,7 @@ export async function subscribeMember(memberId: string, amount = 120): Promise<L
   const sb = getServerClient();
   const { error } = await sb.rpc("subscribe_member", { p_member: memberId, p_amount: amount, p_as_of: cycleAsOf() });
   if (error) return { ok: false, error: toMessage(error, "구독 처리에 실패했습니다") };
+  await syncMemberAccess(memberId); // 앱 이용 기간 갱신
   revalidatePortals();
   return { ok: true, dest: "/portal/subscriber" };
 }
@@ -47,6 +49,7 @@ export async function renewSubscription(memberId: string, amount = 120): Promise
   const sb = getServerClient();
   const { error } = await sb.rpc("renew_subscription_now", { p_member: memberId, p_amount: amount, p_as_of: cycleAsOf() });
   if (error) return { ok: false, error: toMessage(error, "구독 갱신에 실패했습니다") };
+  await syncMemberAccess(memberId); // 앱 이용 기간 갱신
   const { data: m } = await sb.from("members").select("role").eq("id", memberId).maybeSingle();
   revalidatePortals();
   return { ok: true, dest: m?.role === "marketer" ? "/marketer/dashboard" : "/portal/subscriber" };
@@ -67,6 +70,7 @@ export async function upgradeToMarketer(memberId: string, amount = 200): Promise
   const sb = getServerClient();
   const { error } = await sb.rpc("upgrade_to_marketer", { p_member: memberId, p_amount: amount, p_as_of: cycleAsOf() });
   if (error) return { ok: false, error: toMessage(error, "승급 처리에 실패했습니다") };
+  await syncMemberAccess(memberId); // 앱 이용 기간 갱신
   revalidatePortals();
   return { ok: true, dest: "/marketer/dashboard" };
 }
@@ -81,6 +85,7 @@ export async function subscribeAndUpgrade(memberId: string, sub = 120, annual = 
     p_as_of: cycleAsOf(),
   });
   if (error) return { ok: false, error: toMessage(error, "파트너 전환에 실패했습니다") };
+  await syncMemberAccess(memberId); // 앱 이용 기간 갱신
   revalidatePortals();
   return { ok: true, dest: "/marketer/dashboard" };
 }

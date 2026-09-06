@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerClient } from "@/lib/supabase/server";
 import { today } from "@/lib/dates";
 import { sendEmail, renewalReminderText } from "@/lib/notify";
+import { syncAllMemberAccess } from "@/lib/member-access";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,9 @@ export async function GET(req: Request) {
   if (pErr) return NextResponse.json({ error: pErr.message }, { status: 500 });
 
   // 4) 매출 배분 안전망 — 결제 트리거가 결제마다 배분하지만, 이번 달 사이클을 한 번 더 재계산(멱등)
+  // 앱 이용 기간(체험 2일 / 구독) 전체 동기화 — 갱신·만료 결과를 포르투나 앱에 반영
+  const access = await syncAllMemberAccess();
+
   const { error: aErr } = await sb.rpc("allocate_revenue", { p_cycle: t.slice(0, 7) });
   if (aErr) return NextResponse.json({ error: aErr.message }, { status: 500 });
 

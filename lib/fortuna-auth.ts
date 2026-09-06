@@ -88,6 +88,14 @@ export async function updateFortunaDisplayName(fortunaUserId: string, displayNam
   if (error) console.warn("[fortuna-auth] display_name 갱신 실패:", error.message);
 }
 
+// 앱 이용 만료 시각(profiles.access_until) 기록. null = 무제한. cf. lib/member-access.ts
+export async function setFortunaAccessUntil(fortunaUserId: string, until: string | null): Promise<void> {
+  const fb = fortunaAdmin();
+  if (!fb) return;
+  const { error } = await fb.from("profiles").update({ access_until: until }).eq("id", fortunaUserId);
+  if (error) console.warn("[fortuna-auth] access_until 기록 실패:", error.message);
+}
+
 // 포털 members.fortuna_user_id 기록.
 export async function linkFortunaUser(memberId: string, fortunaUserId: string): Promise<void> {
   const sb = getServerClient();
@@ -113,4 +121,9 @@ export async function syncFortunaAccount(args: {
   const knownId = await getLinkedFortunaId(args.memberId);
   const id = await ensureFortunaUser({ email: args.email, password: args.password, displayName: args.displayName, knownId });
   if (id && id !== knownId) await linkFortunaUser(args.memberId, id);
+  // 이용 기간(체험 2일 / 구독) 동기화 — 계정이 보장된 직후.
+  if (id) {
+    const { syncMemberAccess } = await import("@/lib/member-access");
+    await syncMemberAccess(args.memberId);
+  }
 }
