@@ -47,6 +47,7 @@ export async function scanDeposits(): Promise<NetworkScanResult[]> {
       }
     } catch (e) {
       r.error = e instanceof Error ? e.message : String(e);
+      console.warn(`[deposit-scan] ${cfg.network} 조회 실패:`, r.error);
       await sb.from("deposit_scan_state").upsert({ network: cfg.network, last_run_at: new Date().toISOString(), last_error: r.error });
       continue;
     }
@@ -93,6 +94,7 @@ export async function scanDeposits(): Promise<NetworkScanResult[]> {
       last_error: r.error,
       seen_count: r.fetched,
     });
+    console.info(`[deposit-scan] ${cfg.network} 조회 ${r.fetched}건 · 신규 ${r.inserted} · 반영 ${r.credited} · 미확인 ${r.unmatched}`);
   }
 
   return results;
