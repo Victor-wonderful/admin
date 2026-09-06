@@ -56,8 +56,17 @@ async function getJson(url: string, headers: Record<string, string> = {}): Promi
 
 // Tron: 계정으로 들어온 TRC20 USDT 전송(성공 건만). sinceMs 이후, 시간 오름차순.
 export async function fetchTronUsdtDeposits(address: string, apiKey: string, sinceMs: number, limit = 200): Promise<ChainTransfer[]> {
+  return fetchTronUsdtTransfers(address, apiKey, sinceMs, "in", limit);
+}
+
+// Tron: 계정에서 나간 TRC20 USDT 전송(출금 자동 완료 확인용).
+export async function fetchTronUsdtOutgoing(address: string, apiKey: string, sinceMs: number, limit = 200): Promise<ChainTransfer[]> {
+  return fetchTronUsdtTransfers(address, apiKey, sinceMs, "out", limit);
+}
+
+async function fetchTronUsdtTransfers(address: string, apiKey: string, sinceMs: number, direction: "in" | "out", limit: number): Promise<ChainTransfer[]> {
   const q = new URLSearchParams({
-    only_to: "true",
+    [direction === "in" ? "only_to" : "only_from"]: "true",
     only_confirmed: "true",
     contract_address: USDT_CONTRACT.TRC20,
     min_timestamp: String(Math.max(0, sinceMs)),
@@ -104,4 +113,12 @@ export async function fetchBscUsdtDeposits(
     }))
     .filter((t) => t.amount > 0);
   return { transfers, scannedTo: r.scannedTo, skippedBlocks: r.skippedBlocks, fromBlock: r.fromBlock, latest: r.latest };
+}
+
+// BSC: 회사 주소에서 나간 USDT 전송(출금 자동 완료 확인용). 노드 보관 범위(≈1시간) 안만 조회.
+export async function fetchBscUsdtOutgoing(address: string, rpcUrls: string, startBlock: number): Promise<ChainTransfer[]> {
+  const r = await fetchBscUsdtTransfers(address, parseRpcUrls(rpcUrls), startBlock, "out");
+  return r.transfers
+    .map((t) => ({ network: "BEP20" as const, txHash: t.txHash, from: t.from, to: t.to, amount: fromUnits(t.amountUnits, USDT_DECIMALS.BEP20), blockTime: t.blockTime, blockNumber: t.blockNumber }))
+    .filter((t) => t.amount > 0);
 }

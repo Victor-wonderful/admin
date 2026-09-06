@@ -58,8 +58,8 @@ export function parseRpcUrls(raw: string | undefined | null): string[] {
   return list.length > 0 ? list : BSC_DEFAULT_RPC_URLS;
 }
 
-/** 회사 주소로 들어온 USDT 전송을 [startBlock, 확정 최신 블록] 범위에서 읽는다. startBlock<=0 이면 첫 실행. */
-export async function fetchBscUsdtTransfers(address: string, rpcUrls: string[], startBlock: number): Promise<BscScanResult> {
+/** 회사 주소의 USDT 전송을 [startBlock, 확정 최신 블록] 범위에서 읽는다. direction "in"=받은 것, "out"=보낸 것. startBlock<=0 이면 첫 실행. */
+export async function fetchBscUsdtTransfers(address: string, rpcUrls: string[], startBlock: number, direction: "in" | "out" = "in"): Promise<BscScanResult> {
   const latest = parseInt(String(await rpcCall(rpcUrls, "eth_blockNumber", [])), 16);
   if (!Number.isFinite(latest) || latest <= 0) throw new Error("BSC RPC eth_blockNumber 응답 이상");
   const safe = latest - CONFIRMATIONS;
@@ -79,7 +79,7 @@ export async function fetchBscUsdtTransfers(address: string, rpcUrls: string[], 
   for (let i = 0; i < MAX_CHUNKS_PER_RUN && cursor <= safe; i++) {
     const to = Math.min(cursor + CHUNK_BLOCKS - 1, safe);
     const part = (await rpcCall(rpcUrls, "eth_getLogs", [
-      { address: BSC_USDT_CONTRACT, topics: [TRANSFER_TOPIC, null, me], fromBlock: hex(cursor), toBlock: hex(to) },
+      { address: BSC_USDT_CONTRACT, topics: direction === "in" ? [TRANSFER_TOPIC, null, me] : [TRANSFER_TOPIC, me, null], fromBlock: hex(cursor), toBlock: hex(to) },
     ])) as RpcLog[];
     logs.push(...(part ?? []));
     scannedTo = to;
@@ -106,7 +106,7 @@ export async function fetchBscUsdtTransfers(address: string, rpcUrls: string[], 
         blockTime: blockTimes.get(bn) ?? new Date(),
       };
     })
-    .filter((t) => t.to.toLowerCase() === address.toLowerCase() && t.amountUnits !== "0")
+    .filter((t) => (direction === "in" ? t.to : t.from).toLowerCase() === address.toLowerCase() && t.amountUnits !== "0")
     .sort((a, b) => a.blockNumber - b.blockNumber);
 
   return { transfers, fromBlock: from, scannedTo, latest, skippedBlocks };

@@ -171,7 +171,7 @@ export default async function AdminWithdrawalsPage({ searchParams }: { searchPar
 
           <div className="mb-3 flex items-center justify-between text-[12px] text-text-tertiary">
             <span>{hasFilter ? `조건 일치 ${filtered.length.toLocaleString()}건` : `전체 ${all.length.toLocaleString()}건`}{filtered.length > PAGE ? ` · 최근 ${PAGE}건 표시` : ""}</span>
-            <span>승인 → 송금 시작 → 지갑 앱(TronLink/MetaMask)에서 보낸 뒤 tx_hash 입력으로 완료</span>
+            <span>승인 → 송금 시작 → 지갑 앱에서 보내면 5분 내 체인 확인으로 자동 완료(해시 직접 입력도 가능)</span>
           </div>
 
           <div className="min-w-[960px]">

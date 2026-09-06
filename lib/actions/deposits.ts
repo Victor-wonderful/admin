@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getServerClient } from "@/lib/supabase/server";
 import { scanDeposits, type NetworkScanResult } from "@/lib/deposit-scan";
+import { syncWithdrawalsFromChain } from "@/lib/withdrawal-sync";
 import { toUid } from "@/lib/uid";
 import { audit } from "@/lib/audit";
 import { checkCapability } from "@/lib/admin-guard";
@@ -24,6 +25,7 @@ export async function runDepositScan(): Promise<{ ok: true; results: NetworkScan
   if (!g.ok) return { ok: false, error: g.error };
   try {
     const results = await scanDeposits();
+    await syncWithdrawalsFromChain(); // 송금 중 출금 건도 함께 체인 확인
     const inserted = results.reduce((s, r) => s + r.inserted, 0);
     const credited = results.reduce((s, r) => s + r.credited, 0);
     await audit({ category: "finance", action: "deposit_scan", target: `입금 스캔 실행 · 네트워크 ${results.length}개 · 신규 ${inserted}건 · 자동 반영 ${credited}건` });
