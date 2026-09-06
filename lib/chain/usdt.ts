@@ -49,7 +49,7 @@ function fromUnits(raw: string, decimals: number): number {
 }
 
 async function getJson(url: string, headers: Record<string, string> = {}): Promise<unknown> {
-  const res = await fetch(url, { headers, cache: "no-store" });
+  const res = await fetch(url, { headers, cache: "no-store", signal: AbortSignal.timeout(8_000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} ${url.split("?")[0]}`);
   return res.json();
 }

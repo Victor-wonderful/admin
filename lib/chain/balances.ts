@@ -17,7 +17,7 @@ async function tronUsdt(address: string, apiKey: string): Promise<number> {
   const res = await fetch(`https://api.trongrid.io/v1/accounts/${address}`, {
     headers: { "TRON-PRO-API-KEY": apiKey },
     cache: "no-store",
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(6_000),
   });
   if (!res.ok) throw new Error(`TronGrid HTTP ${res.status}`);
   const json = (await res.json()) as { data?: Array<{ trc20?: Array<Record<string, string>> }> };
@@ -40,7 +40,7 @@ async function bscUsdt(address: string, rpcUrls: string[]): Promise<number> {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: USDT_CONTRACT.BEP20, data }, "latest"] }),
         cache: "no-store",
-        signal: AbortSignal.timeout(10_000),
+        signal: AbortSignal.timeout(6_000),
       });
       const json = (await res.json()) as { result?: string; error?: { message?: string } };
       if (json.error || !json.result) { lastErr = json.error?.message ?? "empty"; continue; }

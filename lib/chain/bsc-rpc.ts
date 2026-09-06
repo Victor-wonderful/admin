@@ -35,7 +35,7 @@ async function rpcCall(urls: string[], method: string, params: unknown[]): Promi
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
         cache: "no-store",
-        signal: AbortSignal.timeout(12_000),
+        signal: AbortSignal.timeout(6_000), // 노드가 느리면 빨리 포기하고 다음 노드로(크론 실행 시간 보호)
       });
       if (!res.ok) { lastErr = `HTTP ${res.status} (${url})`; continue; }
       const json = (await res.json()) as { result?: unknown; error?: { message?: string } };
