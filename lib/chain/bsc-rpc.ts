@@ -9,7 +9,9 @@ export const BSC_USDT_CONTRACT = "0x55d398326f99059fF775485246999027B3197955"; /
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"; // Transfer(address,address,uint256)
 
 export const BSC_DEFAULT_RPC_URLS = ["https://bsc-rpc.publicnode.com", "https://bsc.drpc.org"];
-const CONFIRMATIONS = 15; // 이 블록 수만큼 지난 것만 확정으로 본다
+// 확정 대기: 공개 노드는 최신 블록의 로그 색인이 늦을 수 있어(2026-09-06 운영에서 확정 15블록 시점 조회가 빈 결과 → 입금 누락)
+// 넉넉히 300블록(≈2~3분) 뒤까지만 읽는다. 여기에 매 실행 2,000블록을 겹쳐 다시 읽어(중복은 tx_hash unique 로 흡수) 누락을 막는다.
+const CONFIRMATIONS = 300;
 const CHUNK_BLOCKS = 4000; // eth_getLogs 한 번의 범위
 const MAX_CHUNKS_PER_RUN = 3; // 한 실행에서 최대 3구간(≈12,000 블록, 노드 한계 안)
 export const BSC_INITIAL_LOOKBACK_BLOCKS = 4000; // 커서가 없을 때(첫 실행) 최근 4천 블록(≈30분)만
@@ -19,6 +21,10 @@ export type BscTransfer = { txHash: string; from: string; to: string; amountUnit
 export type BscScanResult = { transfers: BscTransfer[]; fromBlock: number; scannedTo: number; latest: number; skippedBlocks: number };
 
 type RpcLog = { transactionHash: string; topics: string[]; data: string; blockNumber: string; removed?: boolean };
+
+let lastServedBy = "";
+/** 직전 RPC 호출을 처리한 노드(진단 로그용). */
+export function lastRpcServedBy(): string { return lastServedBy; }
 
 async function rpcCall(urls: string[], method: string, params: unknown[]): Promise<unknown> {
   let lastErr = "";
@@ -34,6 +40,7 @@ async function rpcCall(urls: string[], method: string, params: unknown[]): Promi
       if (!res.ok) { lastErr = `HTTP ${res.status} (${url})`; continue; }
       const json = (await res.json()) as { result?: unknown; error?: { message?: string } };
       if (json.error) { lastErr = `${json.error.message ?? "rpc error"} (${url})`; continue; }
+      lastServedBy = url;
       return json.result;
     } catch (e) {
       lastErr = `${e instanceof Error ? e.message : String(e)} (${url})`;

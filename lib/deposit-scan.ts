@@ -2,6 +2,7 @@ import "server-only";
 
 import { getServerClient } from "@/lib/supabase/server";
 import { fetchBscUsdtDeposits, fetchTronUsdtDeposits, getNetworkConfigs, type ChainTransfer } from "@/lib/chain/usdt";
+import { lastRpcServedBy } from "@/lib/chain/bsc-rpc";
 import type { ChainNetwork } from "@/lib/chain/explorer";
 
 // 입금 스캔 한 바퀴 — 네트워크별로: 커서 이후 전송 조회 → 원장 등록(멱등) → 보낸 주소로 회원 자동 매칭 → 매칭된 건 잔액 반영 → 커서 전진.
@@ -20,7 +21,7 @@ export type NetworkScanResult = {
 
 const OVERLAP_MS = 5 * 60 * 1000; // 커서를 5분 겹쳐 조회(체인 인덱서 지연 대비). 중복은 tx_hash unique 로 흡수.
 const INITIAL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // 커서 없을 때 최근 7일(Tron)
-const BSC_OVERLAP_BLOCKS = 20; // BSC 커서를 20블록(≈10초) 겹쳐 조회
+const BSC_OVERLAP_BLOCKS = 2000; // BSC 커서를 2,000블록(≈15분) 겹쳐 다시 읽는다(노드 색인 지연 대비, 중복은 tx_hash unique)
 
 export async function scanDeposits(): Promise<NetworkScanResult[]> {
   const sb = getServerClient();
@@ -48,7 +49,7 @@ export async function scanDeposits(): Promise<NetworkScanResult[]> {
         const res = await fetchBscUsdtDeposits(cfg.address!, cfg.apiKey!, start);
         transfers = res.transfers;
         bscScannedTo = res.scannedTo;
-        console.info(`[deposit-scan] BEP20 범위 커서=${state?.last_block ?? "없음"} 시작=${start} 조회=${res.fromBlock}~${res.scannedTo} 최신=${res.latest}`);
+        console.info(`[deposit-scan] BEP20 범위 커서=${state?.last_block ?? "없음"} 시작=${start} 조회=${res.fromBlock}~${res.scannedTo} 최신=${res.latest} 노드=${lastRpcServedBy()}`);
         if (res.skippedBlocks > 0) console.warn(`[deposit-scan] BEP20 노드 보관 범위를 넘어 ${res.skippedBlocks} 블록 건너뜀(크론 장기 중단) — 그 구간 입금은 수동 처리`);
       }
     } catch (e) {
