@@ -51,6 +51,7 @@ export async function syncWithdrawalsFromChain(): Promise<WithdrawalSyncResult[]
       continue;
     }
     r.fetched = transfers.length;
+    console.info(`[withdrawal-sync] ${cfg.network} 송금 중 ${sending.length}건 · 체인 나간 전송 ${transfers.length}건` + (transfers[0] ? ` · 최근 ${transfers[transfers.length - 1].amount} USDT → ${transfers[transfers.length - 1].to.slice(0, 8)}…` : ""));
     if (transfers.length === 0) continue;
 
     // 이미 다른 출금에 쓰인 해시는 제외
@@ -61,7 +62,7 @@ export async function syncWithdrawalsFromChain(): Promise<WithdrawalSyncResult[]
     for (const t of transfers) {
       if (usedHashes.has(t.txHash)) continue;
       const w = sending.find((x) => !done.has(x.id) && sameAddress(cfg.network, x.to_address, t.to) && sameAmount(Number(x.amount_usd), t.amount));
-      if (!w) continue;
+      if (!w) { console.info(`[withdrawal-sync] ${cfg.network} 불일치: tx ${t.txHash.slice(0, 10)}… ${t.amount} USDT → ${t.to} (송금 중 건과 주소·금액 불일치)`); continue; }
       const { error } = await sb.rpc("transition_withdrawal", { p_id: w.id, p_to: "completed", p_tx_hash: t.txHash });
       if (error) { r.error = error.message; console.warn(`[withdrawal-sync] ${cfg.network} 완료 처리 실패:`, error.message); continue; }
       done.add(w.id);
