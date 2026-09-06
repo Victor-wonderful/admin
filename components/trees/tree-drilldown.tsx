@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRightIcon, UserRoundIcon, HomeIcon, CornerUpLeftIcon } from "lucide-react";
+import Link from "next/link";
+import { ChevronRightIcon, UserRoundIcon, HomeIcon, CornerUpLeftIcon, ExternalLinkIcon } from "lucide-react";
 
 import type { TreeNode, MemberRole } from "@/lib/supabase/types";
 import { PlaceHereButton } from "@/components/marketer/placement-context";
@@ -54,12 +55,15 @@ export function TreeDrilldown({
   spine = false,
   placeable = false,
   emptyLabel = "하위 회원이 없습니다.",
+  detailHref,
 }: {
   root: TreeNode | null;
   /** 후원배치 트리: 1번 라인(주력) 강조 + 자동 배치 표시 */
   spine?: boolean;
   placeable?: boolean;
   emptyLabel?: string;
+  /** 있으면 각 회원 카드에 상세 링크를 붙인다(관리자 조직도용). */
+  detailHref?: (n: TreeNode) => string;
 }) {
   // 경로: [루트, ...내려온 노드]. 항상 마지막이 현재 노드.
   const [path, setPath] = React.useState<TreeNode[]>(root ? [root] : []);
@@ -117,6 +121,11 @@ export function TreeDrilldown({
         <div className="shrink-0 text-right">
           <div className="text-[11px] text-text-tertiary">직속 {kids.length} · 산하</div>
           <div className="text-[17px] font-bold tabular-nums text-text-primary">{below.toLocaleString()}명</div>
+          {detailHref ? (
+            <Link href={detailHref(current)} className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-green-700 hover:underline">
+              상세 <ExternalLinkIcon className="size-2.5" />
+            </Link>
+          ) : null}
         </div>
       </div>
 
@@ -178,9 +187,14 @@ export function TreeDrilldown({
                       )}
                     </div>
                   </button>
-                  {placeable ? (
-                    <div className="border-t px-3 py-2">
-                      <PlaceHereButton nodeId={c.id} nodeUid={c.name} />
+                  {placeable || detailHref ? (
+                    <div className="flex items-center justify-between gap-2 border-t px-3 py-2">
+                      {placeable ? <PlaceHereButton nodeId={c.id} nodeUid={c.name} /> : <span />}
+                      {detailHref ? (
+                        <Link href={detailHref(c)} className="inline-flex items-center gap-1 text-[12px] font-semibold text-green-700 hover:underline">
+                          상세 보기 <ChevronRightIcon className="size-3" />
+                        </Link>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>

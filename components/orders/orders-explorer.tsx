@@ -129,8 +129,10 @@ export function OrdersExplorer({ rows, stats, cycle }: { rows: OrderRow[]; stats
         })}
       </div>
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-0.5 rounded-[10px] bg-n-100 p-[3px] ring-1 ring-border">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* 좁은 화면: 탭이 넘치면 가로 스크롤 */}
+        <div className="-mx-1 max-w-full overflow-x-auto px-1">
+        <div className="flex w-max gap-0.5 rounded-[10px] bg-n-100 p-[3px] ring-1 ring-border">
           {TABS.map((t) => {
             const on = tab === t.key;
             return (
@@ -140,6 +142,7 @@ export function OrdersExplorer({ rows, stats, cycle }: { rows: OrderRow[]; stats
               </button>
             );
           })}
+        </div>
         </div>
         <div className="flex gap-2.5">
           <button onClick={() => setPanelOpen((v) => !v)} className={cn("inline-flex items-center gap-1.5 rounded-[10px] px-3.5 py-2 text-[13px] font-semibold transition-colors", panelOpen ? "bg-green-50 text-green-700 ring-1 ring-green-500" : "bg-card text-text-secondary ring-1 ring-border-strong")}>
@@ -204,6 +207,9 @@ export function OrdersExplorer({ rows, stats, cycle }: { rows: OrderRow[]; stats
       ) : null}
 
       <div className="overflow-hidden rounded-xl bg-card px-5 pt-2 pb-4 ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]">
+        {/* 좁은 화면: 표만 가로 스크롤(페이지네이션은 고정) */}
+        <div className="-mx-5 overflow-x-auto px-5">
+        <div className="min-w-[900px]">
         <div className="grid grid-cols-[minmax(0,1fr)_150px_110px_190px_90px_100px] items-center gap-3 border-b py-3 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
           <span>회원</span><span>항목</span><span>금액</span><span>이용 기간</span><span>상태</span><span>결제일</span>
         </div>
@@ -227,7 +233,9 @@ export function OrdersExplorer({ rows, stats, cycle }: { rows: OrderRow[]; stats
             </div>
           ))
         )}
-        <div className="flex items-center justify-between pt-3.5">
+        </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3.5">
           <span className="text-xs text-n-400">{fromN.toLocaleString()}–{toN.toLocaleString()} / {filtered.length.toLocaleString()}건 · 결제는 전부 회원 지갑 잔액 차감</span>
           <div className="flex gap-1.5">
             <PageBtn disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>‹</PageBtn>

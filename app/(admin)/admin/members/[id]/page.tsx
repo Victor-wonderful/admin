@@ -389,7 +389,8 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
         {/* 후원 레그별 활성 (파트너) */}
         {isMarketer && sortedLegs.length > 0 ? (
           <SectionCard title="후원 레그별 활성 구독자" action={<span className="text-xs font-medium text-text-tertiary">{sortedLegs.length}개 라인</span>}>
-            <div>
+            <div className="-mx-1 overflow-x-auto px-1">
+              <div className="min-w-[420px]">
               <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
                 <span>레그 (직속 자식)</span><span className="text-right">활성 구독자</span><span className="text-right">구분</span>
               </div>
@@ -402,6 +403,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
                   </span>
                 </div>
               ))}
+              </div>
             </div>
           </SectionCard>
         ) : null}
@@ -412,7 +414,8 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
             {subs.length === 0 ? (
               <p className="py-6 text-center text-sm text-text-tertiary">구독 내역이 없습니다.</p>
             ) : (
-              <div>
+              <div className="-mx-1 overflow-x-auto px-1">
+                <div className="min-w-[520px]">
                 <div className="grid grid-cols-[1.4fr_0.8fr_0.8fr_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
                   <span>기간</span><span>항목</span><span className="text-right">금액</span><span className="text-right">상태</span>
                 </div>
@@ -426,6 +429,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
                     </span>
                   </div>
                 ))}
+                </div>
               </div>
             )}
           </SectionCard>

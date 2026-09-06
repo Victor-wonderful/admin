@@ -65,6 +65,8 @@ export default async function AdminOrgPage({ searchParams }: { searchParams: Pro
         placementVals={{ total: plc.total, major: mm.major_leg, minor: mm.other_minor, balancePct }}
         unilevelTree={<MemberTree root={unilevel} maxDepth={2} maxChildren={5} />}
         placementTree={<MemberTree root={placement} maxDepth={7} maxChildren={3} spine highlightLabel="주력 라인" showSpillover />}
+        unilevelRoot={unilevel}
+        placementRoot={placement}
       />
     </>
   );
