@@ -70,7 +70,7 @@ export default async function SubscriberDashboardPage() {
     <>
       <Topbar title="대시보드" sub="구독 관리 · 결제 · 지갑" uid={uid} />
 
-      <div className="flex-1 space-y-4 overflow-auto p-7">
+      <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         {/* 만료 / 잔액 부족 안내 */}
         <SubscriptionNotice memberId={ME} />
 

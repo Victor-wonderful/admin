@@ -59,7 +59,7 @@ export default async function RegisteredDashboardPage() {
     <>
       <Topbar title="대시보드" sub="환영합니다 · 구독을 시작해 보세요" uid={uid} />
 
-      <div className="flex-1 space-y-4 overflow-auto p-7">
+      <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         {/* 온보딩 히어로 */}
         <div className="flex items-center justify-between gap-4 rounded-xl bg-gradient-to-br from-lime to-green-600 p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
           <div className="space-y-2">

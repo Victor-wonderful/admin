@@ -52,7 +52,7 @@ export default async function AdminWalletPage() {
     <>
       <Topbar title="지갑잔액" sub="회사 보유(원장) · 회원 예치금 · 배분 풀 · 체인별 입출금 · USDT" uid={admin.display_name} />
 
-      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-4 lg:p-7">
         <div className="grid gap-[18px] lg:grid-cols-[1fr_360px]">
           <div className="relative flex flex-col justify-between overflow-hidden rounded-xl p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]" style={{ background: "linear-gradient(135deg,#3fbf6f 0%,#1f9d55 55%,#147a40 100%)" }}>
             <div className="flex items-start justify-between gap-4">

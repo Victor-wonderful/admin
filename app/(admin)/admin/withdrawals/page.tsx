@@ -116,7 +116,7 @@ export default async function AdminWithdrawalsPage({ searchParams }: { searchPar
     <>
       <Topbar title="출금내역" sub="회원 출금 신청 · 승인 · 지갑 앱에서 송금 후 tx_hash 입력 (USDT)" uid={admin.display_name} />
 
-      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-4 lg:p-7">
         {/* ── 상단 KPI 6종 ── */}
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {KPIS.map((k) => (

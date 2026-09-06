@@ -112,7 +112,7 @@ export function OrdersExplorer({ rows, stats, cycle }: { rows: OrderRow[]; stats
   ];
 
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-auto bg-canvas p-7">
+    <div className="flex flex-1 flex-col gap-4 overflow-auto bg-canvas p-4 lg:p-7">
       <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-3 xl:grid-cols-6">
         {KPIS.map((k) => {
           const Icon = k.icon; const DIcon = k.delta.icon;

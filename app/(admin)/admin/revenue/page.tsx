@@ -139,7 +139,7 @@ export default async function AdminRevenuePage({ searchParams }: { searchParams:
         }
       />
 
-      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-4 lg:p-7">
         {/* ── 상단 KPI 5종 ── */}
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {KPIS.map((k) => (

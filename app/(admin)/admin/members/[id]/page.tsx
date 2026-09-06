@@ -178,7 +178,7 @@ export default async function MemberDetail({ params }: { params: Promise<{ id: s
     <>
       <Topbar title="회원 상세" sub={`${ROLE_LABEL[me.role]} · ${uid}`} uid={admin.display_name} />
 
-      <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-4 overflow-auto bg-canvas p-4 lg:p-7">
         <Link href="/admin/members" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-text-secondary hover:text-text-primary">
           <ChevronLeftIcon className="size-4" /> 회원 목록으로
         </Link>

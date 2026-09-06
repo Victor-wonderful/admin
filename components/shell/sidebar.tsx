@@ -17,7 +17,9 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "flex w-64 shrink-0 flex-col gap-1.5 border-r bg-sidebar px-3.5 py-5",
+        // 모바일·태블릿(<lg)에서는 숨기고 하단 탭바(회원)/드로어(어드민)가 대신한다.
+        // 드로어 안에서 쓸 때는 className 으로 display·width 를 덮어쓴다.
+        "hidden w-64 shrink-0 flex-col gap-1.5 border-r bg-sidebar px-3.5 py-5 lg:flex",
         className,
       )}
     >

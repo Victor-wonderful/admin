@@ -72,7 +72,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
         uid={toUid(memberId)}
       />
 
-      <div className="flex-1 space-y-4 overflow-auto p-7">
+      <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         <div className="flex items-center justify-between gap-4 rounded-xl bg-gradient-to-br from-lime to-green-600 p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
           <div>
             <div className="text-[13px] font-semibold text-white/80">내 지갑 잔액</div>

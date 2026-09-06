@@ -47,11 +47,12 @@ function Item({ role, ...props }: { role: AdminRole } & React.ComponentProps<typ
   return showFor(role, props.href) ? <SidebarNavItem {...props} /> : null;
 }
 
-export function AdminSidebar({ name = "관리자", role = "viewer", roleLabel = "관리자", mfa = false, mfaOff = false }: { name?: string; role?: AdminRole; roleLabel?: string; mfa?: boolean; mfaOff?: boolean }) {
+export function AdminSidebar({ name = "관리자", role = "viewer", roleLabel = "관리자", mfa = false, mfaOff = false, className }: { name?: string; role?: AdminRole; roleLabel?: string; mfa?: boolean; mfaOff?: boolean; className?: string }) {
   // 역할이 볼 수 없는 화면은 메뉴에서 감춘다(진입도 requireAdminPage 가 막는다).
   const finance = ["/admin/settlements", "/admin/deposits", "/admin/withdrawals", "/admin/wallet", "/admin/transactions"].some((h) => showFor(role, h));
   return (
-    <Sidebar>
+    // className: 모바일 드로어에서 display·width·border 를 덮어쓰기 위한 통로.
+    <Sidebar className={className}>
       <SidebarBrand icon={FortunaMark} title="포르투나" subtitle="운영 콘솔" />
 
       <SidebarSection>

@@ -31,7 +31,7 @@ export default async function AdminTransactionsPage() {
   return (
     <>
       <Topbar title="트랜잭션" sub="회원 지갑 통합 원장 · 입금 · 결제 · 출금 · 리워드 (USDT)" uid={admin.display_name} />
-      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-4 lg:p-7">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {KPIS.map((k) => (
             <div key={k.label} className={cn(SUBCARD, "space-y-3")}>

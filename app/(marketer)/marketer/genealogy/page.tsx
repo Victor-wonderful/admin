@@ -72,7 +72,7 @@ export default async function MarketerGenealogyPage() {
       <Topbar title="내 팀" sub="추천조직 · 후원배치" uid={toUid(viewerId)} />
 
       <PlacementProvider ownerUid={toUid(viewerId)} pending={pending} targets={targets} recommended={recommended}>
-      <div className="flex-1 space-y-4 overflow-auto p-7">
+      <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((s) => (
             <div key={s.label} className="flex items-center gap-3 rounded-lg bg-card p-4 ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]">

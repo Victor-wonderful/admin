@@ -28,7 +28,7 @@ export default async function AdminRanksPage() {
     <>
       <Topbar title="수당체계·직급" sub="직급 9단계 · 직급요율 5~53% · 자격 기준 · 수당 3종" uid={admin.display_name} />
 
-      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-4 lg:p-7">
         {/* ── 매출 배분 구조 (편집) ── */}
         <Panel
           title="매출 배분 구조"

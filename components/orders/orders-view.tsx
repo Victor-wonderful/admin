@@ -67,7 +67,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
     <>
       <Topbar title="구독·주문" sub="내 구독 · 결제 내역" uid={toUid(memberId)} />
 
-      <div className="flex-1 space-y-4 overflow-auto p-7">
+      <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         <div className={cn("grid gap-4", role !== "registered" && "lg:grid-cols-2")}>
           {/* 카드 1: 포르투나 구독 (전 등급) */}
           <Panel>

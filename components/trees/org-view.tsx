@@ -100,7 +100,7 @@ export function OrgView({
   ];
 
   return (
-    <div className="flex flex-1 flex-col gap-4 overflow-auto bg-canvas p-7">
+    <div className="flex flex-1 flex-col gap-4 overflow-auto bg-canvas p-4 lg:p-7">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {rootPicker ?? (

@@ -52,7 +52,7 @@ export default async function AdminAdminsPage() {
     <>
       <Topbar title="관리자·권한" sub="운영자 계정 · 역할 · 2단계 인증" uid={me.display_name} actions={<AddAdminButton disabled={!canManage} />} />
 
-      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-4 lg:p-7">
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {(Object.keys(ROLE_META) as AdminRole[]).map((r) => {
             const m = ROLE_META[r];

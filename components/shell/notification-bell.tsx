@@ -62,7 +62,7 @@ export function NotificationBell() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 z-40 mt-2 w-[340px] overflow-hidden rounded-xl bg-card shadow-[0_12px_32px_-8px_rgba(16,24,40,0.25)] ring-1 ring-border">
+        <div className="absolute right-0 z-40 mt-2 w-[min(340px,calc(100vw-2rem))] overflow-hidden rounded-xl bg-card shadow-[0_12px_32px_-8px_rgba(16,24,40,0.25)] ring-1 ring-border">
           <div className="flex items-center justify-between border-b px-4 py-3">
             <span className="text-sm font-bold text-text-primary">알림</span>
             <span className="text-[11px] text-text-tertiary">{isAdmin ? "처리 대기 · 보안 이벤트" : "구독 상태 · 최근 지갑 내역"}</span>

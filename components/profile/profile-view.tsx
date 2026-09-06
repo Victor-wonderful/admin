@@ -26,7 +26,7 @@ export function ProfileView({ member }: { member: MemberRow }) {
     <>
       <Topbar title="프로필·설정" sub="계정 정보 · 닉네임 · 비밀번호" uid={uid} />
 
-      <div className="flex-1 space-y-4 overflow-auto p-7">
+      <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         <div className="flex items-center gap-4 rounded-xl bg-feature p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
           <span className="grid size-14 place-items-center rounded-full bg-white/15 text-lg font-bold">{uidInitials(member.id)}</span>
           <div className="min-w-0 flex-1">

@@ -153,7 +153,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
     <>
       <Topbar title="대시보드" sub="운영 현황 요약 · 포르투나" uid={admin.display_name} />
 
-      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-4 lg:p-7">
         {deniedLabel ? (
           <div className="rounded-md bg-warning-soft px-4 py-3 text-[13px] leading-relaxed text-warning ring-1 ring-warning/30">
             <b>{deniedLabel}</b> 화면은 현재 역할({ADMIN_ROLE_LABEL[admin.role]})로 볼 수 없습니다. 권한이 필요하면 슈퍼관리자에게 요청하세요. 이 시도는 감사 로그에 기록됩니다.

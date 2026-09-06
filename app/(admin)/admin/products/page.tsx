@@ -58,7 +58,7 @@ export default async function AdminProductsPage() {
         uid={admin.display_name}
         actions={readOnly ? null : <ProductFormModal />}
       />
-      <div className="flex-1 space-y-4 overflow-auto p-7">
+      <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((p) => {
             const { icon: Icon, tone } = ICON_BY_CODE[p.code] ?? DEFAULT_ICON;

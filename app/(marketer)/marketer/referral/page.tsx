@@ -78,7 +78,7 @@ export default async function MarketerReferralPage() {
     <>
       <Topbar title="초대" sub="내 초대 코드 · 초대 현황" uid={toUid(viewerId)} />
 
-      <div className="flex-1 space-y-4 overflow-auto p-7">
+      <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         <div className="flex items-center justify-between gap-4 rounded-xl bg-feature p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
           <div>
             <div className="text-xs font-medium text-white/60">내 초대 코드</div>

@@ -1,4 +1,4 @@
-import { MemberSidebar } from "@/components/shell/member-sidebar";
+import { MemberShell } from "@/components/shell/member-shell";
 import { getShellProps } from "@/lib/portal-shell";
 import { requireMember } from "@/lib/session";
 import { renewOnVisit } from "@/lib/renewal";
@@ -14,10 +14,5 @@ export default async function MarketerLayout({
   await renewOnVisit(member); // 방문 시 본인 구독 자동 갱신/만료 처리
   const shell = await getShellProps(member);
 
-  return (
-    <div className="flex min-h-screen bg-canvas">
-      <MemberSidebar {...shell} />
-      <main className="flex min-w-0 flex-1 flex-col">{children}</main>
-    </div>
-  );
+  return <MemberShell {...shell}>{children}</MemberShell>;
 }

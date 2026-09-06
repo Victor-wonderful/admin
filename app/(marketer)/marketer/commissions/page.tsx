@@ -54,7 +54,7 @@ export default async function MarketerCommissionsPage() {
     <>
       <Topbar title="내 리워드" sub="당월 리워드 · 팀 분배 · USDT" uid={toUid(viewerId)} />
 
-      <div className="flex-1 space-y-4 overflow-auto p-7">
+      <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         {/* 상위 비공개 안내 */}
         <div className="flex items-center gap-2.5 rounded-lg bg-info-soft px-4 py-3 text-[12px] font-medium text-info">
           <ShieldIcon className="size-4 shrink-0" />

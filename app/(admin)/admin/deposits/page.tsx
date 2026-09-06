@@ -113,7 +113,7 @@ export default async function AdminDepositsPage({ searchParams }: { searchParams
     <>
       <Topbar title="입금내역" sub="회사 입금 주소로 들어온 USDT · 보낸 주소로 회원 식별 · 잔액 반영" uid={admin.display_name} actions={<DepositScanButton readOnly={readOnly} />} />
 
-      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-4 lg:p-7">
         {/* ── 상단 KPI 6종 ── */}
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {KPIS.map((k) => (

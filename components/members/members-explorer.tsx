@@ -243,7 +243,7 @@ export function MembersExplorer({
   const pageBtns = pageNumbers(safePage, totalPages);
 
   return (
-    <div className="flex flex-1 flex-col gap-[18px] overflow-auto bg-canvas p-7">
+    <div className="flex flex-1 flex-col gap-[18px] overflow-auto bg-canvas p-4 lg:p-7">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         {lockedRole ? (

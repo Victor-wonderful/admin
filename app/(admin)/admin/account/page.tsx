@@ -33,7 +33,7 @@ export default async function AdminAccountPage() {
     <>
       <Topbar title="내 계정" sub="관리자 본인 정보 · 비밀번호 · 인증 앱 · 로그인 기기" uid={me.display_name} />
 
-      <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-4 overflow-auto bg-canvas p-4 lg:p-7">
         <div className="grid gap-4 lg:grid-cols-2">
           <Panel title="계정 정보" sub="역할은 슈퍼관리자가 관리자·권한 화면에서 바꿉니다 · 이메일(로그인 ID)은 변경 불가">
             <div className="mb-3 border-b pb-3"><AdminNameForm current={me.display_name} /></div>

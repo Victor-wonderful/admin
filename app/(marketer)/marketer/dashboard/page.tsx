@@ -116,7 +116,7 @@ export default async function MarketerDashboardPage() {
     <>
       <Topbar title="대시보드" sub="내 직급 · 리워드 현황" uid={uid} />
 
-      <div className="flex-1 space-y-4 overflow-auto bg-canvas p-7">
+      <div className="flex-1 space-y-4 overflow-auto bg-canvas p-4 lg:p-7">
         {/* 구독 만료 / 잔액 부족 안내 */}
         <SubscriptionNotice memberId={ME} role="marketer" />
 

@@ -203,7 +203,7 @@ export function AuditExplorer({ rows, stats }: { rows: AuditRow[]; stats: AuditS
   const badgeTone: Record<string, string> = { green: "bg-green-50 text-green-700", info: "bg-info-soft text-info", warning: "bg-warning-soft text-warning", negative: "bg-negative-soft text-negative" };
 
   return (
-    <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-7">
+    <div className="flex-1 space-y-[18px] overflow-auto bg-canvas p-4 lg:p-7">
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {KPIS.map((k) => (
           <div key={k.label} className={cn(SUBCARD, "space-y-3")}>
