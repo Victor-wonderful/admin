@@ -6,4 +6,6 @@ export const DEMO_REGISTERED_ID = "aaaaaaaa-0000-0000-0000-000000000138";
 export const DEMO_SUBSCRIBER_ID = "aaaaaaaa-0000-0000-0000-00000000000b";
 
 // 포르투나 제품 앱(체험/실사용). 등록회원 대시보드 히어로 등에서 새 탭으로 연결.
-export const FORTUNA_APP_URL = "https://fortuna-three-murex.vercel.app/app";
+// 포르투나 앱 주소(회원 화면 "플랫폼 체험하기" 등). 2026-09-06 fortuan.org 도메인으로 전환.
+// 환경변수 NEXT_PUBLIC_FORTUNA_APP_URL 로 바꿀 수 있고, 없으면 운영 주소를 쓴다.
+export const FORTUNA_APP_URL = process.env.NEXT_PUBLIC_FORTUNA_APP_URL?.trim() || "https://fortuan.org/app";
