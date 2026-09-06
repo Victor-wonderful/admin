@@ -12,13 +12,17 @@ export async function syncMemberAccess(memberId: string): Promise<void> {
   const sb = getServerClient();
   const { data: m } = await sb.from("members").select("fortuna_user_id").eq("id", memberId).maybeSingle();
   const fortunaId = (m?.fortuna_user_id as string | null) ?? null;
-  if (!fortunaId) return;
+  if (!fortunaId) {
+    console.info(`[member-access] ${memberId.slice(0, 8)} 앱 계정 미연결 → 건너뜀`);
+    return;
+  }
   const { data: until, error } = await sb.rpc("member_access_until", { p_member: memberId });
   if (error) {
     console.warn("[member-access] 만료 시각 계산 실패:", error.message);
     return;
   }
   await setFortunaAccessUntil(fortunaId, (until as string | null) ?? null);
+  console.info(`[member-access] ${memberId.slice(0, 8)} 앱 이용 기한 → ${until ?? "무제한"}`);
 }
 
 // 연결된 회원 전부 동기화(일일 크론용). 회원 수가 많아지면 변경분만 추리도록 바꾼다.
