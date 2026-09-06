@@ -19,7 +19,8 @@ export type NetworkScanResult = {
 };
 
 const OVERLAP_MS = 5 * 60 * 1000; // 커서를 5분 겹쳐 조회(체인 인덱서 지연 대비). 중복은 tx_hash unique 로 흡수.
-const INITIAL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // 커서 없을 때 최근 7일
+const INITIAL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000; // 커서 없을 때 최근 7일(Tron)
+const BSC_OVERLAP_BLOCKS = 20; // BSC 커서를 20블록(≈10초) 겹쳐 조회
 
 export async function scanDeposits(): Promise<NetworkScanResult[]> {
   const sb = getServerClient();
@@ -37,13 +38,17 @@ export async function scanDeposits(): Promise<NetworkScanResult[]> {
     const state = (st ?? null) as { last_block_time: string | null; last_block: number | null } | null;
 
     let transfers: ChainTransfer[] = [];
+    let bscScannedTo: number | null = null; // BEP20: 전송 0건이어도 커서를 여기까지 전진
     try {
       if (cfg.network === "TRC20") {
         const since = state?.last_block_time ? new Date(state.last_block_time).getTime() - OVERLAP_MS : Date.now() - INITIAL_LOOKBACK_MS;
         transfers = await fetchTronUsdtDeposits(cfg.address!, cfg.apiKey!, since);
       } else {
-        const start = state?.last_block ? Math.max(0, Number(state.last_block) - 20) : 0;
-        transfers = await fetchBscUsdtDeposits(cfg.address!, cfg.apiKey!, start);
+        const start = state?.last_block ? Math.max(0, Number(state.last_block) - BSC_OVERLAP_BLOCKS) : 0;
+        const res = await fetchBscUsdtDeposits(cfg.address!, cfg.apiKey!, start);
+        transfers = res.transfers;
+        bscScannedTo = res.scannedTo;
+        if (res.skippedBlocks > 0) console.warn(`[deposit-scan] BEP20 노드 보관 범위를 넘어 ${res.skippedBlocks} 블록 건너뜀(크론 장기 중단) — 그 구간 입금은 수동 처리`);
       }
     } catch (e) {
       r.error = e instanceof Error ? e.message : String(e);
@@ -85,6 +90,8 @@ export async function scanDeposits(): Promise<NetworkScanResult[]> {
       if (!maxTime || t.blockTime > maxTime) maxTime = t.blockTime;
       if (t.blockNumber != null && (maxBlock == null || t.blockNumber > maxBlock)) maxBlock = t.blockNumber;
     }
+
+    if (bscScannedTo != null && (maxBlock == null || bscScannedTo > maxBlock)) maxBlock = bscScannedTo;
 
     await sb.from("deposit_scan_state").upsert({
       network: cfg.network,

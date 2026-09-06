@@ -1,11 +1,13 @@
 import "server-only";
 
 import type { ChainNetwork } from "@/lib/chain/explorer";
+import { fetchBscUsdtTransfers, parseRpcUrls } from "@/lib/chain/bsc-rpc";
 
-// 회사 입금 주소로 들어온 USDT 전송 조회 — Tron(TronGrid) / BSC(BscScan, Etherscan V2 API).
-// 키·주소는 환경변수로만 관리한다(Victor 가 .env.local 에 직접 기입):
-//   TRONGRID_API_KEY, BSCSCAN_API_KEY, COMPANY_DEPOSIT_ADDRESS_TRC20, COMPANY_DEPOSIT_ADDRESS_BEP20
-// 어느 하나라도 없으면 해당 네트워크는 "미설정"으로 건너뛴다(오류 아님).
+// 회사 입금 주소로 들어온 USDT 전송 조회 — Tron(TronGrid API) / BSC(공개 JSON-RPC, lib/chain/bsc-rpc.ts).
+// 키·주소는 환경변수로만 관리한다(운영은 Vercel, 로컬은 .env.local):
+//   TRONGRID_API_KEY + COMPANY_DEPOSIT_ADDRESS_TRC20 / COMPANY_DEPOSIT_ADDRESS_BEP20 (+ 선택 BSC_RPC_URLS 콤마 구분)
+// BSC 는 API 키가 필요 없다(Etherscan V2 무료 플랜이 BSC 를 지원하지 않아 2026-09 RPC 로 전환).
+// 필수값이 없으면 해당 네트워크는 "미설정"으로 건너뛴다(오류 아님).
 
 export const USDT_CONTRACT: Record<ChainNetwork, string> = {
   TRC20: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", // Tether USD (Tron), 6 decimals
@@ -26,13 +28,16 @@ export type ChainTransfer = {
 export type NetworkConfig = { network: ChainNetwork; address: string | null; apiKey: string | null; ready: boolean; missing: string[] };
 
 export function getNetworkConfigs(): NetworkConfig[] {
-  const mk = (network: ChainNetwork, addrKey: string, keyKey: string): NetworkConfig => {
-    const address = process.env[addrKey]?.trim() || null;
-    const apiKey = process.env[keyKey]?.trim() || null;
-    const missing = [!address ? addrKey : null, !apiKey ? keyKey : null].filter((x): x is string => !!x);
-    return { network, address, apiKey, ready: missing.length === 0, missing };
-  };
-  return [mk("TRC20", "COMPANY_DEPOSIT_ADDRESS_TRC20", "TRONGRID_API_KEY"), mk("BEP20", "COMPANY_DEPOSIT_ADDRESS_BEP20", "BSCSCAN_API_KEY")];
+  const trAddr = process.env.COMPANY_DEPOSIT_ADDRESS_TRC20?.trim() || null;
+  const trKey = process.env.TRONGRID_API_KEY?.trim() || null;
+  const trMissing = [!trAddr ? "COMPANY_DEPOSIT_ADDRESS_TRC20" : null, !trKey ? "TRONGRID_API_KEY" : null].filter((x): x is string => !!x);
+  const bscAddr = process.env.COMPANY_DEPOSIT_ADDRESS_BEP20?.trim() || null;
+  const bscMissing = !bscAddr ? ["COMPANY_DEPOSIT_ADDRESS_BEP20"] : [];
+  return [
+    { network: "TRC20", address: trAddr, apiKey: trKey, ready: trMissing.length === 0, missing: trMissing },
+    // BEP20: apiKey 자리에 RPC 주소 목록(콤마 구분)을 담는다. 키 불필요.
+    { network: "BEP20", address: bscAddr, apiKey: parseRpcUrls(process.env.BSC_RPC_URLS).join(","), ready: bscMissing.length === 0, missing: bscMissing },
+  ];
 }
 
 // 정수 문자열(최소 단위) → USDT 수량. 부동소수 오차를 피하려고 문자열로 자른다.
@@ -79,41 +84,24 @@ export async function fetchTronUsdtDeposits(address: string, apiKey: string, sin
     .filter((t) => t.amount > 0);
 }
 
-// BSC: Etherscan V2(chainid=56) tokentx — BscScan 단독 엔드포인트가 V2 로 통합됐다. 키는 Etherscan 계정 키.
-export async function fetchBscUsdtDeposits(address: string, apiKey: string, startBlock: number, limit = 200): Promise<ChainTransfer[]> {
-  const q = new URLSearchParams({
-    chainid: "56",
-    module: "account",
-    action: "tokentx",
-    contractaddress: USDT_CONTRACT.BEP20,
-    address,
-    startblock: String(Math.max(0, startBlock)),
-    endblock: "99999999",
-    page: "1",
-    offset: String(limit),
-    sort: "asc",
-    apikey: apiKey,
-  });
-  const json = (await getJson(`https://api.etherscan.io/v2/api?${q}`)) as {
-    status: string;
-    message: string;
-    result: Array<{ hash: string; from: string; to: string; value: string; timeStamp: string; blockNumber: string; contractAddress: string }> | string;
-  };
-  if (typeof json.result === "string") {
-    if (/no transactions found/i.test(json.message ?? "") || /no transactions/i.test(json.result)) return [];
-    throw new Error(`BscScan 오류: ${json.result}`);
-  }
-  const me = address.toLowerCase();
-  return json.result
-    .filter((t) => t.to.toLowerCase() === me && t.contractAddress.toLowerCase() === USDT_CONTRACT.BEP20.toLowerCase())
+// BSC: 공개 RPC 에서 USDT Transfer 로그를 읽는다(startBlock<=0 이면 첫 실행 → 최근 구간만).
+// scannedTo 는 이번에 읽은 마지막 확정 블록 — 전송이 0건이어도 커서를 여기까지 전진시킨다.
+export async function fetchBscUsdtDeposits(
+  address: string,
+  rpcUrls: string,
+  startBlock: number,
+): Promise<{ transfers: ChainTransfer[]; scannedTo: number; skippedBlocks: number }> {
+  const r = await fetchBscUsdtTransfers(address, parseRpcUrls(rpcUrls), startBlock);
+  const transfers = r.transfers
     .map((t) => ({
       network: "BEP20" as const,
-      txHash: t.hash,
+      txHash: t.txHash,
       from: t.from,
       to: t.to,
-      amount: fromUnits(t.value, USDT_DECIMALS.BEP20),
-      blockTime: new Date(Number(t.timeStamp) * 1000),
-      blockNumber: Number(t.blockNumber),
+      amount: fromUnits(t.amountUnits, USDT_DECIMALS.BEP20),
+      blockTime: t.blockTime,
+      blockNumber: t.blockNumber,
     }))
     .filter((t) => t.amount > 0);
+  return { transfers, scannedTo: r.scannedTo, skippedBlocks: r.skippedBlocks };
 }

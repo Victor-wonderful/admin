@@ -164,7 +164,7 @@ export default async function AdminDepositsPage({ searchParams }: { searchParams
                 {!c.ready ? (
                   <div className="flex items-start gap-2 rounded-md bg-warning-soft px-3 py-2 text-[11px] leading-relaxed text-text-secondary">
                     <CircleAlertIcon className="mt-0.5 size-3.5 shrink-0 text-warning" />
-                    <span>환경변수 필요: <span className="font-mono">{c.missing.join(", ")}</span> — .env.local 에 기입 후 서버 재시작</span>
+                    <span>환경변수 필요: <span className="font-mono">{c.missing.join(", ")}</span> — 운영은 Vercel 환경변수, 로컬은 .env.local 에 기입 후 재배포·재시작</span>
                   </div>
                 ) : st?.last_error ? (
                   <div className="flex items-start gap-2 rounded-md bg-negative-soft px-3 py-2 text-[11px] leading-relaxed text-negative">
