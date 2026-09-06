@@ -56,7 +56,7 @@ export function SubscriptionManageModal({
       {open ? (
         <div className="fixed inset-0 z-50 grid place-items-center p-4">
           <div className="absolute inset-0 bg-[#0B0F14]/80" onClick={() => setOpen(false)} />
-          <div className="relative z-10 w-full max-w-[440px] overflow-hidden rounded-xl bg-card shadow-[0_20px_40px_-8px_rgba(11,15,20,0.35)]">
+          <div className="relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-xl bg-card shadow-[0_20px_40px_-8px_rgba(11,15,20,0.35)]">
             <div className="flex items-start justify-between border-b px-6 py-5">
               <div>
                 <h2 className="text-base font-bold text-text-primary">구독 관리</h2>

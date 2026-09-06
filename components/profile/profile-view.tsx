@@ -27,14 +27,14 @@ export function ProfileView({ member }: { member: MemberRow }) {
       <Topbar title="프로필·설정" sub="계정 정보 · 닉네임 · 비밀번호" uid={uid} />
 
       <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
-        <div className="flex items-center gap-4 rounded-xl bg-feature p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
-          <span className="grid size-14 place-items-center rounded-full bg-white/15 text-lg font-bold">{uidInitials(member.id)}</span>
+        <div className="flex items-center gap-4 rounded-xl bg-feature p-5 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)] lg:p-6">
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-white/15 text-base font-bold lg:size-14 lg:text-lg">{uidInitials(member.id)}</span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-lg font-bold">{member.display_name}</span>
               <Pill tone={ROLE_TONE[member.role]}>{ROLE_LABEL[member.role]}</Pill>
             </div>
-            <div className="mt-0.5 text-sm text-white/70">{uid} · {member.email ?? "ID 미설정"}</div>
+            <div className="mt-0.5 truncate text-[13px] text-white/70 lg:text-sm">{uid} · {member.email ?? "ID 미설정"}</div>
           </div>
         </div>
 
@@ -42,9 +42,9 @@ export function ProfileView({ member }: { member: MemberRow }) {
           <Panel title="계정 정보" sub="ID(이메일)와 UID는 변경할 수 없습니다">
             <div>
               {rows.map(([k, v]) => (
-                <div key={k} className="flex items-center justify-between border-b py-2.5 text-[13px] last:border-0">
-                  <span className="text-text-secondary">{k}</span>
-                  <span className="font-semibold text-text-primary">{v}</span>
+                <div key={k} className="flex items-center justify-between gap-3 border-b py-2.5 text-[13px] last:border-0">
+                  <span className="shrink-0 text-text-secondary">{k}</span>
+                  <span className="truncate font-semibold text-text-primary">{v}</span>
                 </div>
               ))}
             </div>

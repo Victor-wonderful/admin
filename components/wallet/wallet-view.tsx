@@ -73,27 +73,29 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
       />
 
       <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
-        <div className="flex items-center justify-between gap-4 rounded-xl bg-gradient-to-br from-lime to-green-600 p-6 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)]">
-          <div>
+        <div className="flex flex-col gap-4 rounded-xl bg-gradient-to-br from-lime to-green-600 p-5 text-white shadow-[0_2px_12px_-3px_rgba(16,24,40,0.12)] lg:flex-row lg:items-center lg:justify-between lg:p-6">
+          <div className="min-w-0">
             <div className="text-[13px] font-semibold text-white/80">내 지갑 잔액</div>
-            <div className="mt-1 text-[42px] leading-none font-bold tabular-nums">
+            <div className="mt-1 text-[34px] leading-none font-bold tabular-nums lg:text-[42px]">
               {usd(balance)} <span className="text-base font-semibold text-white/80">USDT</span>
             </div>
             {payout ? (
-              <div className="mt-3 inline-flex items-center gap-2 rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium">
-                <HashIcon className="size-3" /> 출금 주소 · {payout.network} · {payout.address}
+              <div className="mt-3 flex max-w-full items-center gap-2 rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium lg:inline-flex">
+                <HashIcon className="size-3 shrink-0" />
+                <span className="shrink-0">출금 주소 · {payout.network} ·</span>
+                <span className="truncate font-mono">{payout.address}</span>
               </div>
             ) : (
-              <Link href={profileHref} className="mt-3 inline-flex items-center gap-2 rounded-md bg-white/15 px-3 py-1.5 text-xs font-medium hover:bg-white/25">
-                <TriangleAlertIcon className="size-3" /> 출금 주소 미등록 · 프로필에서 내 지갑 주소를 등록하세요
+              <Link href={profileHref} className="mt-3 flex items-start gap-2 rounded-md bg-white/15 px-3 py-2 text-xs font-medium hover:bg-white/25 lg:inline-flex lg:items-center lg:py-1.5">
+                <TriangleAlertIcon className="mt-0.5 size-3 shrink-0 lg:mt-0" /> 출금 주소 미등록 · 프로필에서 내 지갑 주소를 등록하세요
               </Link>
             )}
           </div>
-          <div className="flex flex-col items-end gap-2.5">
-            <div className="flex gap-2.5">
+          <div className="flex w-full shrink-0 flex-col gap-2.5 lg:w-auto lg:items-end">
+            <div className="flex flex-col gap-2.5 sm:flex-row">
               <DepositButton
                 memberId={memberId}
-                className="inline-flex items-center gap-2 rounded-[10px] bg-white px-5 py-3 text-sm font-bold whitespace-nowrap text-green-700"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-white px-5 text-sm font-bold whitespace-nowrap text-green-700 sm:h-auto sm:py-3"
               >
                 <PlusIcon className="size-4" /> USDT 입금하기
               </DepositButton>
@@ -104,7 +106,7 @@ export async function WalletView({ memberId, role }: { memberId: string; role: M
                 defaultNetwork={payout?.network ?? "TRC20"}
               />
             </div>
-            <span className="text-xs font-medium text-white/80">
+            <span className="text-xs font-medium text-white/80 lg:text-right">
               {isMarketer ? `당월 리워드 ${signed(monthCommission)} · ` : ""}당월 입금 {signed(monthDeposit)}
             </span>
           </div>

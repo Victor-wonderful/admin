@@ -12,6 +12,7 @@ import {
 import { Topbar } from "@/components/shell/topbar";
 import { Panel } from "@/components/dashboard/panel";
 import { Pill } from "@/components/ui/pill";
+import { DataList, type DataColumn } from "@/components/ui/data-list";
 import { DepositButton } from "@/components/wallet/deposit-button";
 import { LifecycleButton } from "@/components/portal/lifecycle-actions";
 import { getMemberSubscriptions, listProducts } from "@/lib/queries/members";
@@ -28,6 +29,25 @@ import { cn } from "@/lib/utils";
 const usd = (n: number) => `$${Math.round(n).toLocaleString()}`;
 // 기준일 = 실제 오늘(Asia/Seoul).
 const TODAY = today();
+
+type PurchaseRow = Awaited<ReturnType<typeof listMemberPurchases>>[number];
+
+// 상품 구매 내역 — lg 이상 표 / lg 미만 카드(DataList)
+const PURCHASE_COLUMNS: DataColumn<PurchaseRow>[] = [
+  { key: "paid", label: "구매일", mobile: "meta", cell: (r) => <span className="text-text-tertiary tabular-nums">{toSeoulDate(r.paid_at)}</span> },
+  { key: "name", label: "상품", width: "1fr", mobile: "title", cell: (r) => <span className="font-medium text-text-primary">{r.product_name}</span> },
+  {
+    key: "period",
+    label: "이용 기간",
+    mobile: "meta",
+    cell: (r) => (
+      <span className="text-xs text-text-secondary tabular-nums">
+        {r.period_start && r.period_end ? `${r.period_start.slice(0, 10)} ~ ${r.period_end.slice(0, 10)}` : "일회성"}
+      </span>
+    ),
+  },
+  { key: "amount", label: "금액", align: "right", mobile: "value", cell: (r) => <span className="font-semibold tabular-nums text-text-primary">{usd(Number(r.amount_usd))}</span> },
+];
 
 // 구독·주문 — 파트너/구독회원/등록회원 공용. 두 번째 카드(파트너 멤버십)는 파트너에게만, 등록회원 카드1 에는 구독 시작 버튼.
 export async function OrdersView({ memberId, role }: { memberId: string; role: MemberRole }) {
@@ -71,12 +91,12 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
         <div className={cn("grid gap-4", role !== "registered" && "lg:grid-cols-2")}>
           {/* 카드 1: 포르투나 구독 (전 등급) */}
           <Panel>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="grid size-[42px] place-items-center rounded-[12px] bg-green-50 text-green-700">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid size-[42px] shrink-0 place-items-center rounded-[12px] bg-green-50 text-green-700">
                   <CpuIcon className="size-[22px]" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <div className="text-[15px] font-semibold text-text-primary">포르투나 구독</div>
                   <div className="text-xs text-text-secondary">AI 매매 판단 체크 · 진입 전 검증</div>
                 </div>
@@ -116,12 +136,12 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
           {/* 카드 2: 파트너 멤버십 — 파트너에게만. 등록·구독회원 화면에는 파트너 관련 요소를 노출하지 않는다. */}
           {role === "marketer" ? (
             <Panel>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-[42px] place-items-center rounded-[12px] bg-crypto-soft text-crypto">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid size-[42px] shrink-0 place-items-center rounded-[12px] bg-crypto-soft text-crypto">
                     <BadgeCheckIcon className="size-[22px]" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-[15px] font-semibold text-text-primary">파트너 멤버십</div>
                     <div className="text-xs text-text-secondary">초대 리워드 자격</div>
                   </div>
@@ -154,12 +174,12 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
           ) : role === "subscriber" && partnerActive ? (
             <div id="partner" className="scroll-mt-4">
             <Panel className="ring-1 ring-crypto/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-[42px] place-items-center rounded-[12px] bg-crypto-soft text-crypto">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid size-[42px] shrink-0 place-items-center rounded-[12px] bg-crypto-soft text-crypto">
                     <SparklesIcon className="size-[22px]" />
                   </span>
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-[15px] font-semibold text-text-primary">포르투나 파트너 멤버십</div>
                     <div className="text-xs text-text-secondary">Basic 이용 + 초대 리워드 · 파트너 대시보드</div>
                   </div>
@@ -198,14 +218,14 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
               ) : UPCOMING.map((u, i) => (
                 <div key={u.name} className={cn("space-y-2.5 py-3.5", i < UPCOMING.length - 1 && "border-b")}>
                   <div className="flex items-center gap-3">
-                    <span className={cn("grid size-10 place-items-center rounded-[12px]", u.soft)}>
+                    <span className={cn("grid size-10 shrink-0 place-items-center rounded-[12px]", u.soft)}>
                       <CalendarClockIcon className="size-[19px]" />
                     </span>
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                       <div className="text-sm font-semibold text-text-primary">{u.name}</div>
                       <div className="text-xs text-text-secondary">{u.sub}</div>
                     </div>
-                    <div className="text-right">
+                    <div className="shrink-0 text-right">
                       <div className="text-base font-bold text-text-primary">{u.amount}</div>
                     </div>
                   </div>
@@ -219,12 +239,12 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
 
           <Panel title="결제 잔액" sub="내 지갑 USDT 잔액에서 차감">
             <div className="space-y-3.5">
-              <div className="flex items-center justify-between rounded-lg bg-surface-muted p-3.5 ring-1 ring-border">
-                <div>
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted p-3.5 ring-1 ring-border">
+                <div className="min-w-0">
                   <div className="text-xs text-text-secondary">내 지갑 잔액 (결제 가능)</div>
                   <div className="text-2xl font-bold text-text-primary">{usd(balance)}</div>
                 </div>
-                <span className="grid size-[42px] place-items-center rounded-[12px] bg-green-50 text-green-700">
+                <span className="grid size-[42px] shrink-0 place-items-center rounded-[12px] bg-green-50 text-green-700">
                   <WalletIcon className="size-5" />
                 </span>
               </div>
@@ -268,19 +288,7 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
             ) : null}
             {purchases.length > 0 ? (
               <Panel title="상품 구매 내역" sub={`${purchases.length}건`}>
-                <div>
-                  <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
-                    <span>구매일</span><span>상품</span><span>이용 기간</span><span className="text-right">금액</span>
-                  </div>
-                  {purchases.map((r) => (
-                    <div key={r.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
-                      <span className="text-text-tertiary tabular-nums">{toSeoulDate(r.paid_at)}</span>
-                      <span className="font-medium text-text-primary">{r.product_name}</span>
-                      <span className="text-xs text-text-secondary tabular-nums">{r.period_start && r.period_end ? `${r.period_start.slice(0, 10)} ~ ${r.period_end.slice(0, 10)}` : "일회성"}</span>
-                      <span className="text-right font-semibold tabular-nums text-text-primary">{usd(Number(r.amount_usd))}</span>
-                    </div>
-                  ))}
-                </div>
+                <DataList columns={PURCHASE_COLUMNS} rows={purchases} rowKey={(r) => r.id} empty="구매 내역이 없습니다." />
               </Panel>
             ) : null}
           </div>
@@ -288,24 +296,17 @@ export async function OrdersView({ memberId, role }: { memberId: string; role: M
 
         <div id="history" className="scroll-mt-4">
         <Panel title="결제 내역" sub={`${subs.length}건`}>
-          <div>
-            <div className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-2.5 text-[11px] font-semibold tracking-wide text-text-tertiary uppercase">
-              <span>결제일</span><span>항목</span><span>금액</span><span className="text-right">상태</span>
-            </div>
-            {subs.slice(0, 10).map((s) => (
-              <div key={s.id} className="grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 border-b py-3 text-sm last:border-0">
-                <span className="text-text-tertiary tabular-nums">{toSeoulDate(s.paid_at)}</span>
-                <span className="font-medium text-text-primary">{(s.product_id && productName.get(s.product_id)) || "포르투나 구독"}</span>
-                <span className="font-semibold tabular-nums text-text-primary">${Number(s.amount_usd).toFixed(0)}</span>
-                <span className="justify-self-end">
-                  <Pill tone={s.status === "active" ? "green" : "neutral"}>{s.status === "active" ? "완료" : "만료"}</Pill>
-                </span>
-              </div>
-            ))}
-            {subs.length === 0 ? (
-              <div className="py-8 text-center text-sm text-text-tertiary">결제 내역이 없습니다.</div>
-            ) : null}
-          </div>
+          <DataList
+            columns={[
+              { key: "paid", label: "결제일", mobile: "meta", cell: (r) => <span className="text-text-tertiary tabular-nums">{toSeoulDate(r.paid_at)}</span> },
+              { key: "item", label: "항목", width: "1fr", mobile: "title", cell: (r) => <span className="font-medium text-text-primary">{(r.product_id && productName.get(r.product_id)) || "포르투나 구독"}</span> },
+              { key: "amount", label: "금액", mobile: "value", cell: (r) => <span className="font-semibold tabular-nums text-text-primary">${Number(r.amount_usd).toFixed(0)}</span> },
+              { key: "status", label: "상태", align: "right", mobile: "meta", cell: (r) => <Pill tone={r.status === "active" ? "green" : "neutral"}>{r.status === "active" ? "완료" : "만료"}</Pill> },
+            ]}
+            rows={subs.slice(0, 10)}
+            rowKey={(r) => r.id}
+            empty="결제 내역이 없습니다."
+          />
         </Panel>
         </div>
       </div>

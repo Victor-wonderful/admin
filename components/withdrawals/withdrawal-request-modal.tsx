@@ -71,7 +71,7 @@ export function WithdrawalRequestModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold whitespace-nowrap text-green-700"
+        className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-white px-6 text-sm font-bold whitespace-nowrap text-green-700 sm:h-auto sm:py-3 sm:text-[15px]"
       >
         <CircleArrowUpIcon className="size-[18px]" /> 출금 신청
       </button>
@@ -79,7 +79,7 @@ export function WithdrawalRequestModal({
       {open ? (
         <div className="fixed inset-0 z-50 grid place-items-center p-4">
           <div className="absolute inset-0 bg-[#0B0F14]/80" onClick={close} />
-          <div className="relative z-10 w-full max-w-[440px] overflow-hidden rounded-xl bg-card shadow-[0_20px_40px_-8px_rgba(11,15,20,0.35)]">
+          <div className="relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-xl bg-card shadow-[0_20px_40px_-8px_rgba(11,15,20,0.35)]">
             <div className="flex items-start justify-between border-b px-6 py-5">
               <div>
                 <h2 className="text-base font-bold text-text-primary">출금 신청</h2>

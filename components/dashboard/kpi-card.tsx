@@ -37,21 +37,21 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-lg bg-card p-4 ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]",
+        "flex items-center gap-2.5 rounded-lg bg-card p-3 ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)] lg:gap-3 lg:p-4",
         className,
       )}
     >
       <div
         className={cn(
-          "grid size-10 shrink-0 place-items-center rounded-[12px]",
+          "grid size-9 shrink-0 place-items-center rounded-[12px] lg:size-10",
           badgeTone[tone],
         )}
       >
-        <Icon className="size-[19px]" />
+        <Icon className="size-[17px] lg:size-[19px]" />
       </div>
       <div className="min-w-0">
-        <div className="text-xs text-text-secondary">{label}</div>
-        <div className="text-xl font-bold text-text-primary tabular-nums">
+        <div className="text-[11px] text-text-secondary lg:text-xs">{label}</div>
+        <div className="text-lg font-bold text-text-primary tabular-nums lg:text-xl">
           {value}
         </div>
         {sub ? (
