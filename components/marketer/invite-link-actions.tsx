@@ -110,10 +110,10 @@ export function InviteLinkActions({ code }: { code: string }) {
         <HashIcon className="size-3 shrink-0" /> <span className="truncate">{display}</span>
       </div>
       <div className="flex gap-2.5">
-        <button type="button" onClick={copy} className="inline-flex items-center gap-2 rounded-[10px] bg-white/10 px-5 py-3 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/15">
+        <button type="button" onClick={copy} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-[10px] bg-white/10 px-5 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/15 lg:h-auto lg:flex-none lg:py-3">
           {copied ? <CheckIcon className="size-4" /> : <CopyIcon className="size-4" />} {copied ? "복사됨" : "링크 복사"}
         </button>
-        <button type="button" onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-[10px] bg-crypto px-5 py-3 text-sm font-bold text-white hover:opacity-90">
+        <button type="button" onClick={() => setOpen(true)} className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-[10px] bg-crypto px-5 text-sm font-bold text-white hover:opacity-90 lg:h-auto lg:flex-none lg:py-3">
           <Share2Icon className="size-4" /> 공유
         </button>
       </div>
@@ -121,8 +121,8 @@ export function InviteLinkActions({ code }: { code: string }) {
       {open ? (
         <div className="fixed inset-0 z-50 grid place-items-center p-4">
           <div className="absolute inset-0 bg-[#0B0F14]/80" onClick={() => setOpen(false)} />
-          <div className="relative z-10 w-full max-w-[440px] overflow-hidden rounded-xl bg-card text-text-primary shadow-[0_20px_40px_-8px_rgba(11,15,20,0.35)]">
-            <div className="flex items-start justify-between border-b px-6 py-5">
+          <div className="relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-[440px] overflow-y-auto rounded-xl bg-card text-text-primary shadow-[0_20px_40px_-8px_rgba(11,15,20,0.35)]">
+            <div className="flex items-start justify-between gap-3 border-b px-4 py-4 lg:px-6 lg:py-5">
               <div>
                 <h2 className="text-base font-bold">초대 링크 공유</h2>
                 <p className="mt-0.5 text-xs text-text-secondary">초대 코드 {code} · 링크로 가입하면 자동으로 내 팀에 연결됩니다</p>
@@ -131,7 +131,7 @@ export function InviteLinkActions({ code }: { code: string }) {
                 <XIcon className="size-4" />
               </button>
             </div>
-            <div className="space-y-4 px-6 py-5">
+            <div className="space-y-4 px-4 py-4 lg:px-6 lg:py-5">
               <div className="grid grid-cols-5 gap-2">
                 {channels.map((c) =>
                   c.href ? (
@@ -158,7 +158,7 @@ export function InviteLinkActions({ code }: { code: string }) {
                 </button>
               </div>
 
-              <div className="flex items-center gap-4 rounded-lg bg-surface-muted p-3 ring-1 ring-border">
+              <div className="flex flex-col items-center gap-3 rounded-lg bg-surface-muted p-3 text-center ring-1 ring-border sm:flex-row sm:gap-4 sm:text-left">
                 {qr ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={qr} alt="초대 링크 QR" width={120} height={120} className="rounded-md bg-white p-1" />

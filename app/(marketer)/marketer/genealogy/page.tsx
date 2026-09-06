@@ -16,6 +16,7 @@ import { listPendingPlacements, listPlacementTargets, getRecommendedPlacementTar
 import { PlacementPanel } from "@/components/marketer/placement-panel";
 import { PlacementProvider } from "@/components/marketer/placement-context";
 import { ZoomPanCanvas } from "@/components/trees/zoom-pan";
+import { TreeDrilldown } from "@/components/trees/tree-drilldown";
 import { getMarketerViewerId } from "@/lib/session";
 import { toUid } from "@/lib/uid";
 import type { TreeNode } from "@/lib/supabase/types";
@@ -75,19 +76,19 @@ export default async function MarketerGenealogyPage() {
       <div className="flex-1 space-y-4 overflow-auto p-4 lg:p-7">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((s) => (
-            <div key={s.label} className="flex items-center gap-3 rounded-lg bg-card p-4 ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)]">
-              <span className={cn("grid size-10 place-items-center rounded-[12px]", s.tone)}>
-                <s.icon className="size-[19px]" />
+            <div key={s.label} className="flex items-center gap-2.5 rounded-lg bg-card p-3 ring-1 ring-border shadow-[0_2px_12px_-3px_rgba(16,24,40,0.08)] lg:gap-3 lg:p-4">
+              <span className={cn("grid size-9 shrink-0 place-items-center rounded-[12px] lg:size-10", s.tone)}>
+                <s.icon className="size-[17px] lg:size-[19px]" />
               </span>
-              <div>
-                <div className="text-xs text-text-secondary">{s.label}</div>
-                <div className="text-xl font-bold text-text-primary">{s.value}</div>
+              <div className="min-w-0">
+                <div className="text-[11px] text-text-secondary lg:text-xs">{s.label}</div>
+                <div className="text-lg font-bold text-text-primary lg:text-xl">{s.value}</div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-5 px-1">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
           {LEGEND.map((l) => (
             <span key={l.t} className="flex items-center gap-1.5 text-xs text-text-secondary">
               <span className={cn("size-2.5 rounded-full", l.c)} /> {l.t}
@@ -103,13 +104,24 @@ export default async function MarketerGenealogyPage() {
         <GenealogyTrees
           labels={{ uni: "추천조직", place: "후원배치" }}
           unilevel={
-            <Panel sub="추천조직 — 내가 초대한 회원과 그 아래 (초대 리워드 1·2대) · 휠: 확대/축소 · 드래그: 이동">
-              <ZoomPanCanvas><MemberTree root={unilevel} maxDepth={2} maxChildren={6} variant="partner" /></ZoomPanCanvas>
+            <Panel sub="추천조직 — 내가 초대한 회원과 그 아래 (초대 리워드 1·2대)">
+              {/* lg 이상: 트리 도식(휠 확대 · 드래그 이동) / lg 미만: 터치로 한 단계씩 내려가는 목록 */}
+              <div className="hidden lg:block">
+                <ZoomPanCanvas><MemberTree root={unilevel} maxDepth={2} maxChildren={6} variant="partner" /></ZoomPanCanvas>
+              </div>
+              <div className="lg:hidden">
+                <TreeDrilldown root={unilevel} emptyLabel="아직 초대한 회원이 없습니다." />
+              </div>
             </Panel>
           }
           placement={
-            <Panel sub="후원배치 — 직급·팀 리워드 산정 기준 조직 · 휠: 확대/축소 · 드래그: 이동 · 좌측 1번 라인 = 첫 파트너 고정">
-              <ZoomPanCanvas><MemberTree root={placement} maxDepth={3} maxChildren={6} variant="partner" placeable={pending.length > 0} /></ZoomPanCanvas>
+            <Panel sub="후원배치 — 직급·팀 리워드 산정 기준 조직 · 1번 라인 = 첫 파트너 고정(주력)">
+              <div className="hidden lg:block">
+                <ZoomPanCanvas><MemberTree root={placement} maxDepth={3} maxChildren={6} variant="partner" placeable={pending.length > 0} /></ZoomPanCanvas>
+              </div>
+              <div className="lg:hidden">
+                <TreeDrilldown root={placement} spine placeable={pending.length > 0} emptyLabel="후원배치된 회원이 없습니다." />
+              </div>
             </Panel>
           }
         />
