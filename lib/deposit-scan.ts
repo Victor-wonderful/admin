@@ -48,6 +48,7 @@ export async function scanDeposits(): Promise<NetworkScanResult[]> {
         const res = await fetchBscUsdtDeposits(cfg.address!, cfg.apiKey!, start);
         transfers = res.transfers;
         bscScannedTo = res.scannedTo;
+        console.info(`[deposit-scan] BEP20 범위 커서=${state?.last_block ?? "없음"} 시작=${start} 조회=${res.fromBlock}~${res.scannedTo} 최신=${res.latest}`);
         if (res.skippedBlocks > 0) console.warn(`[deposit-scan] BEP20 노드 보관 범위를 넘어 ${res.skippedBlocks} 블록 건너뜀(크론 장기 중단) — 그 구간 입금은 수동 처리`);
       }
     } catch (e) {

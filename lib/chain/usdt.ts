@@ -90,7 +90,7 @@ export async function fetchBscUsdtDeposits(
   address: string,
   rpcUrls: string,
   startBlock: number,
-): Promise<{ transfers: ChainTransfer[]; scannedTo: number; skippedBlocks: number }> {
+): Promise<{ transfers: ChainTransfer[]; scannedTo: number; skippedBlocks: number; fromBlock: number; latest: number }> {
   const r = await fetchBscUsdtTransfers(address, parseRpcUrls(rpcUrls), startBlock);
   const transfers = r.transfers
     .map((t) => ({
@@ -103,5 +103,5 @@ export async function fetchBscUsdtDeposits(
       blockNumber: t.blockNumber,
     }))
     .filter((t) => t.amount > 0);
-  return { transfers, scannedTo: r.scannedTo, skippedBlocks: r.skippedBlocks };
+  return { transfers, scannedTo: r.scannedTo, skippedBlocks: r.skippedBlocks, fromBlock: r.fromBlock, latest: r.latest };
 }
