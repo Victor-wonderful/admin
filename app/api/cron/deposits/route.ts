@@ -3,6 +3,7 @@ import { scanDeposits } from "@/lib/deposit-scan";
 import { syncWithdrawalsFromChain } from "@/lib/withdrawal-sync";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // 두 체인 조회 + 출금 확인이 한 실행에 들어가므로 기본 제한보다 넉넉히
 
 // 온체인 입금 스캔(크론용). 몇 분 간격으로 호출: Vercel Cron 또는 외부 스케줄러.
 // 회사 입금 주소로 들어온 USDT 를 조회해 회원 잔액에 반영하고, 나간 USDT 로 '송금 중' 출금을 자동 완료한다. 키·주소 미설정 네트워크는 skipped.
